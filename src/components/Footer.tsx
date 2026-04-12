@@ -7,7 +7,71 @@ import { FooterBehanceIcon, FooterFacebookIcon, FooterInstagramIcon, FooterLinke
 export default function Footer() {
     return (
         <footer className="w-full bg-1">
-            <div className="mx-auto flex items-start  container justify-between   py-16 ">
+
+            {/* ── Mobile layout (hidden on lg+) ── */}
+            <div className="lg:hidden container mx-auto px-4 py-12 flex flex-col gap-8">
+
+                {/* Follow Us */}
+                <div>
+                    <p className="mb-3 font-beatrice text-[11px] font-bold uppercase tracking-widest text-gray-500">
+                        Follow Us
+                    </p>
+                    <div className="flex items-center gap-4">
+                        <a href="#" aria-label="Facebook">
+                            <FooterFacebookIcon className="h-5 w-5 fill-black text-black" />
+                        </a>
+                        <a href="#" aria-label="Instagram">
+                            <FooterInstagramIcon className="h-5 w-5 text-black" />
+                        </a>
+                        <a href="#" aria-label="Behance">
+                            <FooterBehanceIcon className="h-5 w-5 text-black" />
+                        </a>
+                        <a href="#" aria-label="LinkedIn">
+                            <FooterLinkedInIcon className="h-5 w-5 fill-black text-black" />
+                        </a>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8">
+                    {/* Shop */}
+                    <div>
+                        <p className="mb-3 font-beatrice text-[11px] font-bold uppercase tracking-widest text-gray-500">
+                            Shop
+                        </p>
+                        <div className="flex flex-col gap-3 font-beatrice text-[15px] uppercase text-black">
+                            <Link href="/">Home</Link>
+                            <Link href="/order">Order Now</Link>
+                            <Link href="/branches">Our Branches</Link>
+                            <Link href="/contact">Contact Us</Link>
+                        </div>
+                    </div>
+
+                    {/* Help */}
+                    <div>
+                        <p className="mb-3 font-beatrice text-[11px] font-bold uppercase tracking-widest text-gray-500">
+                            Help
+                        </p>
+                        <div className="flex flex-col gap-3 font-beatrice text-[15px] uppercase text-black">
+                            <Link href="#">Shipping Policy</Link>
+                            <Link href="#">Refund &amp; Exchange Policy</Link>
+                            <Link href="/contact">Contact</Link>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Logo + copyright */}
+                <div className="flex flex-col items-center gap-3 pt-2">
+                    <div className="relative h-[80px] w-[180px]">
+                        <Image src="/images/logo.png" alt="Logo" fill className="object-contain" />
+                    </div>
+                    <p className="font-beatrice text-[12px] text-gray-500">
+                        © 2026 Miniman Rights Reserved.
+                    </p>
+                </div>
+            </div>
+
+            {/* ── Desktop layout (hidden below lg) ── */}
+            <div className="mx-auto hidden lg:flex items-start container justify-between py-16">
                 <div className="flex flex-col items-start gap-5 font-beatrice">
                     <Link href="/" className="text-[18px] font-normal uppercase text-black">
                         Home
@@ -34,7 +98,7 @@ export default function Footer() {
                     </div>
                 </div>
 
-                <div className="flex flex-col items-start gap-4 md:items-start lg:items-start">
+                <div className="flex flex-col items-start gap-4">
                     <a href="mailto:miniman@gmail.com" className="text-[18px] uppercase text-black">
                         miniman@gmail.com
                     </a>

@@ -42,7 +42,7 @@ const HomeProductsSection = () => {
         <section className="py-20 bg-white">
             <div className="container mx-auto px-4">
                 {/* Title */}
-                <h2 className="text-[48px]  font-beatrice font-extrabold leading-[50px] uppercase mb-10">
+                <h2 className="text-[32px] md:text-[48px] font-beatrice font-extrabold leading-tight md:leading-[50px] uppercase mb-10">
                     SUMMER <br />
                     COLLECTION <br />
                     2026

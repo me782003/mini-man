@@ -38,8 +38,8 @@ const HeroSection = () => {
       className="min-h-[100svh] bg-1 w-full  bg-cover bg-center bg-no-repeat pt-[120px]"
       // style={{ backgroundImage: "url('/images/home%20bg.jpg')" }}
     >
-      <section className="   xl:ml-[calc((100vw-1280px)/2)] pl-4   flex flex-col py-10 md:py-10">
-        <div className="grid flex-1 grid-cols-1 items-stretch gap-[180px] lg:grid-cols-[367px_1fr]">
+      <section className="xl:ml-[calc((100vw-1280px)/2)] pl-4 flex flex-col py-10 md:py-10">
+        <div className="grid flex-1 grid-cols-1 items-stretch gap-6 lg:gap-[180px] lg:grid-cols-[367px_1fr]">
           <aside className="  space-y-10 self-start">
             <nav className="space-y-1 text-[20px] font-medium font-beatrice uppercase tracking-wide text-neutral-900">
               <a className="block w-fit hover:opacity-70" href="#">
@@ -76,7 +76,7 @@ const HeroSection = () => {
 
             <a
               href="#"
-              className="group inline-flex !mt-[100px] h-11 w-full items-center justify-between gap-4 bg-neutral-900 px-4 font-headline text-[20px] font-semibold text-sm text-white shadow-sm transition hover:bg-neutral-800"
+              className="group inline-flex mt-6 lg:!mt-[100px] h-11 w-full items-center justify-between gap-4 bg-neutral-900 px-4 font-headline text-[20px] font-semibold text-sm text-white shadow-sm transition hover:bg-neutral-800"
             >
               <span>Go To Shop</span>
               <span className="grid place-items-center">
@@ -85,7 +85,7 @@ const HeroSection = () => {
             </a>
           </aside>
 
-          <div className="min-w-0 lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:justify-end relative">
+          <div className="min-w-0 relative lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:justify-end">
             <Swiper
               modules={[FreeMode]}
               spaceBetween={24}
@@ -98,7 +98,7 @@ const HeroSection = () => {
               }}
               freeMode={{ enabled: true, momentum: true }}
               grabCursor
-              className="hero-product-swiper w-full absolute"
+              className="hero-product-swiper w-full lg:absolute"
             >
               {Array.from({ length: PLACEHOLDER_COUNT }).map((_, idx) => (
                 <SwiperSlide key={idx} className="!h-auto">

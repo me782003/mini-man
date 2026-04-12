@@ -1,3 +1,4 @@
+import HeroBannerSwiper from "@/components/HeroBannerSwiper";
 import HeroSection from "@/components/Home/HeroSection"
 import HomeProductsSection from "@/components/Home/HomeProductsSection";
 import ProductReviews from "@/components/Home/ProductReviews";
@@ -46,15 +47,17 @@ const SAMPLE_PRODUCTS = [
 export default function HomePage() {
   return (
     <section>
-      <HeroSection />
+      {/* mobile only */}
+      <HeroBannerSwiper />
+      {/* <HeroSection /> */}
       <SwiperSection
         primaryTitle="MIRROR"
         secondaryTitle="COLLECTION"
         count={50}
         items={SAMPLE_PRODUCTS}
       />
-      <HomeProductsSection />
-      <ProductReviews />
+      {/* <HomeProductsSection />
+      <ProductReviews /> */}
     </section>
   );
 }

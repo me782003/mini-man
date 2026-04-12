@@ -1,17 +1,181 @@
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-Regular-BF64829e8f591fb.ttf")
+    format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-RegularItalic-BF64829e8a78ca8.ttf")
+    format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-Medium-BF64829e8f63463.ttf")
+    format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-MediumItalic-BF64829e8f58376.ttf")
+    format("truetype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-Semibold-BF64829e8f17d4c.ttf")
+    format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-SemiboldItalic-BF64829e8ed91f7.ttf")
+    format("truetype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-Bold-BF64829e8fd7dc6.ttf")
+    format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-BoldItalic-BF64829e9014b3a.ttf")
+    format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-Extrabold-BF64829e902d6f1.ttf")
+    format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceTRIAL-ExtraboldItalic-BF64829e90112c4.ttf")
+    format("truetype");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceDisplayTRIAL-Black-BF64829e9159b86.ttf")
+    format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice";
+  src: url("/beatrice-font-family/BeatriceDisplayTRIAL-BlackItalic-BF64829e913ae5d.ttf")
+    format("truetype");
+  font-weight: 900;
+  font-style: italic;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@font-face {
+  font-family: "Beatrice Headline";
+  src: url("/beatrice-font-family/BeatriceHeadlineTRIAL-Semibold-BF64829e8bd4153.otf")
+    format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice Headline";
+  src: url("/beatrice-font-family/BeatriceHeadlineTRIAL-SemiboldItalic-BF64829e8fdb83c.otf")
+    format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice Headline";
+  src: url("/beatrice-font-family/BeatriceHeadlineTRIAL-Bold-BF64829e8cbc444.otf")
+    format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice Headline";
+  src: url("/beatrice-font-family/BeatriceHeadlineTRIAL-BoldItalic-BF64829e903973d.otf")
+    format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice Headline";
+  src: url("/beatrice-font-family/BeatriceHeadlineTRIAL-Extrabold-BF64829e909806d.otf")
+    format("opentype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Beatrice Headline";
+  src: url("/beatrice-font-family/BeatriceHeadlineTRIAL-ExtraboldItalic-BF64829e906bd91.otf")
+    format("opentype");
+  font-weight: 800;
+  font-style: italic;
+  font-display: swap;
 }
 
 html {
   height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  color-scheme: light;
 }
 
 html,
@@ -26,7 +190,7 @@ body {
   flex-direction: column;
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Cairo", "Beatrice", Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -42,8 +206,20 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+.bg-1 {
+  position: relative;
+  background: url("/images/home bg.jpg") center/cover no-repeat;
+  overflow: hidden;
+}
+
+.bg-1::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.679);
+  pointer-events: none;
+}
+.bg-1 > * {
+  position: relative;
+  z-index: 1;
 }

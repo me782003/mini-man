@@ -35,7 +35,7 @@ function ProductSlideCard({ src }) {
 const HeroSection = () => {
   return (
     <main
-      className="min-h-[100svh] bg-1 w-full  bg-cover bg-center bg-no-repeat pt-[120px]"
+      className="min-h-[100svh] bg-1 w-full  bg-cover bg-center bg-no-repeat pt-[120px] hidden md:block"
       // style={{ backgroundImage: "url('/images/home%20bg.jpg')" }}
     >
       <section className="xl:ml-[calc((100vw-1280px)/2)] pl-4 flex flex-col py-10 md:py-10">

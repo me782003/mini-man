@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { FooterBehanceIcon, FooterFacebookIcon, FooterInstagramIcon, FooterLinkedInIcon } from './icons';
+import { FooterFacebookIcon, FooterInstagramIcon, FooterTikTokIcon, FooterThreadsIcon, FooterYouTubeIcon } from './icons';
 
 
 export default function Footer() {
@@ -9,62 +9,67 @@ export default function Footer() {
         <footer className="w-full bg-1">
 
             {/* ── Mobile layout (hidden on lg+) ── */}
-            <div className="lg:hidden container mx-auto px-4 py-12 flex flex-col gap-8">
+            <div className="lg:hidden container mx-auto px-4 pt-10 pb-6 flex flex-col gap-8">
 
                 {/* Follow Us */}
-                <div>
-                    <p className="mb-3 font-beatrice text-[11px] font-bold uppercase tracking-widest text-gray-500">
+                <div className="flex flex-col items-center gap-4">
+                    <p className="font-beatrice text-[11px] font-bold uppercase tracking-widest text-gray-500">
                         Follow Us
                     </p>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5">
                         <a href="#" aria-label="Facebook">
-                            <FooterFacebookIcon className="h-5 w-5 fill-black text-black" />
+                            <FooterFacebookIcon className="h-6 w-6" />
                         </a>
                         <a href="#" aria-label="Instagram">
-                            <FooterInstagramIcon className="h-5 w-5 text-black" />
+                            <FooterInstagramIcon className="h-6 w-6" />
                         </a>
-                        <a href="#" aria-label="Behance">
-                            <FooterBehanceIcon className="h-5 w-5 text-black" />
+                        <a href="#" aria-label="TikTok">
+                            <FooterTikTokIcon className="h-6 w-6" />
                         </a>
-                        <a href="#" aria-label="LinkedIn">
-                            <FooterLinkedInIcon className="h-5 w-5 fill-black text-black" />
+                        <a href="#" aria-label="Threads">
+                            <FooterThreadsIcon className="h-6 w-6" />
+                        </a>
+                        <a href="#" aria-label="YouTube">
+                            <FooterYouTubeIcon className="h-6 w-6" />
                         </a>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-8">
-                    {/* Shop */}
-                    <div>
-                        <p className="mb-3 font-beatrice text-[11px] font-bold uppercase tracking-widest text-gray-500">
-                            Shop
-                        </p>
-                        <div className="flex flex-col gap-3 font-beatrice text-[15px] uppercase text-black">
-                            <Link href="/">Home</Link>
-                            <Link href="/order">Order Now</Link>
-                            <Link href="/branches">Our Branches</Link>
-                            <Link href="/contact">Contact Us</Link>
-                        </div>
-                    </div>
-
-                    {/* Help */}
-                    <div>
-                        <p className="mb-3 font-beatrice text-[11px] font-bold uppercase tracking-widest text-gray-500">
-                            Help
-                        </p>
-                        <div className="flex flex-col gap-3 font-beatrice text-[15px] uppercase text-black">
-                            <Link href="#">Shipping Policy</Link>
-                            <Link href="#">Refund &amp; Exchange Policy</Link>
-                            <Link href="/contact">Contact</Link>
-                        </div>
+                {/* Shop */}
+                <div>
+                    <p className="mb-4 font-beatrice text-[15px] font-bold uppercase text-black">
+                        Shop
+                    </p>
+                    <div className="flex flex-col gap-4 font-beatrice text-[14px] uppercase text-black">
+                        <Link href="/products">Men</Link>
+                        <Link href="/products">Women</Link>
+                        <Link href="/products">Kids</Link>
+                        <Link href="/products">Accessories</Link>
                     </div>
                 </div>
 
-                {/* Logo + copyright */}
-                <div className="flex flex-col items-center gap-3 pt-2">
+                {/* Help */}
+                <div>
+                    <p className="mb-4 font-beatrice text-[15px] font-bold uppercase text-black">
+                        Help
+                    </p>
+                    <div className="flex flex-col gap-4 font-beatrice text-[14px] uppercase text-black">
+                        <Link href="#">Shipping Policy</Link>
+                        <Link href="#">Refuned and Exchange Policy</Link>
+                        <Link href="/contact">Contact</Link>
+                    </div>
+                </div>
+
+                {/* Logo */}
+                <div className="flex justify-center pt-2">
                     <div className="relative h-[80px] w-[180px]">
-                        <Image src="/images/logo.png" alt="Logo" fill className="object-contain" />
+                        <Image src="/images/logo.svg" alt="Logo" fill className="object-contain" />
                     </div>
-                    <p className="font-beatrice text-[12px] text-gray-500">
+                </div>
+
+                {/* Divider + copyright */}
+                <div className="flex flex-col items-center gap-3 border-t border-gray-300 pt-4">
+                    <p className="font-beatrice text-[14px] text-black">
                         © 2026 Miniman Rights Reserved.
                     </p>
                 </div>
@@ -112,16 +117,19 @@ export default function Footer() {
 
                     <div className="flex items-center gap-4 pt-2">
                         <a href="#" aria-label="Facebook">
-                            <FooterFacebookIcon className="h-5 w-5 fill-black text-black" />
+                            <FooterFacebookIcon className="h-5 w-5" />
                         </a>
                         <a href="#" aria-label="Instagram">
-                            <FooterInstagramIcon className="h-5 w-5 text-black" />
+                            <FooterInstagramIcon className="h-5 w-5" />
                         </a>
-                        <a href="#" aria-label="Behance">
-                            <FooterBehanceIcon className="h-5 w-5 text-black" />
+                        <a href="#" aria-label="TikTok">
+                            <FooterTikTokIcon className="h-5 w-5" />
                         </a>
-                        <a href="#" aria-label="LinkedIn">
-                            <FooterLinkedInIcon className="h-5 w-5 fill-black text-black" />
+                        <a href="#" aria-label="Threads">
+                            <FooterThreadsIcon className="h-5 w-5" />
+                        </a>
+                        <a href="#" aria-label="YouTube">
+                            <FooterYouTubeIcon className="h-5 w-5" />
                         </a>
                     </div>
                 </div>

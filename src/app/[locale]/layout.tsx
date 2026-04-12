@@ -19,7 +19,7 @@ export default async function LocaleLayout({
       {/* mobile only */}
       <TopCategories />
       {children}
-      {/* <Footer /> */}
+      <Footer />
     </NextIntlClientProvider>
   );
 }

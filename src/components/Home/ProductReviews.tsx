@@ -69,49 +69,56 @@ const StarIcon = ({ filled }: { filled: boolean }) => (
 );
 
 const ReviewCard = ({ review }: { review: typeof REVIEWS[0] }) => (
-    <div className="bg-white border border-[#00000033] p-7 h-full flex flex-col justify-between shadow-xl">
+    <div className="flex h-full flex-col justify-between border border-[#00000033] bg-white p-4 shadow-xl sm:p-5 md:p-7">
         <div>
-            <div className="flex gap-1 mb-5">
+            <div className="mb-4 flex gap-1 sm:mb-5">
                 {[1, 2, 3, 4, 5].map((star) => (
                     <StarIcon key={star} filled={star <= review.rating} />
                 ))}
             </div>
-            <p className="text-[14px] leading-[22px] font-beatrice font-medium text-[#5a5a5a] mb-8">
+
+            <p className="mb-6 text-[13px] leading-[21px] font-beatrice font-medium text-[#5a5a5a] sm:mb-7 sm:text-[14px] sm:leading-[22px] md:mb-8">
                 {review.text}
             </p>
         </div>
 
-        <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+        <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+                <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 sm:h-10 sm:w-10">
                     <img
                         src={review.avatar}
                         alt={review.author}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-cover"
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(review.author);
+                            (e.target as HTMLImageElement).src =
+                                "https://ui-avatars.com/api/?name=" +
+                                encodeURIComponent(review.author);
                         }}
                     />
                 </div>
-                <div className="flex flex-col">
-                    <span className="text-[16px] font-beatrice font-bold text-black leading-tight">
+
+                <div className="flex min-w-0 flex-col">
+                    <span className="truncate text-[14px] leading-tight font-beatrice font-bold text-black sm:text-[15px] md:text-[16px]">
                         {review.author}
                     </span>
-                    <span className="text-[12px] font-beatrice font-medium text-black">
+                    <span className="text-[11px] font-beatrice font-medium text-black sm:text-[12px]">
                         {review.date}
                     </span>
                 </div>
             </div>
-            <ReviewIcon />
+
+            <div className="flex-shrink-0">
+                <ReviewIcon />
+            </div>
         </div>
     </div>
 );
 
 const ProductReviews = () => {
     return (
-        <section className="py-20 bg-white">
-            <div className="container mx-auto px-4">
-                <h2 className="text-[32px] md:text-[48px] font-beatrice font-extrabold leading-tight md:leading-[50px] uppercase mb-12">
+        <section className=" py-5 md:py-20 bg-white">
+            <div className="container mx-auto ">
+                <h2 className="text-[32px] md:text-[48px] font-beatrice font-extrabold leading-tight md:leading-[50px] uppercase mb-7 md:mb-12">
                     PRODUCT <br />
                     REVIEWS
                 </h2>
@@ -123,6 +130,9 @@ const ProductReviews = () => {
                     slidesPerView={1.2}
                     freeMode={true}
                     breakpoints={{
+                        0: {
+                            slidesPerView: 1.1,
+                        },
                         640: {
                             slidesPerView: 2.2,
                         },

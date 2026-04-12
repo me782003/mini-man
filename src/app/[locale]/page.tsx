@@ -1,7 +1,8 @@
 import HeroBannerSwiper from "@/components/HeroBannerSwiper";
-import HeroSection from "@/components/Home/HeroSection"
 import HomeProductsSection from "@/components/Home/HomeProductsSection";
 import ProductReviews from "@/components/Home/ProductReviews";
+import HeroSection from "@/components/Home/HeroSection";
+
 import SwiperSection from "@/components/SwiperSection";
 
 const SAMPLE_PRODUCTS = [
@@ -49,15 +50,17 @@ export default function HomePage() {
     <section>
       {/* mobile only */}
       <HeroBannerSwiper />
-      {/* <HeroSection /> */}
+      <HeroSection />
       <SwiperSection
         primaryTitle="MIRROR"
+        seeAllHref="#"
         secondaryTitle="COLLECTION"
         count={50}
         items={SAMPLE_PRODUCTS}
       />
-      {/* <HomeProductsSection />
-      <ProductReviews /> */}
+      <HomeProductsSection />
+
+      <ProductReviews />
     </section>
   );
 }

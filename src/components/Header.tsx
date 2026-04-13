@@ -437,13 +437,14 @@ export default function Header() {
             </nav>
 
             <div className="mt-8 flex items-center gap-3 border-t border-neutral-300 pt-6">
-              <button
-                type="button"
+              <Link
+                href="/account"
+                onClick={closeMobileMenu}
                 className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
                 aria-label="Account"
               >
                 <UserIcon className="h-[24px] w-[24px]" />
-              </button>
+              </Link>
 
               <Link
                 href="/favorites"

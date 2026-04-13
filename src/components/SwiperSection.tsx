@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, FreeMode } from "swiper/modules";
+import { Navigation, FreeMode, Autoplay } from "swiper/modules";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "../i18n/navigation";
 import SectionHeader from "./SectionHeader";
@@ -46,8 +46,13 @@ const SwiperSection = ({
 
             <div className="container mt-6 px-4 sm:mt-8 lg:mt-10">
                 <Swiper
-                    modules={[Navigation, FreeMode]}
+                    modules={[Navigation, FreeMode, Autoplay]}
                     freeMode={true}
+                    autoplay={{
+                        delay: 2500,
+                        disableOnInteraction: false,
+                    }}
+                    loop={true}
                     navigation={{
                         prevEl: ".swiper-button-prev-custom",
                         nextEl: ".swiper-button-next-custom",
@@ -120,7 +125,7 @@ const SwiperSection = ({
                     </div>
 
                     {seeAllHref ? (
-                        <a
+                        <Link
                             href={seeAllHref}
                             className="mb-1 flex items-center gap-2 text-[14px] font-medium text-[#6b6b6b] transition hover:text-[#4f4f4f] md:flex"
                         >
@@ -142,7 +147,7 @@ const SwiperSection = ({
                                     />
                                 </svg>
                             </span>
-                        </a>
+                        </Link>
                     ) : null}
                 </div>
 

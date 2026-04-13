@@ -28,8 +28,10 @@ export default function ContactClient() {
         message: '',
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -38,10 +40,12 @@ export default function ContactClient() {
     };
 
     return (
-        <div className="container py-8">
+        <div className="container">
             {/* Breadcrumb */}
-            <nav className="mb-2 flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
-                <Link href="/" className="transition-colors hover:text-black">Home</Link>
+            <nav className="mb-2 flex flex-wrap items-center gap-1 font-beatrice text-[12px] text-gray-500">
+                <Link href="/" className="transition-colors hover:text-black">
+                    Home
+                </Link>
                 <span>/</span>
                 <span className="text-black">Contact</span>
             </nav>
@@ -52,8 +56,8 @@ export default function ContactClient() {
             </h2>
 
             <div className="relative">
-                {/* Social icons — right side */}
-                <div className="absolute right-0 top-0 flex flex-col gap-5">
+                {/* Social icons */}
+                <div className="mb-6 flex items-center gap-4 md:absolute md:right-0 md:top-0 md:mb-0 md:flex-col md:gap-5">
                     <a href="#" aria-label="Facebook">
                         <FooterFacebookIcon className="h-6 w-6" />
                     </a>
@@ -66,21 +70,21 @@ export default function ContactClient() {
                 </div>
 
                 {/* Headline */}
-                <h1 className="mb-10 max-w-5xl font-beatrice text-[48px] font-extrabold leading-[1.1] text-black">
+                <h1 className="mb-8 max-w-5xl font-beatrice text-[30px] font-extrabold leading-[1.1] text-black sm:text-[38px] lg:mb-10 lg:text-[48px]">
                     Get in touch with us. Always here for your steps &amp; style.
                 </h1>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="flex flex-col gap-10  ">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-6 lg:gap-10">
                     {/* Row 1 */}
-                    <div className="flex gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row">
                         <input
                             type="text"
                             name="firstName"
                             placeholder="First Name"
                             value={form.firstName}
                             onChange={handleChange}
-                            className="flex-1 border border-gray-300 px-4 py-4 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none"
+                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
                         />
                         <input
                             type="text"
@@ -88,19 +92,19 @@ export default function ContactClient() {
                             placeholder="Last Name"
                             value={form.lastName}
                             onChange={handleChange}
-                            className="flex-1 border border-gray-300 px-4 py-4 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none"
+                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
                         />
                     </div>
 
                     {/* Row 2 */}
-                    <div className="flex gap-4">
+                    <div className="flex flex-col gap-4 sm:flex-row">
                         <input
                             type="email"
                             name="email"
                             placeholder="Email"
                             value={form.email}
                             onChange={handleChange}
-                            className="flex-1 border border-gray-300 px-4 py-4 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none"
+                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
                         />
                         <input
                             type="tel"
@@ -108,7 +112,7 @@ export default function ContactClient() {
                             placeholder="Phone Number"
                             value={form.phone}
                             onChange={handleChange}
-                            className="flex-1 border border-gray-300 px-4 py-4 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none"
+                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
                         />
                     </div>
 
@@ -119,17 +123,24 @@ export default function ContactClient() {
                         rows={6}
                         value={form.message}
                         onChange={handleChange}
-                        className="w-full border border-gray-300 px-4 py-4 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none resize-none"
+                        className="min-h-[180px] w-full resize-none border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
                     />
 
                     {/* Submit */}
                     <div>
                         <button
                             type="submit"
-                            className="flex items-center justify-between bg-black px-6 py-2 font-beatrice text-[20px] font-semibold text-white transition-colors hover:bg-neutral-800 min-w-[475px]"
+                            className="flex w-full items-center justify-between gap-4 bg-black px-5 py-3 font-beatrice text-[16px] font-semibold text-white transition-colors hover:bg-neutral-800 sm:px-6 sm:text-[18px] md:w-auto md:min-w-[475px] md:py-2 md:text-[20px]"
                         >
                             <span>Leave us a Message</span>
-                            <svg width="37" height="14" viewBox="0 0 37 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <svg
+                                width="37"
+                                height="14"
+                                viewBox="0 0 37 14"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="shrink-0"
+                            >
                                 <path
                                     d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
                                     stroke="white"

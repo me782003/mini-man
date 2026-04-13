@@ -69,7 +69,7 @@ export default function FavoritesClient() {
                     {/* Mobile: list layout */}
                     <div className=" space-y-[20px] md:hidden">
                         {items.map(item => (
-                            <div key={item.id} className="flex items-start gap-4 ">
+                            <Link href={`/products/${item.id}`} key={item.id} className="flex items-start gap-4 ">
                                 {/* Image */}
                                 <div className="h-[120px] w-[120px] shrink-0 bg-[#e8e8e8] flex items-center justify-center">
                                     <img
@@ -108,13 +108,16 @@ export default function FavoritesClient() {
 
                                 {/* Heart */}
                                 <button
-                                    onClick={() => remove(item.id)}
+                                    onClick={(e: React.MouseEvent) => {
+                                        e.preventDefault();
+                                        remove(item.id)
+                                    }}
                                     aria-label="Remove from favorites"
                                     className="shrink-0 p-1 text-[#e63946] transition-transform hover:scale-110"
                                 >
                                     <Heart size={22} fill="#e63946" strokeWidth={0} />
                                 </button>
-                            </div>
+                            </Link>
                         ))}
                     </div>
 

@@ -60,7 +60,7 @@ export default function OrderSummary({ subtotal, discount, className, children }
                 </div>
             </div>
 
-            <div className={` mb-0 md:mb-6    border-t border-gray-200 pt-4`}>
+            <div className={` mb-6    border-t border-gray-200 pt-4`}>
                 <div className="flex items-baseline justify-between font-beatrice">
                     <span className="text-[20px] font-bold text-black">Total</span>
                     <span className="text-[20px] font-extrabold text-black">{total.toLocaleString()} EGP</span>

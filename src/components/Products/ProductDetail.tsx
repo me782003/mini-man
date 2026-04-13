@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { HeartIcon } from '../icons';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { FreeMode, Navigation, Thumbs } from 'swiper/modules';
+import { Autoplay, FreeMode, Navigation, Thumbs } from 'swiper/modules';
 
 import type { Swiper as SwiperType } from 'swiper';
 
@@ -50,7 +50,11 @@ export default function ProductDetail({ product }: { product: Product }) {
                                 swiper:
                                     thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null,
                             }}
-                            modules={[Navigation, Thumbs]}
+                            modules={[Navigation, Thumbs, Autoplay]}
+                            autoplay={{
+                                delay: 2500,
+                                disableOnInteraction: false,
+                            }}
                             className="h-full w-full"
                         >
                             {gallery.map((image, i) => (

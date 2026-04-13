@@ -111,7 +111,7 @@ export default function ShippingClient() {
                         />
                     </div>
 
-                    <button className="mt-6 hidden md:flex w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800">
+                    <Link href="/payment" className="mt-6 hidden md:flex w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800">
                         <span>Continue to delivery</span>
                         <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
                             <path
@@ -122,7 +122,7 @@ export default function ShippingClient() {
                                 strokeLinejoin="round"
                             />
                         </svg>
-                    </button>
+                    </Link>
                 </div>
 
                 {/* Order Summary */}
@@ -133,7 +133,7 @@ export default function ShippingClient() {
                 >
                     <SecurePaymentBadge />
                 </OrderSummary>
-                <button className=" flex md:hidden w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800">
+                <Link href="/payment" className=" flex md:hidden w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800">
                     <span>Continue to delivery</span>
                     <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
                         <path
@@ -144,7 +144,7 @@ export default function ShippingClient() {
                             strokeLinejoin="round"
                         />
                     </svg>
-                </button>
+                </Link>
             </div>}
         </div>
     );

@@ -51,7 +51,7 @@ export default function CheckoutClient() {
     const currentStep = 2;
 
     return (
-        <div className="container py-8">
+        <div className="container">
             {/* Breadcrumb */}
             <nav className="mb-[10px] flex items-center gap-1 font-beatrice text-[14px] text-gray-500">
                 <Link href="/" className="transition-colors hover:text-black">Home</Link>

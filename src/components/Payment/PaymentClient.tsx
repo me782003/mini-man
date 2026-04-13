@@ -175,7 +175,7 @@ export default function PaymentClient() {
 
 const Actions = ({ mobile, ...props }: { mobile?: boolean, props?: any }) => {
     return <div className={`mt-5 md:mt-6 flex  gap-[10px] md:gap-4 ${mobile ? 'md:hidden' : 'hidden md:flex'}`} {...props}>
-        <button className={`flex w-full items-center justify-between bg-black px-[14px] md:px-5 py-[10px] md:py-3 font-beatrice text-[16px] md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800`}>
+        <Link href="/checkout" className={`flex w-full items-center justify-between bg-black px-[14px] md:px-5 py-[10px] md:py-3 font-beatrice text-[16px] md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800`}>
             <span>Continue to delivery</span>
             <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
                 <path
@@ -186,7 +186,7 @@ const Actions = ({ mobile, ...props }: { mobile?: boolean, props?: any }) => {
                     strokeLinejoin="round"
                 />
             </svg>
-        </button>
+        </Link>
         <Link
             href="/shipping"
             className="flex items-center justify-center border border-black px-4 md:px-8 py-[10px] md:py-3 font-beatrice text-[16px] font-semibold text-black transition-colors hover:bg-gray-100"

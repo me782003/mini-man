@@ -7,6 +7,7 @@ import { FreeMode } from "swiper/modules";
 import { ArrowRightIcon, SearchIcon } from "@/components/icons";
 
 import "swiper/css";
+import Link from "next/link";
 
 const PRODUCT_IMAGES = [
   "/images/image 9.png",
@@ -74,15 +75,15 @@ const HeroSection = () => {
               </div>
             </div>
 
-            <a
-              href="#"
+            <Link
+              href="/products"
               className="group inline-flex mt-6 lg:!mt-[100px] h-11 w-full items-center justify-between gap-4 bg-neutral-900 px-4 font-headline text-[20px] font-semibold text-sm text-white shadow-sm transition hover:bg-neutral-800"
             >
               <span>Go To Shop</span>
               <span className="grid place-items-center">
                 <ArrowRightIcon className="transition-transform group-hover:translate-x-0.5" />
               </span>
-            </a>
+            </Link>
           </aside>
 
           <div className="min-w-0 relative lg:flex lg:h-full lg:min-h-0 lg:flex-col lg:justify-end">

@@ -108,7 +108,8 @@ export default function CartClient() {
                     ) : (
                         <div className="divide-y divide-gray-200">
                             {items.map(item => (
-                                <div
+                                <Link
+                                    href={`/products/${item.id}`}
                                     key={item.id}
                                     className="relative flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:gap-5 lg:p-6"
                                 >
@@ -153,7 +154,10 @@ export default function CartClient() {
 
                                     {/* Delete */}
                                     <button
-                                        onClick={() => removeItem(item.id)}
+                                        onClick={(e: React.MouseEvent) => {
+                                            e.preventDefault();
+                                            removeItem(item.id)
+                                        }}
                                         className="absolute right-4 top-4 text-red-500 transition-colors hover:text-red-700 sm:right-5 sm:top-5"
                                         aria-label="Remove item"
                                     >
@@ -161,7 +165,7 @@ export default function CartClient() {
                                     </button>
 
                                     {/* Quantity */}
-                                    <div className="mt-1 flex justify-end lg:absolute lg:bottom-5 lg:right-5 lg:mt-0">
+                                    <div onClick={(e: React.MouseEvent) => e.preventDefault()} className="mt-1 flex justify-end lg:absolute lg:bottom-5 lg:right-5 lg:mt-0">
                                         <div className="flex items-center border border-gray-300">
                                             <button
                                                 onClick={() => updateQty(item.id, -1)}
@@ -180,7 +184,7 @@ export default function CartClient() {
                                             </button>
                                         </div>
                                     </div>
-                                </div>
+                                </Link>
                             ))}
                         </div>
                     )}
@@ -264,27 +268,31 @@ export default function CartClient() {
                     </label>
 
                     {/* Checkout */}
-                    <button
-                        disabled={!agreed || items.length === 0}
-                        className="flex w-full items-center justify-between gap-4 bg-black px-4 py-3 font-beatrice text-[17px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40 sm:px-5 sm:text-[20px]"
+                    <Link
+                        href="/shipping"
                     >
-                        <span>Go to Checkout</span>
-                        <svg
-                            width="30"
-                            height="12"
-                            viewBox="0 0 37 14"
-                            fill="none"
-                            className="shrink-0"
+                        <button
+                            disabled={!agreed || items.length === 0}
+                            className="flex w-full items-center justify-between gap-4 bg-black px-4 py-3 font-beatrice text-[17px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40 sm:px-5 sm:text-[20px]"
                         >
-                            <path
-                                d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                        </svg>
-                    </button>
+                            <span>Go to Checkout</span>
+                            <svg
+                                width="30"
+                                height="12"
+                                viewBox="0 0 37 14"
+                                fill="none"
+                                className="shrink-0"
+                            >
+                                <path
+                                    d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                        </button>
+                    </Link>
                 </div>
             </div>
         </div>

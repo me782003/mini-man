@@ -14,11 +14,11 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <SaleTicker />
+
       <Header />
-      {/* mobile only */}
-      <TopCategories />
-      {children}
+      <div className="">
+        {children}
+      </div>
       <Footer />
     </NextIntlClientProvider>
   );

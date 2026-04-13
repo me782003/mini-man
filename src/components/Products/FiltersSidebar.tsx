@@ -5,6 +5,8 @@ import { X } from 'lucide-react';
 
 const SIZES = [41, 42, 43, 44, 45] as const;
 
+const CATEGORIES = ['Men', 'Women', 'Kids', 'Accessories'] as const;
+
 const COLORS = [
     { name: 'Black', hex: '#000000' },
     { name: 'White', hex: '#ffffff' },
@@ -97,6 +99,7 @@ export default function FiltersSidebar({
     onClose,
 }: FiltersSidebarProps) {
     const [selectedSizes, setSelectedSizes] = useState<number[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     const [availability, setAvailability] = useState<AvailabilityState>({
         inStock: false,
         outOfStock: false,
@@ -109,6 +112,14 @@ export default function FiltersSidebar({
             prev.includes(size)
                 ? prev.filter((item) => item !== size)
                 : [...prev, size]
+        );
+    }, []);
+
+    const toggleCategory = useCallback((category: string) => {
+        setSelectedCategories((prev) =>
+            prev.includes(category)
+                ? prev.filter((item) => item !== category)
+                : [...prev, category]
         );
     }, []);
 
@@ -192,8 +203,8 @@ export default function FiltersSidebar({
                                     onClick={() => toggleSize(size)}
                                     aria-pressed={isSelected}
                                     className={`h-9 w-9 border text-[13px] font-beatrice font-medium transition-colors ${isSelected
-                                            ? 'border-black bg-black text-white'
-                                            : 'border-gray-300 bg-white text-black hover:border-black'
+                                        ? 'border-black bg-black text-white'
+                                        : 'border-gray-300 bg-white text-black hover:border-black'
                                         }`}
                                 >
                                     {size}
@@ -202,6 +213,24 @@ export default function FiltersSidebar({
                         })}
                     </div>
                 </div>
+
+                <AccordionSection title="Categories" defaultOpen>
+                    <div className="flex flex-col gap-2.5">
+                        {CATEGORIES.map((category) => (
+                            <label key={category} className="flex cursor-pointer items-center gap-2.5">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedCategories.includes(category)}
+                                    onChange={() => toggleCategory(category)}
+                                    className="h-4 w-4 cursor-pointer accent-black"
+                                />
+                                <span className="font-beatrice text-[14px] text-black">
+                                    {category}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                </AccordionSection>
 
                 <AccordionSection title="Availability" defaultOpen>
                     <label className="mb-2.5 flex cursor-pointer items-center gap-2.5">
@@ -231,7 +260,8 @@ export default function FiltersSidebar({
                     </label>
                 </AccordionSection>
 
-                <AccordionSection title="Color">
+                {/* Color Filter not possible to be implemented  */}
+                {/* <AccordionSection title="Color">
                     <div className="flex flex-wrap gap-2.5">
                         {COLORS.map((color) => {
                             const isSelected = selectedColors.includes(color.hex);
@@ -256,7 +286,7 @@ export default function FiltersSidebar({
                             );
                         })}
                     </div>
-                </AccordionSection>
+                </AccordionSection> */}
 
                 <AccordionSection title="Shop by Price">
                     <input

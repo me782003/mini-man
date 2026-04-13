@@ -10,12 +10,13 @@ export default function SaleTicker() {
   const pathname = usePathname();
 
   const isHome = pathname === "/en" || pathname === "/ar";
+  // const isHome = false;
 
 
 
 
   return (
-    <div className={`w-full   overflow-hidden bg-[#ff2a2a] bg-gradient-to-b from-[#D10C11] via-[#E23E38] to-[#E7090E] shadow-2xl ${isHome ? " md:!hidden" : ""}`}>
+    <div className={`w-full  overflow-hidden bg-[#ff2a2a] bg-gradient-to-b from-[#D10C11] via-[#E23E38] to-[#E7090E] shadow-2xl ${isHome ? " md:!hidden" : ""}`}>
       <div className="sale-ticker-track flex min-w-max items-center whitespace-nowrap py-3 ">
         {items.map((item) => (
           <div

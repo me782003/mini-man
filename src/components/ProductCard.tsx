@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React, { JSX } from "react";
 
 interface ProductCardProps {
@@ -18,7 +19,7 @@ export default function ProductCard({
     colors = ["#9ea0a3", "black", "#312be2"],
 }: ProductCardProps): JSX.Element {
     return (
-        <div className="group w-full max-w-full cursor-pointer sm:max-w-[445px]">
+        <Link href={`/products/${title}`} className="group w-full max-w-full cursor-pointer sm:max-w-[445px]">
             <div className="flex aspect-square w-full items-center justify-center overflow-hidden bg-[#e8e8e8]">
                 <img
                     src={image}
@@ -61,6 +62,6 @@ export default function ProductCard({
                     )}
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }

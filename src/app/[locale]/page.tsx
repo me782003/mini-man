@@ -53,7 +53,7 @@ export default function HomePage() {
       <HeroSection />
       <SwiperSection
         primaryTitle="MIRROR"
-        seeAllHref="#"
+        seeAllHref="/products"
         secondaryTitle="COLLECTION"
         count={50}
         items={SAMPLE_PRODUCTS}

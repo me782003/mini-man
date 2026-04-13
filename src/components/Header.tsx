@@ -5,17 +5,36 @@ import { useTranslations } from 'next-intl';
 import { Link } from '../i18n/navigation';
 import LanguageSwitch from './LanguageSwitch';
 import { BagIcon, HeartIcon, MenuIcon, UserIcon } from './icons';
-import { useEffect, useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { ChevronDown, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import TopCategories from './TopCategories';
+import SaleTicker from './SaleTicker';
+
+type MobileMenuSection = 'men' | 'women' | 'kids' | 'accessories' | null;
 
 export default function Header() {
   const t = useTranslations('Header');
   const [isFixed, setIsFixed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openSection, setOpenSection] = useState<MobileMenuSection>('men');
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      if (entries[0]) {
+        setHeaderHeight(entries[0].target.getBoundingClientRect().height);
+      }
+    });
+    observer.observe(headerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsFixed(window.scrollY > 200);
+      setIsFixed(window.scrollY > 100);
     };
 
     handleScroll();
@@ -36,17 +55,35 @@ export default function Header() {
     };
   }, [isMobileMenuOpen]);
 
+  const toggleSection = (section: Exclude<MobileMenuSection, null>) => {
+    setOpenSection(prev => (prev === section ? null : section));
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  const pathname = usePathname();
+  const isHome = pathname === '/en' || pathname === '/ar';
+
   return (
     <>
+      {isFixed && (
+        <div style={{ height: `${headerHeight}px` }} className={isHome ? 'md:hidden' : ''} aria-hidden="true" />
+      )}
       <header
+        ref={headerRef}
         className={`w-full z-50 transition-all duration-300 ${isFixed
           ? 'fixed top-0 left-0 bg-white/95 shadow-md backdrop-blur-md'
-          : 'bg-transparent'
+          : isHome ? "md:absolute  top-0 left-0 bg-transparent"
+            : 'bg-transparent'
           }`}
       >
+        <SaleTicker />
+
         <div className="container py-[17px] md:py-[35px]">
           {/* Mobile Header */}
-          <div className="flex items-center  md:hidden">
+          <div className="flex items-center md:hidden">
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
@@ -56,10 +93,7 @@ export default function Header() {
               <MenuIcon className="" />
             </button>
 
-            <Link
-              href="/"
-              className="flex flex-1 "
-            >
+            <Link href="/" className="flex flex-1">
               <span className="relative h-[34px] w-[107px]">
                 <Image
                   src="/images/logo.svg"
@@ -119,7 +153,7 @@ export default function Header() {
                 {t('home')}
               </Link>
               <Link
-                href="/order"
+                href="/products"
                 className="font-beatrice text-[20px] font-normal uppercase leading-[100%] tracking-[0em] text-neutral-800 hover:text-neutral-950"
               >
                 {t('orderNow')}
@@ -139,13 +173,13 @@ export default function Header() {
             </nav>
 
             <div className="flex items-center gap-4 text-neutral-900">
-              <button
-                type="button"
+              <Link
+                href="/account"
                 className="grid h-8 w-8 place-items-center rounded hover:bg-neutral-100"
                 aria-label="Account"
               >
                 <UserIcon className="h-[32px] w-[32px]" />
-              </button>
+              </Link>
 
               <Link
                 href="/favorites"
@@ -167,7 +201,9 @@ export default function Header() {
             </div>
           </div>
         </div>
+        <TopCategories />
       </header>
+
 
       {/* Mobile Menu */}
       <div
@@ -175,80 +211,259 @@ export default function Header() {
           ? 'pointer-events-auto bg-black/40 opacity-100'
           : 'pointer-events-none opacity-0'
           }`}
-        onClick={() => setIsMobileMenuOpen(false)}
+        onClick={closeMobileMenu}
       >
         <div
-          className={`absolute left-0 top-0 h-full w-[82%] max-w-[320px] bg-white p-6 shadow-xl transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`absolute left-0 top-0 h-full w-[82%] max-w-[320px] overflow-y-auto bg-[#efefef]  shadow-xl transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
-          <div className="mb-8 flex items-center justify-between">
-            <span className="text-lg font-semibold text-neutral-900">Menu</span>
+          <div className="mb-6 p-5 sticky top-0 bg-[#efefef] flex items-center justify-between">
+            <span className="font-beatrice text-[24px] font-bold text-neutral-900">
+              Menu
+            </span>
+
             <button
               type="button"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-100"
+              onClick={closeMobileMenu}
+              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
               aria-label="Close menu"
             >
               <X className="h-6 w-6" />
             </button>
           </div>
+          <div className='p-5'>
+            {/* Old navigations */}
+            <nav className="mb-7 flex flex-col gap-4 border-b border-neutral-300 pb-6">
+              <Link
+                href="/"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('home')}
+              </Link>
+              <Link
+                href="/products"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('orderNow')}
+              </Link>
+              <Link
+                href="/branches"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('branches')}
+              </Link>
+              <Link
+                href="/contact"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('contact')}
+              </Link>
+            </nav>
 
-          <nav className="flex flex-col gap-5">
-            <Link
-              href="/"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="font-beatrice text-[20px] uppercase text-neutral-900"
-            >
-              {t('home')}
-            </Link>
-            <Link
-              href="/order"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="font-beatrice text-[20px] uppercase text-neutral-900"
-            >
-              {t('orderNow')}
-            </Link>
-            <Link
-              href="/branches"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="font-beatrice text-[20px] uppercase text-neutral-900"
-            >
-              {t('branches')}
-            </Link>
-            <Link
-              href="/contact"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="font-beatrice text-[20px] uppercase text-neutral-900"
-            >
-              {t('contact')}
-            </Link>
-          </nav>
+            {/* Expandable category menu */}
+            <nav className="flex flex-col">
+              <div className="pb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('men')}
+                  className="flex w-full items-center justify-between py-3 text-left"
+                >
+                  <span className="font-beatrice text-[20px] font-bold text-black">
+                    Men
+                  </span>
+                  <ChevronDown
+                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'men' ? 'rotate-180' : ''
+                      }`}
+                  />
+                </button>
 
-          <div className="mt-10 flex items-center gap-3 border-t border-neutral-200 pt-6">
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-100"
-              aria-label="Account"
-            >
-              <UserIcon className="h-[24px] w-[24px]" />
-            </button>
+                <div
+                  className={`grid transition-all duration-300 ${openSection === 'men'
+                    ? 'grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
+                      <Link
+                        href="/men/items-by-miniman"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        Items By MiniMan
+                      </Link>
+                      <Link
+                        href="/men/mirror"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        Mirror
+                      </Link>
+                      <Link
+                        href="/men/classic"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        Classic
+                      </Link>
+                      <Link
+                        href="/men/big-size"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        Big Size
+                      </Link>
+                      <Link
+                        href="/men/slippers"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        Slippers
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-100"
-              aria-label="Favorites"
-            >
-              <HeartIcon className="h-[24px] w-[24px]" />
-            </button>
+              <div className="pb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('women')}
+                  className="flex w-full items-center justify-between py-3 text-left"
+                >
+                  <span className="font-beatrice text-[20px] font-bold text-black">
+                    Women
+                  </span>
+                  <ChevronDown
+                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'women' ? 'rotate-180' : ''
+                      }`}
+                  />
+                </button>
 
-            <button
-              type="button"
-              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-100"
-              aria-label="Cart"
-            >
-              <BagIcon className="h-[24px] w-[24px]" />
-            </button>
+                <div
+                  className={`grid transition-all duration-300 ${openSection === 'women'
+                    ? 'grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
+                      <Link
+                        href="/women"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        View All Women
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('kids')}
+                  className="flex w-full items-center justify-between py-3 text-left"
+                >
+                  <span className="font-beatrice text-[20px] font-bold text-black">
+                    Kids
+                  </span>
+                  <ChevronDown
+                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'kids' ? 'rotate-180' : ''
+                      }`}
+                  />
+                </button>
+
+                <div
+                  className={`grid transition-all duration-300 ${openSection === 'kids'
+                    ? 'grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
+                      <Link
+                        href="/kids"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        View All Kids
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pb-1">
+                <button
+                  type="button"
+                  onClick={() => toggleSection('accessories')}
+                  className="flex w-full items-center justify-between py-3 text-left"
+                >
+                  <span className="font-beatrice text-[20px] font-bold text-black">
+                    Accessories
+                  </span>
+                  <ChevronDown
+                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'accessories' ? 'rotate-180' : ''
+                      }`}
+                  />
+                </button>
+
+                <div
+                  className={`grid transition-all duration-300 ${openSection === 'accessories'
+                    ? 'grid-rows-[1fr] opacity-100'
+                    : 'grid-rows-[0fr] opacity-0'
+                    }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
+                      <Link
+                        href="/accessories"
+                        onClick={closeMobileMenu}
+                        className="font-beatrice text-[16px] text-black"
+                      >
+                        View All Accessories
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </nav>
+
+            <div className="mt-8 flex items-center gap-3 border-t border-neutral-300 pt-6">
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
+                aria-label="Account"
+              >
+                <UserIcon className="h-[24px] w-[24px]" />
+              </button>
+
+              <Link
+                href="/favorites"
+                onClick={closeMobileMenu}
+                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
+                aria-label="Favorites"
+              >
+                <HeartIcon className="h-[24px] w-[24px]" />
+              </Link>
+
+              <Link
+                href="/cart"
+                onClick={closeMobileMenu}
+                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
+                aria-label="Cart"
+              >
+                <BagIcon className="h-[24px] w-[24px]" />
+              </Link>
+            </div>
+
           </div>
         </div>
       </div>

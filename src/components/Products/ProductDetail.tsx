@@ -36,9 +36,9 @@ export default function ProductDetail({ product }: { product: Product }) {
             : [product.image];
 
     return (
-        <section className="container mx-auto py-10">
-            <div className="flex gap-10  ">
-                <div className="flex gap-5 flex-1 h-[558px] ">
+        <section className="container mx-auto ">
+            <div className=" grid grid-cols-1 md:flex  gap-10  ">
+                <div className="flex   gap-[10px] md:gap-5 flex-1 h-[290px] md:h-[558px] ">
 
 
                     {/* Main image */}
@@ -72,7 +72,24 @@ export default function ProductDetail({ product }: { product: Product }) {
                             onSwiper={setThumbsSwiper}
                             direction="vertical"
                             spaceBetween={8}
-                            slidesPerView={5}
+                            // slidesPerView={5}
+                            breakpoints={{
+                                0: {
+                                    direction: 'vertical',
+                                    slidesPerView: 5,
+                                    spaceBetween: 10,
+                                },
+                                640: {
+                                    direction: 'vertical',
+                                    slidesPerView: 5,
+                                    spaceBetween: 8,
+                                },
+                                1024: {
+                                    direction: 'vertical',
+                                    slidesPerView: 5,
+                                    spaceBetween: 8,
+                                },
+                            }}
                             freeMode
                             watchSlidesProgress
                             modules={[FreeMode, Thumbs]}
@@ -80,7 +97,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                         >
                             {gallery.map((thumb, i) => (
                                 <SwiperSlide key={i}>
-                                    <div className="h-[96px] w-[96px] cursor-pointer overflow-hidden border-2 border-transparent bg-[#e8e8e8] transition-colors hover:border-gray-300">
+                                    <div className=" w-[50px] md:h-[96px]  h-[50px] md:w-[96px] cursor-pointer overflow-hidden border-2 border-transparent bg-[#e8e8e8] transition-colors hover:border-gray-300">
                                         <img
                                             src={thumb}
                                             alt={`${product.title} thumbnail ${i + 1}`}
@@ -94,16 +111,16 @@ export default function ProductDetail({ product }: { product: Product }) {
                 </div>
 
                 {/* Product info */}
-                {true && <div className="flex-1 min-w-0 border border-neutral-300 p-10">
-                    <p className="mb-5 font-beatrice text-[16px] font-medium text-[#5a5a5a]">
+                {true && <div className="flex-1 min-w-0 md:border border-neutral-300  md:p-10">
+                    <p className=" mb-[10px] md:mb-5 font-beatrice text-[12px] md:text-[16px] font-medium text-[#5a5a5a]">
                         {product.category}
                     </p>
 
-                    <h1 className="mb-1 font-beatrice text-[28px] font-medium leading-tight text-black">
+                    <h1 className="mb-1 font-beatrice text-2xl md:text-[28px] font-medium leading-tight text-black">
                         {product.title}
                     </h1>
 
-                    <p className="mb-8 font-beatrice text-[26px] font-extrabold text-black">
+                    <p className="mb-8 font-beatrice text-[24px] md:text-[26px] font-extrabold text-black">
                         {product.price}
                     </p>
 
@@ -118,7 +135,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                                 <button
                                     key={size}
                                     onClick={() => setSelectedSize(size)}
-                                    className={`h-9 w-9 border text-[13px] font-beatrice font-medium transition-colors ${selectedSize === size
+                                    className={`h-10 w-10 border text-[13px] font-beatrice font-medium transition-colors ${selectedSize === size
                                         ? 'border-black bg-black text-white'
                                         : 'border-gray-300 bg-white text-black hover:border-black'
                                         }`}
@@ -140,7 +157,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                                 <button
                                     key={color}
                                     onClick={() => setSelectedColor(color)}
-                                    className={`h-[50px] w-[50px] rounded-full border-2 transition-all ${selectedColor === color
+                                    className={`  w-[32px] h-[32px] md:h-[50px] md:w-[50px] rounded-full border-2 transition-all ${selectedColor === color
                                         ? 'scale-110 border-black'
                                         : 'border-transparent hover:border-gray-400'
                                         }`}
@@ -164,7 +181,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                             />
                         </button>
 
-                        <button className="flex h-12 flex-1 items-center justify-between bg-black px-5 font-beatrice text-[20px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800">
+                        <button className="flex h-12 flex-1 items-center justify-between bg-black px-3 md:px-5 font-beatrice  text-base md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800">
                             <span>Add To Shopping Cart</span>
                             <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
                                 <path

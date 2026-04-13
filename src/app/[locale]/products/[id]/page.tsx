@@ -29,7 +29,7 @@ export default async function ProductDetailPage({
     await params;
 
     return (
-        <main className=' my-28'>
+        <main className=' my-10'>
             <ProductDetail product={PRODUCT} />
             <SwiperSection
                 primaryTitle="YOU MIGHT ALSO LIKE"

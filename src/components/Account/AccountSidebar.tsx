@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Gift, LogOut } from 'lucide-react';
+import { Gift, LogOut, X } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
 import {
     AccountOrdersHistoryIcon,
@@ -28,9 +28,11 @@ const NAV_ITEMS: NavItem[] = [
 interface AccountSidebarProps {
     activeTab?: ActiveTab;
     onTabChange?: (tab: ActiveTab) => void;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
-export default function AccountSidebar({ activeTab, onTabChange }: AccountSidebarProps) {
+export default function AccountSidebar({ activeTab, onTabChange, isOpen = false, onClose }: AccountSidebarProps) {
     const pathname = usePathname();
 
     function isActive(item: NavItem): boolean {
@@ -38,8 +40,19 @@ export default function AccountSidebar({ activeTab, onTabChange }: AccountSideba
         return activeTab === item.key;
     }
 
+    const drawerTranslate = isOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full';
+
     return (
-        <aside className="w-[336px] shrink-0 border border-gray-200 p-10">
+        <aside className={`fixed top-0 z-50 h-screen w-[280px] overflow-y-auto bg-white ltr:left-0 rtl:right-0 transition-transform duration-300 ease-in-out ${drawerTranslate} lg:static lg:z-auto lg:h-auto lg:w-[336px] lg:!translate-x-0 lg:overflow-visible lg:shrink-0 border border-gray-200 p-4 md:p-10`}>
+            {/* Close button — mobile/tablet only */}
+            <button
+                onClick={onClose}
+                className="absolute top-4 ltr:right-4 rtl:left-4 p-1 text-gray-500 hover:text-black lg:hidden"
+                aria-label="Close menu"
+            >
+                <X size={20} />
+            </button>
+
             <h2 className="font-beatrice text-[22px] font-bold text-black">Account</h2>
             <p className="mt-5 font-beatrice text-[13px] leading-snug text-gray-400">
                 Manage your editorial skincare journey
@@ -57,7 +70,7 @@ export default function AccountSidebar({ activeTab, onTabChange }: AccountSideba
 
                     if (href) {
                         return (
-                            <Link key={key} href={href} className={itemClass}>
+                            <Link key={key} href={href} className={itemClass} onClick={onClose}>
                                 <Icon size={15} strokeWidth={1.8} className={iconClass} />
                                 {label}
                             </Link>
@@ -65,7 +78,7 @@ export default function AccountSidebar({ activeTab, onTabChange }: AccountSideba
                     }
 
                     return (
-                        <button key={key} onClick={() => onTabChange?.(key)} className={itemClass}>
+                        <button key={key} onClick={() => { onTabChange?.(key); onClose?.(); }} className={itemClass}>
                             <Icon size={15} strokeWidth={1.8} className={iconClass} />
                             {label}
                         </button>

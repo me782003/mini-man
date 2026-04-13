@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import ProductCard from '../ProductCard';
 import { SearchIcon } from '../icons';
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronRight, SlidersHorizontal } from 'lucide-react';
 
 const PAGE_SIZE = 6;
 
@@ -22,7 +22,7 @@ const PRODUCTS = [
     { id: 12, image: '/images/image 9.png', title: 'Nike Air Max Plus', category: "Men's Shoes", price: '2,590 EGP', colors: ['#4dd9ac', '#000000', '#8b2222'] },
 ];
 
-export default function ProductsGrid() {
+export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: any }) {
     const [search, setSearch] = useState('');
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -45,7 +45,7 @@ export default function ProductsGrid() {
     return (
         <div className="flex-1 min-w-0">
             {/* Search */}
-            <div className="relative mb-8 max-w-[367px]">
+            <div className="relative mb-4 md:mb-8 max-w-[367px]">
                 <input
                     type="text"
                     placeholder="Search"
@@ -57,11 +57,20 @@ export default function ProductsGrid() {
                     <SearchIcon />
                 </span>
             </div>
+            {/* Heading + mobile filter button */}
+
+            <button
+                className="flex mb-5 items-center gap-2 md:hidden   font-beatrice text-[13px] font-semibold uppercase tracking-widest hover:border-black transition-colors"
+                onClick={() => setFiltersOpen(true)}
+            >
+                Filters
+                <ChevronRight size={20} />
+            </button>
 
             {/* Grid */}
             {visible.length > 0 ? (
                 <>
-                    <div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-x-[10px] md:gap-x-6 gap-y-5 md:gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
                         {visible.map(product => (
                             <ProductCard
                                 key={product.id}

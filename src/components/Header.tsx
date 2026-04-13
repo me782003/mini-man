@@ -72,21 +72,21 @@ export default function Header() {
             </Link>
 
             <div className="flex items-center gap-[10px] text-neutral-900">
-              <button
-                type="button"
-                className="grid  place-items-center rounded"
+              <Link
+                href="/favorites"
+                className="grid place-items-center rounded"
                 aria-label="Favorites"
               >
                 <HeartIcon className="h-[24px] w-[24px]" />
-              </button>
+              </Link>
 
-              <button
-                type="button"
-                className="grid  place-items-center rounded"
+              <Link
+                href="/cart"
+                className="grid place-items-center rounded"
                 aria-label="Cart"
               >
                 <BagIcon className="h-[24px] w-[24px]" />
-              </button>
+              </Link>
 
               <LanguageSwitch />
             </div>
@@ -147,21 +147,21 @@ export default function Header() {
                 <UserIcon className="h-[32px] w-[32px]" />
               </button>
 
-              <button
-                type="button"
+              <Link
+                href="/favorites"
                 className="grid h-8 w-8 place-items-center rounded hover:bg-neutral-100"
                 aria-label="Favorites"
               >
                 <HeartIcon className="h-[32px] w-[32px]" />
-              </button>
+              </Link>
 
-              <button
-                type="button"
+              <Link
+                href="/cart"
                 className="grid h-8 w-8 place-items-center rounded hover:bg-neutral-100"
                 aria-label="Cart"
               >
                 <BagIcon className="h-[32px] w-[32px]" />
-              </button>
+              </Link>
 
               <LanguageSwitch />
             </div>

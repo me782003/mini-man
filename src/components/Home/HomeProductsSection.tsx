@@ -125,7 +125,7 @@ const HomeProductsSection = () => {
     };
 
     return (
-        <section className="bg-white py-20">
+        <section className="bg-white py-10 md:py-20">
             <div className="container px-4">
                 {/* Title */}
                 <h2 className="mb-10 font-beatrice text-[32px] font-extrabold uppercase leading-tight md:text-[48px] md:leading-[50px]">

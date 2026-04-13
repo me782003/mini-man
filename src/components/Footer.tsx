@@ -9,7 +9,7 @@ export default function Footer() {
         <footer className="w-full bg-1">
 
             {/* ── Mobile layout (hidden on lg+) ── */}
-            <div className="lg:hidden container mx-auto px-4 pt-10 pb-6 flex flex-col gap-8">
+            <div className="lg:hidden container px-4 pt-10 pb-6 flex flex-col gap-8">
 
                 {/* Follow Us */}
                 <div className="flex flex-col items-center gap-4">

@@ -14,7 +14,7 @@ export default function SectionHeader({
     seeAllHref = "#",
 }: SectionHeaderProps): JSX.Element {
     return (
-        <div className="w-full container mx-auto px-4">
+        <div className="w-full container px-4">
             <div className="flex items-end justify-between gap-4">
                 <div className="flex items-start">
                     <h2 className="flex flex-col text-[34px] font-beatrice font-extrabold uppercase leading-[35px] md:leading-[50px] text-black sm:text-[48px]">

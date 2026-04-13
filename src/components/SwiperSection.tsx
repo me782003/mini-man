@@ -44,7 +44,7 @@ const SwiperSection = ({
                 seeAllHref={seeAllHref}
             />
 
-            <div className="container mx-auto mt-6 px-4 sm:mt-8 lg:mt-10">
+            <div className="container mt-6 px-4 sm:mt-8 lg:mt-10">
                 <Swiper
                     modules={[Navigation, FreeMode]}
                     freeMode={true}

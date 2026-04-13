@@ -2,9 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Menu } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
-import AccountSidebar, { ActiveTab } from '@/components/Account/AccountSidebar';
 
 /* ─── Personal Information form ──────────────────────────────────────── */
 
@@ -165,57 +163,26 @@ function PersonalPanel() {
         </>
     );
 }
+
 /* ─── Main component ─────────────────────────────────────────────────── */
 
 export default function AccountClient() {
-    const [activeTab, setActiveTab] = useState<ActiveTab>('personal');
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-
     return (
-        <div className="container">
-            {/* Hamburger trigger — mobile/tablet only */}
-            <button
-                onClick={() => setSidebarOpen(true)}
-                className="mb-4 flex items-center gap-2 font-beatrice text-[14px] text-black lg:hidden"
-                aria-label="Open account menu"
-            >
-                <Menu size={20} />
-                <span>Account Menu</span>
-            </button>
+        <>
+            {/* Breadcrumb */}
+            <nav className="mb-[10px] flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
+                <Link href="/" className="transition-colors hover:text-black">
+                    Home
+                </Link>
+                <span>/</span>
+                <span className="font-semibold text-black">Account</span>
+            </nav>
 
-            {/* Backdrop overlay */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
+            <p className="font-beatrice font-bold text-[20px] uppercase text-black">
+                Account
+            </p>
 
-            <div className="flex gap-8">
-                <AccountSidebar
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    isOpen={sidebarOpen}
-                    onClose={() => setSidebarOpen(false)}
-                />
-
-                <main className="min-w-0 flex-1">
-                    {/* Breadcrumb */}
-                    <nav className="mb-[10px] flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
-                        <Link href="/" className="transition-colors hover:text-black">
-                            Home
-                        </Link>
-                        <span>/</span>
-                        <span className="font-semibold text-black">Account</span>
-                    </nav>
-
-                    <p className="font-beatrice font-bold text-[20px] uppercase text-black">
-                        Account
-                    </p>
-
-                    {activeTab === 'personal' && <PersonalPanel />}
-                </main>
-            </div>
-        </div>
+            <PersonalPanel />
+        </>
     );
 }

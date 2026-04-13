@@ -30,7 +30,7 @@ export default function FavoritesClient() {
     };
 
     return (
-        <div className="container mx-auto">
+        <>
             {/* Breadcrumb */}
             <nav className="mb-2 flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
                 <Link href="/" className="transition-colors hover:text-black">Home</Link>
@@ -39,7 +39,7 @@ export default function FavoritesClient() {
             </nav>
 
             {/* Heading */}
-            <div className="mb-6 flex items-baseline gap-3 md:mb-8">
+            <div className="mb-5 flex items-baseline gap-3 md:mb-8">
                 <h1 className="font-beatrice text-[20px] font-bold uppercase text-black">Favorites</h1>
                 {items.length > 0 && (
                     <span className="font-beatrice text-[14px] text-gray-400">
@@ -67,9 +67,9 @@ export default function FavoritesClient() {
             ) : (
                 <>
                     {/* Mobile: list layout */}
-                    <div className="divide-y divide-gray-200 md:hidden">
+                    <div className=" space-y-[20px] md:hidden">
                         {items.map(item => (
-                            <div key={item.id} className="flex items-start gap-4 py-4">
+                            <div key={item.id} className="flex items-start gap-4 ">
                                 {/* Image */}
                                 <div className="h-[120px] w-[120px] shrink-0 bg-[#e8e8e8] flex items-center justify-center">
                                     <img
@@ -94,7 +94,7 @@ export default function FavoritesClient() {
                                     <h3 className="font-beatrice text-[16px] font-semibold text-black leading-snug">
                                         {item.title}
                                     </h3>
-                                    <div className="mt-1 flex items-center gap-2">
+                                    <div className="mt-1 flex flex-col ">
                                         <span className={`font-beatrice text-[15px] font-extrabold ${item.oldPrice ? 'text-[#FF0000]' : 'text-black'}`}>
                                             {item.price}
                                         </span>
@@ -142,6 +142,6 @@ export default function FavoritesClient() {
                     </div>
                 </>
             )}
-        </div>
+        </>
     );
 }

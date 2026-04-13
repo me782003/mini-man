@@ -84,7 +84,7 @@ export default function CartClient() {
     const total = subtotal - discount;
 
     return (
-        <div className="container mx-auto ">
+        <div className="container ">
             {/* Breadcrumb */}
             <nav className="mb-2 flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
                 <Link href="/" className="transition-colors hover:text-black">

@@ -38,7 +38,7 @@ export default function ContactClient() {
     };
 
     return (
-        <div className="container mx-auto py-8">
+        <div className="container py-8">
             {/* Breadcrumb */}
             <nav className="mb-2 flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
                 <Link href="/" className="transition-colors hover:text-black">Home</Link>

@@ -11,16 +11,16 @@ Currently a static UI — no real API, no auth, no persistent state.
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | Next.js 16.2.3 (App Router) |
-| UI | React 19.2.4 |
-| Language | TypeScript 5 (strict mode) |
-| Styling | Tailwind CSS 3.3.5 |
-| i18n | next-intl 4.9.0 |
-| Carousel | Swiper 12.1.3 |
-| Icons | lucide-react 1.8.0 + custom SVGs in `src/components/icons.tsx` |
-| Package manager | npm |
+| Layer           | Technology                                                     |
+| --------------- | -------------------------------------------------------------- |
+| Framework       | Next.js 16.2.3 (App Router)                                    |
+| UI              | React 19.2.4                                                   |
+| Language        | TypeScript 5 (strict mode)                                     |
+| Styling         | Tailwind CSS 3.3.5                                             |
+| i18n            | next-intl 4.9.0                                                |
+| Carousel        | Swiper 12.1.3                                                  |
+| Icons           | lucide-react 1.8.0 + custom SVGs in `src/components/icons.tsx` |
+| Package manager | npm                                                            |
 
 ---
 
@@ -86,9 +86,13 @@ src/
 
 ```tsx
 // page.tsx — server component
-import CartClient from '@/components/Cart/CartClient';
+import CartClient from "@/components/Cart/CartClient";
 export default function CartPage() {
-  return <main className="my-28"><CartClient /></main>;
+  return (
+    <main className="my-28">
+      <CartClient />
+    </main>
+  );
 }
 ```
 
@@ -97,7 +101,7 @@ export default function CartPage() {
 ## Styling Rules
 
 - Use Tailwind utility classes exclusively. No CSS modules (except the unused `page.module.css`).
-- Container: `<div className="container mx-auto px-4">` — max-width 1280px, centered.
+- Container: `<div className="container px-4">` — max-width 1280px, centered.
 - Font classes:
   - `font-beatrice` — English display/heading text
   - `font-headline` — Beatrice Headline, for large section titles
@@ -116,10 +120,10 @@ export default function CartPage() {
 - **Adding translations**: add key to BOTH `src/messages/en.json` and `src/messages/ar.json`.
 - **Using translations in client components**:
   ```tsx
-  'use client';
-  import { useTranslations } from 'next-intl';
-  const t = useTranslations('Header');
-  return <span>{t('home')}</span>;
+  "use client";
+  import { useTranslations } from "next-intl";
+  const t = useTranslations("Header");
+  return <span>{t("home")}</span>;
   ```
 - **Server components**: use `getTranslations` from `next-intl/server`.
 - Arabic text: `font-cairo` class + automatic RTL from `dir="rtl"` on html.
@@ -129,11 +133,13 @@ export default function CartPage() {
 ## Data Layer (Current State)
 
 **No real API exists.** All data is hardcoded:
+
 - Products: inline `const PRODUCTS = [...]` inside component/page files
 - Cart: hardcoded in `CartClient.tsx`
 - Reviews: hardcoded in `ProductReviews.tsx`
 
 When adding real data:
+
 - Use server components or Server Actions (Next.js 16 pattern — check `node_modules/next/dist/docs/`)
 - Add shared types to a new `src/types/` directory
 - Product images live in `public/images/` — reference as `/images/filename.png`

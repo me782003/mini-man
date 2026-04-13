@@ -6,9 +6,5 @@ export default async function OrderDetailPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
-    return (
-        <main className="my-28">
-            <OrderDetailClient orderId={id} />
-        </main>
-    );
+    return <OrderDetailClient orderId={id} />;
 }

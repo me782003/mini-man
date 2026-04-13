@@ -117,7 +117,7 @@ const ReviewCard = ({ review }: { review: typeof REVIEWS[0] }) => (
 const ProductReviews = () => {
     return (
         <section className=" py-5 md:py-20 bg-white">
-            <div className="container mx-auto ">
+            <div className="container ">
                 <h2 className="text-[32px] md:text-[48px] font-beatrice font-extrabold leading-tight md:leading-[50px] uppercase mb-7 md:mb-12">
                     PRODUCT <br />
                     REVIEWS

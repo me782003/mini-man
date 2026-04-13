@@ -36,7 +36,7 @@ export default function ProductDetail({ product }: { product: Product }) {
             : [product.image];
 
     return (
-        <section className="container mx-auto ">
+        <section className="container ">
             <div className=" grid grid-cols-1 md:flex  gap-10  ">
                 <div className="flex   gap-[10px] md:gap-5 flex-1 h-[290px] md:h-[558px] ">
 

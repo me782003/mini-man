@@ -14,13 +14,13 @@ export function UserIcon(props: SVGProps<SVGSVGElement>) {
         fillRule="evenodd"
         clipRule="evenodd"
         d="M19.5 12.5C19.5 13.5609 19.0786 14.5783 18.3284 15.3284C17.5783 16.0786 16.5609 16.5 15.5 16.5C14.4391 16.5 13.4217 16.0786 12.6716 15.3284C11.9214 14.5783 11.5 13.5609 11.5 12.5C11.5 11.4391 11.9214 10.4217 12.6716 9.67157C13.4217 8.92143 14.4391 8.5 15.5 8.5C16.5609 8.5 17.5783 8.92143 18.3284 9.67157C19.0786 10.4217 19.5 11.4391 19.5 12.5ZM17.5 12.5C17.5 13.0304 17.2893 13.5391 16.9142 13.9142C16.5391 14.2893 16.0304 14.5 15.5 14.5C14.9696 14.5 14.4609 14.2893 14.0858 13.9142C13.7107 13.5391 13.5 13.0304 13.5 12.5C13.5 11.9696 13.7107 11.4609 14.0858 11.0858C14.4609 10.7107 14.9696 10.5 15.5 10.5C16.0304 10.5 16.5391 10.7107 16.9142 11.0858C17.2893 11.4609 17.5 11.9696 17.5 12.5Z"
-        fill="black"
+        fill="currentColor"
       />
       <path
         fillRule="evenodd"
         clipRule="evenodd"
         d="M15.5 4.5C9.425 4.5 4.5 9.425 4.5 15.5C4.5 21.575 9.425 26.5 15.5 26.5C21.575 26.5 26.5 21.575 26.5 15.5C26.5 9.425 21.575 4.5 15.5 4.5ZM6.5 15.5C6.5 17.59 7.213 19.514 8.408 21.042C9.24744 19.9401 10.3302 19.0471 11.5716 18.4327C12.8131 17.8183 14.1798 17.4991 15.565 17.5C16.9324 17.4984 18.2821 17.8091 19.5111 18.4084C20.7402 19.0077 21.8162 19.8797 22.657 20.958C23.5234 19.8216 24.1068 18.4952 24.3589 17.0886C24.611 15.682 24.5244 14.2355 24.1065 12.869C23.6886 11.5024 22.9512 10.255 21.9555 9.23004C20.9598 8.20503 19.7343 7.43186 18.3804 6.97451C17.0265 6.51716 15.5832 6.38877 14.1699 6.59997C12.7565 6.81117 11.4138 7.35589 10.2528 8.18905C9.09175 9.02222 8.14581 10.1199 7.49323 11.3912C6.84065 12.6625 6.50018 14.071 6.5 15.5ZM15.5 24.5C13.4339 24.5033 11.4301 23.7926 9.828 22.488C10.4728 21.5646 11.3312 20.8107 12.3301 20.2905C13.329 19.7702 14.4388 19.499 15.565 19.5C16.6772 19.499 17.7735 19.7635 18.763 20.2713C19.7524 20.7792 20.6064 21.5158 21.254 22.42C19.6395 23.767 17.6026 24.5033 15.5 24.5Z"
-        fill="black"
+        fill="currentColor"
       />
     </svg>
 
@@ -39,7 +39,7 @@ export function HeartIcon(props: SVGProps<SVGSVGElement>) {
     >
       <path
         d="M11 7C8.239 7 6 9.216 6 11.95C6 14.157 6.875 19.395 15.488 24.69C15.6423 24.7839 15.8194 24.8335 16 24.8335C16.1806 24.8335 16.3577 24.7839 16.512 24.69C25.125 19.395 26 14.157 26 11.95C26 9.216 23.761 7 21 7C18.239 7 16 10 16 10C16 10 13.761 7 11 7Z"
-        stroke="black"
+        stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -62,28 +62,28 @@ export function BagIcon(props: SVGProps<SVGSVGElement>) {
     >
       <path
         d="M11 27C11.5523 27 12 26.5523 12 26C12 25.4477 11.5523 25 11 25C10.4477 25 10 25.4477 10 26C10 26.5523 10.4477 27 11 27Z"
-        stroke="black"
+        stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M25 27C25.5523 27 26 26.5523 26 26C26 25.4477 25.5523 25 25 25C24.4477 25 24 25.4477 24 26C24 26.5523 24.4477 27 25 27Z"
-        stroke="black"
+        stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M3 5H7L10 22H26"
-        stroke="black"
+        stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M10 16.6666H25.59C25.7056 16.6667 25.8177 16.6267 25.9072 16.5534C25.9966 16.4802 26.0579 16.3781 26.0806 16.2648L27.8806 7.26475C27.8951 7.19218 27.8934 7.11729 27.8755 7.04548C27.8575 6.97368 27.8239 6.90675 27.7769 6.84952C27.73 6.7923 27.6709 6.74621 27.604 6.71458C27.5371 6.68295 27.464 6.66657 27.39 6.66663H8"
-        stroke="black"
+        stroke="currentColor"
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -365,10 +365,11 @@ export function MenuIcon(props: SVGProps<SVGSVGElement>) {
     viewBox="0 0 24 24"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
+    {...props}
   >
-    <path d="M3 7H21" stroke="black" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M3 12H21" stroke="black" strokeWidth="1.5" strokeLinecap="round" />
-    <path d="M3 17H21" stroke="black" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M3 7H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M3 12H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M3 17H21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
   </svg>
 
 

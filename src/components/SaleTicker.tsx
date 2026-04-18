@@ -41,7 +41,7 @@ export default function SaleTicker() {
 
       <style jsx>{`
         .sale-ticker-track {
-          animation: saleTicker 100s linear infinite;
+          animation: saleTicker 40s linear infinite;
         }
 
         @keyframes saleTicker {

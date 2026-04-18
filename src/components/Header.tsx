@@ -75,7 +75,7 @@ export default function Header() {
         ref={headerRef}
         className={`w-full z-50 transition-all duration-300 ${isFixed
           ? 'fixed top-0 left-0 bg-white/95 shadow-md backdrop-blur-md'
-          : isHome ? "md:absolute  top-0 left-0 bg-transparent"
+          : isHome ? "md:absolute  top-0 left-0 bg-transparent "
             : 'bg-transparent'
           }`}
       >
@@ -87,7 +87,7 @@ export default function Header() {
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="flex h-10 me-5 items-center justify-center text-neutral-900"
+              className={`flex h-10 me-5 items-center justify-center text-neutral-900`}
               aria-label="Open menu"
             >
               <MenuIcon className="" />
@@ -96,7 +96,7 @@ export default function Header() {
             <Link href="/" className="flex flex-1">
               <span className="relative h-[34px] w-[107px]">
                 <Image
-                  src="/images/logo.svg"
+                  src={isHome && !isFixed ? '/images/logo-white.png' : '/images/logo.svg'}
                   alt="Logo"
                   fill
                   className="h-full w-full object-contain"
@@ -105,7 +105,7 @@ export default function Header() {
               </span>
             </Link>
 
-            <div className="flex items-center gap-[10px] text-neutral-900">
+            <div className={`flex items-center gap-[10px] ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}>
               <Link
                 href="/favorites"
                 className="grid place-items-center rounded"
@@ -122,7 +122,7 @@ export default function Header() {
                 <BagIcon className="h-[24px] w-[24px]" />
               </Link>
 
-              <LanguageSwitch />
+              <LanguageSwitch className={`  ${isHome && !isFixed ? "!text-white" : "!text-neutral-900"} !font-bold`} />
             </div>
           </div>
 
@@ -134,48 +134,35 @@ export default function Header() {
                 className="flex items-center gap-2 text-sm font-semibold text-neutral-900"
               >
                 <span className="relative h-[50px] w-[191px]">
-                  <Image
-                    src="/images/logo.svg"
+                  <img
+                    src={isHome && !isFixed ? '/images/logo-white.png' : '/images/logo.svg'}
                     alt="Logo"
-                    fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="h-full w-full object-contain"
-                    priority
                   />
                 </span>
               </Link>
             </div>
 
             <nav className="hidden items-center justify-center gap-7 md:flex">
-              <Link
-                href="/"
-                className="font-beatrice text-[20px] font-normal uppercase leading-[100%] tracking-[0em] text-neutral-800 hover:text-neutral-950"
-              >
-                {t('home')}
-              </Link>
-              <Link
-                href="/products"
-                className="font-beatrice text-[20px] font-normal uppercase leading-[100%] tracking-[0em] text-neutral-800 hover:text-neutral-950"
-              >
-                {t('orderNow')}
-              </Link>
-              <Link
-                href="/branches"
-                className="font-beatrice text-[20px] font-normal uppercase leading-[100%] tracking-[0em] text-neutral-800 hover:text-neutral-950"
-              >
-                {t('branches')}
-              </Link>
-              <Link
-                href="/contact"
-                className="font-beatrice text-[20px] font-normal uppercase leading-[100%] tracking-[0em] text-neutral-800 hover:text-neutral-950"
-              >
-                {t('contact')}
-              </Link>
+              {(['/', '/products', '/branches', '/contact'] as const).map((href, i) => {
+                const labels = [t('home'), t('orderNow'), t('branches'), t('contact')];
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={`font-beatrice text-[18px]  transition-all  uppercase leading-[100%] tracking-[0em] hover:font-bold ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950'}`}
+                  >
+                    {labels[i]}
+                  </Link>
+                );
+              })}
             </nav>
 
-            <div className="flex items-center gap-4 text-neutral-900">
+            <div className={`flex items-center gap-4 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}>
               <Link
                 href="/account"
-                className="grid h-8 w-8 place-items-center rounded hover:bg-neutral-100"
+                className={`${"grid h-8 w-8 place-items-center rounded  transition-all"} ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950 hover:bg-neutral-200'}`}
                 aria-label="Account"
               >
                 <UserIcon className="h-[32px] w-[32px]" />
@@ -183,7 +170,7 @@ export default function Header() {
 
               <Link
                 href="/favorites"
-                className="grid h-8 w-8 place-items-center rounded hover:bg-neutral-100"
+                className={`${"grid h-8 w-8 place-items-center rounded  transition-all"} ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950 hover:bg-neutral-200'}`}
                 aria-label="Favorites"
               >
                 <HeartIcon className="h-[32px] w-[32px]" />
@@ -191,13 +178,13 @@ export default function Header() {
 
               <Link
                 href="/cart"
-                className="grid h-8 w-8 place-items-center rounded hover:bg-neutral-100"
+                className={`${"grid h-8 w-8 place-items-center rounded  transition-all"} ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950 hover:bg-neutral-200'}`}
                 aria-label="Cart"
               >
                 <BagIcon className="h-[32px] w-[32px]" />
               </Link>
 
-              <LanguageSwitch />
+              <LanguageSwitch className='!font-bold' />
             </div>
           </div>
         </div>
@@ -218,7 +205,7 @@ export default function Header() {
             }`}
           onClick={e => e.stopPropagation()}
         >
-          <div className="mb-6 p-5 sticky top-0 bg-[#efefef] flex items-center justify-between">
+          <div className="mb-0 p-5 sticky top-0 bg-[#efefef] flex items-center justify-between">
             <span className="font-beatrice text-[24px] font-bold text-neutral-900">
               Menu
             </span>
@@ -233,37 +220,7 @@ export default function Header() {
             </button>
           </div>
           <div className='p-5'>
-            {/* Old navigations */}
-            <nav className="mb-7 flex flex-col gap-4 border-b border-neutral-300 pb-6">
-              <Link
-                href="/"
-                onClick={closeMobileMenu}
-                className="font-beatrice text-[18px] uppercase text-neutral-900"
-              >
-                {t('home')}
-              </Link>
-              <Link
-                href="/products"
-                onClick={closeMobileMenu}
-                className="font-beatrice text-[18px] uppercase text-neutral-900"
-              >
-                {t('orderNow')}
-              </Link>
-              <Link
-                href="/branches"
-                onClick={closeMobileMenu}
-                className="font-beatrice text-[18px] uppercase text-neutral-900"
-              >
-                {t('branches')}
-              </Link>
-              <Link
-                href="/contact"
-                onClick={closeMobileMenu}
-                className="font-beatrice text-[18px] uppercase text-neutral-900"
-              >
-                {t('contact')}
-              </Link>
-            </nav>
+
 
             {/* Expandable category menu */}
             <nav className="flex flex-col">
@@ -434,6 +391,38 @@ export default function Header() {
                   </div>
                 </div>
               </div>
+            </nav>
+
+            {/* Old navigations */}
+            <nav className="mb-7 flex flex-col gap-4 border-t border-neutral-300 pt-6">
+              <Link
+                href="/"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('home')}
+              </Link>
+              <Link
+                href="/products"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('orderNow')}
+              </Link>
+              <Link
+                href="/branches"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('branches')}
+              </Link>
+              <Link
+                href="/contact"
+                onClick={closeMobileMenu}
+                className="font-beatrice text-[18px] uppercase text-neutral-900"
+              >
+                {t('contact')}
+              </Link>
             </nav>
 
             <div className="mt-8 flex items-center gap-3 border-t border-neutral-300 pt-6">

@@ -13,27 +13,34 @@ import 'swiper/css/free-mode';
 import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 
+interface ColorVariant {
+    color: string;
+    images: string[];
+}
+
 interface Product {
-    image: string;
-    thumbnails: string[];
     title: string;
     category: string;
     price: string;
-    colors: string[];
     sizes: number[];
     description: string;
+    colorVariants: ColorVariant[];
 }
 
 export default function ProductDetail({ product }: { product: Product }) {
     const [selectedSize, setSelectedSize] = useState<number | null>(null);
-    const [selectedColor, setSelectedColor] = useState(product.colors[0] ?? null);
+    const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
     const [wishlisted, setWishlisted] = useState(false);
     const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
+    const mainSwiperRef = React.useRef<SwiperType | null>(null);
 
-    const gallery =
-        product.thumbnails && product.thumbnails.length > 0
-            ? product.thumbnails
-            : [product.image];
+    const gallery = product.colorVariants[selectedVariantIdx]?.images ?? [];
+
+    const handleColorSelect = (idx: number) => {
+        setSelectedVariantIdx(idx);
+        mainSwiperRef.current?.slideTo(0);
+        setThumbsSwiper(null); // reset thumbs sync
+    };
 
     return (
         <section className="container ">
@@ -45,16 +52,13 @@ export default function ProductDetail({ product }: { product: Product }) {
                     <div className="flex-1 overflow-hidden bg-[#e8e8e8] aspect-square">
                         <Swiper
                             spaceBetween={10}
-                            // navigation
                             thumbs={{
                                 swiper:
                                     thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null,
                             }}
                             modules={[Navigation, Thumbs, Autoplay]}
-                            autoplay={{
-                                delay: 2500,
-                                disableOnInteraction: false,
-                            }}
+                            autoplay={{ delay: 2500, disableOnInteraction: false }}
+                            onSwiper={(s) => (mainSwiperRef.current = s)}
                             className="h-full w-full"
                         >
                             {gallery.map((image, i) => (
@@ -73,6 +77,7 @@ export default function ProductDetail({ product }: { product: Product }) {
                     {/* Thumbnails */}
                     <div className=" shrink-0 h-full">
                         <Swiper
+                            key={selectedVariantIdx}
                             onSwiper={setThumbsSwiper}
                             direction="vertical"
                             spaceBetween={8}
@@ -157,15 +162,15 @@ export default function ProductDetail({ product }: { product: Product }) {
                         </p>
 
                         <div className="flex flex-wrap gap-2.5">
-                            {product.colors.map((color) => (
+                            {product.colorVariants.map((variant, idx) => (
                                 <button
-                                    key={color}
-                                    onClick={() => setSelectedColor(color)}
-                                    className={`  w-[32px] h-[32px] md:h-[50px] md:w-[50px] rounded-full border-2 transition-all ${selectedColor === color
+                                    key={variant.color}
+                                    onClick={() => handleColorSelect(idx)}
+                                    className={`w-[32px] h-[32px] md:h-[50px] md:w-[50px] rounded-full border-2 transition-all ${selectedVariantIdx === idx
                                         ? 'scale-110 border-black'
                                         : 'border-transparent hover:border-gray-400'
                                         }`}
-                                    style={{ backgroundColor: color }}
+                                    style={{ backgroundColor: variant.color }}
                                 />
                             ))}
                         </div>

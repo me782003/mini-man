@@ -10,6 +10,7 @@ import { ChevronDown, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import TopCategories from './TopCategories';
 import SaleTicker from './SaleTicker';
+import { useAuthState } from '@/lib/hooks/useAuthState';
 
 type MobileMenuSection = 'men' | 'women' | 'kids' | 'accessories' | null;
 
@@ -65,6 +66,7 @@ export default function Header() {
 
   const pathname = usePathname();
   const isHome = pathname === '/en' || pathname === '/ar';
+  const { user, isLoggedIn, logout } = useAuthState();
 
   return (
     <>
@@ -160,13 +162,42 @@ export default function Header() {
             </nav>
 
             <div className={`flex items-center gap-4 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}>
-              <Link
-                href="/account"
-                className={`${"grid h-8 w-8 place-items-center rounded  transition-all"} ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950 hover:bg-neutral-200'}`}
-                aria-label="Account"
-              >
-                <UserIcon className="h-[32px] w-[32px]" />
-              </Link>
+              {isLoggedIn ? (
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/account"
+                    className={`flex items-center gap-2 font-cairo text-sm font-medium transition-opacity hover:opacity-70 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}
+                  >
+                    {user?.profile_picture ? (
+                      <img src={user.profile_picture} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-700">
+                        {user?.name?.[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <span className="hidden lg:block">{user?.name?.split(' ')[0]}</span>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className={`grid h-8 w-8 place-items-center rounded transition-all ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'}`}
+                    aria-label="Logout"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className={`grid h-8 w-8 place-items-center rounded transition-all ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950 hover:bg-neutral-200'}`}
+                  aria-label="Login"
+                >
+                  <UserIcon className="h-[32px] w-[32px]" />
+                </Link>
+              )}
 
               <Link
                 href="/favorites"

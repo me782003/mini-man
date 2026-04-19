@@ -1,6 +1,10 @@
 import type {Metadata} from 'next';
 import {getLocale} from 'next-intl/server';
 import './globals.css';
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: 'Shoes Store',
@@ -19,7 +23,7 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={dir}
-      suppressHydrationWarning
+      suppressHydrationWarning className={cn("font-sans", geist.variable)}
     >
       <body>{children}</body>
     </html>

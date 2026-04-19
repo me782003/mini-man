@@ -2,8 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import Header from '../../components/Header';
 import Footer from '@/components/Footer';
-import SaleTicker from '@/components/SaleTicker';
-import TopCategories from '@/components/TopCategories';
+import Providers from '@/components/Providers';
 
 export default async function LocaleLayout({
   children
@@ -14,12 +13,13 @@ export default async function LocaleLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-
-      <Header />
-      <div className="">
-        {children}
-      </div>
-      <Footer />
+      <Providers>
+        <Header />
+        <div className="">
+          {children}
+        </div>
+        <Footer />
+      </Providers>
     </NextIntlClientProvider>
   );
 }

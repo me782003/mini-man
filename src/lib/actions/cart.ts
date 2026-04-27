@@ -1,27 +1,13 @@
 'use server';
 
-import { addToCart, addToWishlist } from '@/lib/api/products';
+import { post } from '@/lib/fetcher';
 
-export async function addToCartAction(
-  productId: string,
-  colorIndex: number,
-  size: number
-) {
+export async function addToCartAction(productId: number, variantId: number) {
   try {
-    await addToCart(productId, colorIndex, size);
+    await post('/user/cart', { product_id: productId, variant_id: variantId });
     return { ok: true };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to add to cart';
-    return { ok: false, message };
-  }
-}
-
-export async function addToWishlistAction(productId: string) {
-  try {
-    await addToWishlist(productId);
-    return { ok: true };
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Failed to update wishlist';
     return { ok: false, message };
   }
 }

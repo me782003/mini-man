@@ -3,3 +3,4 @@
 
 export { useProducts, useProduct, useProductDetail, useAddToCart } from '@/lib/hooks/useProducts';
 export type { ProductsQuery, ProductsResponse } from '@/lib/hooks/useProducts';
+

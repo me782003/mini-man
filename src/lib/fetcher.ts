@@ -22,12 +22,14 @@ export async function fetcher<T>(
   const url = `${BASE_URL}${path}`;
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
 
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...authHeader, ...options.headers },
-    ...options,
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(url, { ...options, headers });
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);

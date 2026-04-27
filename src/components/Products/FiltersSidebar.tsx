@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useId, useState } from 'react';
 import { X } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCatalogFilters } from '@/lib/hooks/useCatalog';
+import { Slider } from '@/components/ui/slider';
 
 interface AccordionSectionProps {
   title: string;
@@ -211,7 +212,6 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
                       className="h-4 w-4 cursor-pointer accent-black"
                     />
                     <span className="font-beatrice text-[14px] text-black">{col.name}</span>
-                    <span className="ml-auto font-beatrice text-[12px] text-gray-400">({col.products_count})</span>
                   </label>
                 ))}
               </div>
@@ -248,7 +248,6 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
                       className="h-4 w-4 cursor-pointer accent-black"
                     />
                     <span className="font-beatrice text-[14px] font-medium text-black">{cat.name}</span>
-                    <span className="ml-auto font-beatrice text-[12px] text-gray-400">({cat.products_count})</span>
                   </label>
 
                   {local.categoryId === cat.id && (cat.sub_categories?.length ?? 0) > 0 && (
@@ -273,7 +272,6 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
                             className="h-4 w-4 cursor-pointer accent-black"
                           />
                           <span className="font-beatrice text-[13px] text-black">{sub.name}</span>
-                          <span className="ml-auto font-beatrice text-[11px] text-gray-400">({sub.products_count})</span>
                         </label>
                       ))}
                     </div>
@@ -315,34 +313,22 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
 
         {/* Price Range */}
         <AccordionSection title="Shop by Price">
-          <div className="space-y-3">
-            <div>
-              <label className="mb-1 block font-beatrice text-[12px] text-gray-500">Min Price</label>
-              <input
-                type="range"
-                min={priceMin}
-                max={priceMax}
-                step={100}
-                value={local.minPrice ?? priceMin}
-                onChange={(e) => setLocal((p) => ({ ...p, minPrice: Math.min(Number(e.target.value), (p.maxPrice ?? priceMax) - 100) }))}
-                className="w-full accent-black"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block font-beatrice text-[12px] text-gray-500">Max Price</label>
-              <input
-                type="range"
-                min={priceMin}
-                max={priceMax}
-                step={100}
-                value={local.maxPrice ?? priceMax}
-                onChange={(e) => setLocal((p) => ({ ...p, maxPrice: Math.max(Number(e.target.value), (p.minPrice ?? priceMin) + 100) }))}
-                className="w-full accent-black"
-              />
-            </div>
-            <div className="flex justify-between font-beatrice text-[13px] text-gray-600">
-              <span>{(local.minPrice ?? priceMin).toLocaleString()} EGP</span>
-              <span>{(local.maxPrice ?? priceMax).toLocaleString()} EGP</span>
+          <div className="space-y-4">
+            <Slider
+              min={priceMin}
+              max={priceMax}
+              step={1}
+              value={[local.minPrice ?? priceMin, local.maxPrice ?? priceMax]}
+              onValueChange={(val) => {
+                const [min, max] = val as number[];
+                setLocal((p) => ({ ...p, minPrice: min, maxPrice: max }));
+              }}
+              className="mt-2"
+            />
+            <div className="flex items-center justify-between font-beatrice text-[13px] text-gray-700">
+              <span className="rounded border border-gray-200 px-2 py-1">{(local.minPrice ?? priceMin).toLocaleString()} EGP</span>
+              <span className="text-gray-400">—</span>
+              <span className="rounded border border-gray-200 px-2 py-1">{(local.maxPrice ?? priceMax).toLocaleString()} EGP</span>
             </div>
           </div>
         </AccordionSection>

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { get, post, del } from '@/lib/fetcher';
-import type { Product } from '@/lib/types';
+import type { Product, ProductDetailResponse } from '@/lib/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -57,6 +57,22 @@ export function useProduct(id: string) {
     queryKey: productKeys.detail(id),
     queryFn:  () => fetchProduct(id),
     enabled:  !!id,
+  });
+}
+
+function fetchProductDetail(id: string): Promise<ProductDetailResponse> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  return get<ProductDetailResponse>(`/user/catalog/products/${id}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+}
+
+export function useProductDetail(id: string) {
+  return useQuery({
+    queryKey: ['products', 'detail-v2', id],
+    queryFn: () => fetchProductDetail(id),
+    enabled: !!id,
+    staleTime: 2 * 60 * 1000,
   });
 }
 

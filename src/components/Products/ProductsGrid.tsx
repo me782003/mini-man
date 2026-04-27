@@ -11,6 +11,7 @@ const PER_PAGE = 12;
 
 function toProductCardProps(p: CatalogProduct) {
   return {
+    id: p.id,
     title: p.name,
     category: p.category_collection.category.name,
     price: `${parseFloat(p.price).toLocaleString()} EGP`,

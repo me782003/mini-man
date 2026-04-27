@@ -1,33 +1,30 @@
 'use client';
 
-import { useState } from 'react';
 import { Heart } from 'lucide-react';
 import { Link } from '@/i18n/navigation';
 import ProductCard from '@/components/ProductCard';
-
-interface FavoriteItem {
-    id: number;
-    image: string;
-    category: string;
-    title: string;
-    price: string;
-    oldPrice?: string;
-    colors: string[];
-}
-
-const INITIAL_FAVORITES: FavoriteItem[] = [
-    { id: 1, image: '/images/sh-1.png', title: 'Nike Air Max Plus', category: "Men's Shoes", price: '2,590 EGP', colors: ['#1a1a2e', '#8b2222', '#4dd9ac'] },
-    { id: 2, image: '/images/sh-2.png', title: 'Nike Air Max Plus', category: "Men's Shoes", price: '2,590 EGP', oldPrice: '3,200 EGP', colors: ['#f5a623', '#e88080', '#4dd9ac'] },
-    { id: 3, image: '/images/image 9.png', title: 'Nike Air Max Plus', category: "Men's Shoes", price: '2,590 EGP', colors: ['#9ea0a3', '#000000', '#1a237e'] },
-    { id: 4, image: '/images/image 10.png', title: 'Nike Air Max Plus', category: "Men's Shoes", price: '2,590 EGP', colors: ['#c4a882', '#9ea0a3'] },
-];
+import { useWishlist, useRemoveFromWishlist } from '@/lib/hooks/useWishlist';
 
 export default function FavoritesClient() {
-    const [items, setItems] = useState<FavoriteItem[]>(INITIAL_FAVORITES);
+    const { data: response, isLoading } = useWishlist();
+    const removeFromWishlist = useRemoveFromWishlist();
 
-    const remove = (id: number) => {
-        setItems(prev => prev.filter(item => item.id !== id));
+    const items = response?.data || [];
+
+    const handleRemove = (productId: number | null) => {
+        if (productId != null) {
+            removeFromWishlist.mutate(productId);
+        }
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center py-28 text-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-black" />
+                <p className="mt-4 font-beatrice text-[14px] text-gray-500">Loading your favorites...</p>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -73,8 +70,8 @@ export default function FavoritesClient() {
                                 {/* Image */}
                                 <div className="h-[120px] w-[120px] shrink-0 bg-[#e8e8e8] flex items-center justify-center">
                                     <img
-                                        src={item.image}
-                                        alt={item.title}
+                                        src={item.image_url}
+                                        alt={item.name}
                                         className="h-full w-full object-contain"
                                     />
                                 </div>
@@ -86,23 +83,20 @@ export default function FavoritesClient() {
                                             <span
                                                 key={i}
                                                 className="h-4 w-4 rounded-full border border-gray-200"
-                                                style={{ backgroundColor: color }}
+                                                style={{ backgroundColor: color.hexa }}
                                             />
                                         ))}
                                     </div>
-                                    <p className="font-beatrice text-[12px] text-gray-500">{item.category}</p>
+                                    <p className="font-beatrice text-[12px] text-gray-500">
+                                        {item.category_collection.category.name}
+                                    </p>
                                     <h3 className="font-beatrice text-[16px] font-semibold text-black leading-snug">
-                                        {item.title}
+                                        {item.name}
                                     </h3>
                                     <div className="mt-1 flex flex-col ">
-                                        <span className={`font-beatrice text-[15px] font-extrabold ${item.oldPrice ? 'text-[#FF0000]' : 'text-black'}`}>
-                                            {item.price}
+                                        <span className="font-beatrice text-[15px] font-extrabold text-black">
+                                            {Number(item.price).toLocaleString()} EGP
                                         </span>
-                                        {item.oldPrice && (
-                                            <span className="font-beatrice text-[13px] text-[#4f4f4f] line-through">
-                                                {item.oldPrice}
-                                            </span>
-                                        )}
                                     </div>
                                 </div>
 
@@ -110,10 +104,11 @@ export default function FavoritesClient() {
                                 <button
                                     onClick={(e: React.MouseEvent) => {
                                         e.preventDefault();
-                                        remove(item.id)
+                                        handleRemove(item.id)
                                     }}
+                                    disabled={removeFromWishlist.isPending}
                                     aria-label="Remove from favorites"
-                                    className="shrink-0 p-1 text-[#e63946] transition-transform hover:scale-110"
+                                    className="shrink-0 p-1 text-[#e63946] transition-transform hover:scale-110 disabled:opacity-50"
                                 >
                                     <Heart size={22} fill="#e63946" strokeWidth={0} />
                                 </button>
@@ -126,17 +121,18 @@ export default function FavoritesClient() {
                         {items.map(item => (
                             <div key={item.id} className="relative">
                                 <ProductCard
-                                    image={item.image}
-                                    category={item.category}
-                                    title={item.title}
-                                    price={item.price}
-                                    oldPrice={item.oldPrice}
-                                    colors={item.colors}
+                                    id={item.id}
+                                    image={item.image_url}
+                                    category={item.category_collection.category.name}
+                                    title={item.name}
+                                    price={`${Number(item.price).toLocaleString()} EGP`}
+                                    colors={item.colors.map(c => c.hexa)}
                                 />
                                 <button
-                                    onClick={() => remove(item.id)}
+                                    onClick={() => handleRemove(item.id)}
+                                    disabled={removeFromWishlist.isPending}
                                     aria-label="Remove from favorites"
-                                    className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md transition-transform hover:scale-110"
+                                    className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md transition-transform hover:scale-110 disabled:opacity-50"
                                 >
                                     <Heart size={16} fill="#e63946" strokeWidth={0} />
                                 </button>

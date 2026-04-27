@@ -50,5 +50,8 @@ export const post = <T>(path: string, body: unknown, opts?: FetchOptions) =>
 export const patch = <T>(path: string, body: unknown, opts?: FetchOptions) =>
   fetcher<T>(path, { method: 'PATCH', body: JSON.stringify(body), ...opts });
 
+export const put = <T>(path: string, body: unknown, opts?: FetchOptions) =>
+  fetcher<T>(path, { method: 'PUT', body: JSON.stringify(body), ...opts });
+
 export const del = <T>(path: string, opts?: FetchOptions) =>
   fetcher<T>(path, { method: 'DELETE', ...opts });

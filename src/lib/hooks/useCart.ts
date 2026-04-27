@@ -1,20 +1,43 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { get, post, patch, del } from '@/lib/fetcher';
+import { get, post, put, del } from '@/lib/fetcher';
+
+export interface CartProduct {
+  id: number;
+  name: string;
+  slug: string;
+  image_url: string;
+  price: number;
+}
+
+export interface CartVariant {
+  id: number;
+  sku: string;
+  size: string;
+  color_hexa: string;
+}
 
 export interface CartItem {
-  id: string;
-  productId: string;
-  title: string;
-  image: string;
-  color: string;
-  size: number;
-  price: string;
+  cart_item_id: number;
   quantity: number;
+  product: CartProduct;
+  variant: CartVariant;
+  total_item_price: number;
 }
-  
-export interface Cart {
-  items: CartItem[];
+
+export interface CartSummary {
+  subtotal: string;
+  tax: string;
   total: string;
+}
+
+export interface CartData {
+  items: CartItem[];
+  summary: CartSummary;
+}
+
+export interface CartResponse {
+  data: CartData;
+  message: string;
 }
 
 const cartKeys = {
@@ -24,24 +47,28 @@ const cartKeys = {
 export function useCart() {
   return useQuery({
     queryKey: cartKeys.all(),
-    queryFn:  () => get<Cart>('/api/cart'),
+    queryFn: () => get<CartResponse>('/user/cart'),
   });
 }
 
 export function useAddToCart() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { productId: string; colorIndex: number; size: number }) =>
-      post<CartItem>('/api/cart', vars),
-    onSuccess: () => qc.invalidateQueries({ queryKey: cartKeys.all() }),
+    mutationFn: (vars: { variant_id: number; product_id: number }) =>
+      post('/user/cart', vars),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: cartKeys.all() });
+      qc.invalidateQueries({ queryKey: ['profile'] });
+      qc.invalidateQueries({ queryKey: ['products', 'detail-v2'] });
+    },
   });
 }
 
 export function useUpdateCartItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ itemId, quantity }: { itemId: string; quantity: number }) =>
-      patch(`/api/cart/${itemId}`, { quantity }),
+    mutationFn: ({ itemId, action }: { itemId: number; action: 'plus' | 'minus' }) =>
+      put('/user/cart', { cart_item_id: itemId, action }),
     onSuccess: () => qc.invalidateQueries({ queryKey: cartKeys.all() }),
   });
 }
@@ -49,15 +76,7 @@ export function useUpdateCartItem() {
 export function useRemoveCartItem() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (itemId: string) => del(`/api/cart/${itemId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: cartKeys.all() }),
-  });
-}
-
-export function useClearCart() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => del('/api/cart'),
+    mutationFn: (itemId: number) => del(`/user/cart/${itemId}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: cartKeys.all() }),
   });
 }

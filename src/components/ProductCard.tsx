@@ -9,6 +9,7 @@ export interface ColorVariant {
 }
 
 interface ProductCardProps {
+    id?: string | number;
     image?: string;
     colorVariants?: ColorVariant[];
     colors?: string[];
@@ -19,6 +20,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({
+    id,
     image = "/images/sh-1.png",
     colorVariants,
     colors = ["#9ea0a3", "black", "#312be2"],
@@ -73,7 +75,7 @@ export default function ProductCard({
     };
 
     return (
-        <Link href={`/products/${title}`} className="group w-full max-w-full cursor-pointer sm:max-w-[445px]">
+        <Link href={`/products/${id ?? title}`} className="group w-full max-w-full cursor-pointer sm:max-w-[445px]">
             {/* Image area */}
             <div
                 className="relative aspect-square w-full overflow-hidden bg-[#e8e8e8]"

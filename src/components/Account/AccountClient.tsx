@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useProfile, type Profile } from '@/lib/hooks/useProfile';
 import { useChangePassword } from '@/lib/hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
+import { ApiError } from '@/lib/fetcher';
 
 /* ─── Stat card ──────────────────────────────────────────────────────── */
 
@@ -106,13 +108,15 @@ function SecuritySection() {
 /* ─── Personal form ──────────────────────────────────────────────────── */
 
 function PersonalPanel({ profile }: { profile: Profile | undefined }) {
-    const [form, setForm] = useState({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-    });
+    const queryClient = useQueryClient();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [isPending, setIsPending] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!profile) return;
@@ -123,16 +127,53 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
         setSaved(false);
+        setApiError(null);
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setAvatarFile(file);
+        setAvatarPreview(URL.createObjectURL(file));
+        setSaved(false);
+        setApiError(null);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: wire to PATCH /user/auth/profile when endpoint is available
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setIsPending(true);
+        setApiError(null);
+        try {
+            const token = localStorage.getItem('token') ?? '';
+            const formData = new FormData();
+            formData.append('name', `${form.firstName} ${form.lastName}`.trim());
+            formData.append('email', form.email);
+            if (avatarFile) formData.append('profile_picture', avatarFile);
+
+            const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://mini-man.shaarapp.com';
+            const res = await fetch(`${BASE_URL}/user/auth/profile`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+            });
+
+            if (!res.ok) {
+                const text = await res.text().catch(() => res.statusText);
+                throw new ApiError(res.status, text);
+            }
+
+            await queryClient.invalidateQueries({ queryKey: ['profile'] });
+            setAvatarFile(null);
+            setSaved(true);
+            setTimeout(() => setSaved(false), 3000);
+        } catch (err) {
+            setApiError(err instanceof Error ? err.message : 'Something went wrong');
+        } finally {
+            setIsPending(false);
+        }
     };
 
-    const avatar = profile?.profile_picture;
+    const avatar = avatarPreview ?? profile?.profile_picture ?? null;
     const initials = profile?.name?.[0]?.toUpperCase() ?? '?';
 
     return (
@@ -174,8 +215,19 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
                         <p className="mt-0.5 font-beatrice text-[12px] text-[#616161] sm:text-[13px]">
                             {profile?.email}
                         </p>
-                        <button className="mt-3 font-beatrice text-[10px] font-bold uppercase tracking-widest text-[#FF383C] underline underline-offset-2 transition-colors hover:text-red-600">
-                            Change Photo
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="mt-3 font-beatrice text-[10px] font-bold uppercase tracking-widest text-[#FF383C] underline underline-offset-2 transition-colors hover:text-red-600"
+                        >
+                            {avatarFile ? avatarFile.name : 'Change Photo'}
                         </button>
                     </div>
                 </div>
@@ -183,11 +235,11 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
                 {/* Personal fields */}
                 <div className="mb-8 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 md:gap-y-7">
                     {([
-                        { name: 'firstName', label: 'First Name',    type: 'text' },
-                        { name: 'lastName',  label: 'Last Name',     type: 'text' },
-                        { name: 'email',     label: 'Email Address', type: 'email' },
-                        { name: 'phone',     label: 'Phone Number',  type: 'tel' },
-                    ] as const).map(({ name, label, type }) => (
+                        { name: 'firstName', label: 'First Name',    type: 'text',  disabled: false },
+                        { name: 'lastName',  label: 'Last Name',     type: 'text',  disabled: false },
+                        { name: 'email',     label: 'Email Address', type: 'email', disabled: false },
+                        { name: 'phone',     label: 'Phone Number',  type: 'tel',   disabled: true  },
+                    ] as const).map(({ name, label, type, disabled }) => (
                         <div key={name}>
                             <label htmlFor={name} className="mb-2 block font-beatrice text-[13px] text-[#616161]">
                                 {label}
@@ -196,7 +248,8 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
                                 id={name} name={name} type={type}
                                 value={form[name]}
                                 onChange={handleChange}
-                                className="w-full border-b border-gray-300 bg-transparent pb-2 font-beatrice text-[15px] text-black focus:border-black focus:outline-none"
+                                disabled={disabled}
+                                className={`w-full border-b pb-2 font-beatrice text-[15px] focus:outline-none ${disabled ? 'cursor-not-allowed border-gray-200 bg-transparent text-gray-400' : 'border-gray-300 bg-transparent text-black focus:border-black'}`}
                             />
                         </div>
                     ))}
@@ -206,15 +259,21 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
 
                 {/* Save profile button */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    {saved && (
-                        <p className="font-cairo text-sm text-green-600">✓ Profile updated successfully</p>
-                    )}
+                    <div>
+                        {saved && (
+                            <p className="font-cairo text-sm text-green-600">✓ Profile updated successfully</p>
+                        )}
+                        {apiError && (
+                            <p className="font-cairo text-sm text-red-500">{apiError}</p>
+                        )}
+                    </div>
                     <div className="md:ms-auto">
                         <button
                             type="submit"
-                            className="flex items-center justify-between gap-6 bg-black px-5 py-3.5 font-beatrice text-[15px] font-semibold text-white transition-colors hover:bg-neutral-800 sm:px-7"
+                            disabled={isPending}
+                            className="flex items-center justify-between gap-6 bg-black px-5 py-3.5 font-beatrice text-[15px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 sm:px-7"
                         >
-                            <span>Save Profile</span>
+                            <span>{isPending ? 'Saving…' : 'Save Profile'}</span>
                             <svg width="28" height="11" viewBox="0 0 37 14" fill="none">
                                 <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>

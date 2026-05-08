@@ -51,6 +51,27 @@ export interface ProductDetailBreadcrumb {
   url: string | null;
 }
 
+export interface RelatedProduct {
+  id: number;
+  name: string;
+  slug: string;
+  price: string;
+  image_url: string;
+  is_in_favourite: boolean;
+  favourite_id: number | null;
+  is_in_cart: boolean;
+  cart_item_id: number | null;
+  cart_item_quantity: number;
+  images: ProductDetailImage[];
+  colors: ProductDetailColor[];
+  variants: ProductDetailVariant[];
+  sub_category: { id: number; name: string };
+  category_collection: {
+    collection: { id: number; name: string };
+    category: { id: number; name: string };
+  };
+}
+
 export interface ProductDetailData {
   id: number;
   name: string;
@@ -76,6 +97,7 @@ export interface ProductDetailData {
   cart_item_id: number | null;
   cart_item_quantity: number;
   breadcrumbs: ProductDetailBreadcrumb[];
+  related_products: RelatedProduct[];
 }
 
 export interface ProductDetailResponse {

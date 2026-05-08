@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
-import { useProfile, type Profile } from '@/lib/hooks/useProfile';
+import { useProfile, useUpdateProfile, type ProfileResponse } from '@/lib/hooks/useProfile';
 import { useChangePassword } from '@/lib/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '@/lib/fetcher';
@@ -34,8 +34,8 @@ function SecuritySection() {
 
     const validate = () => {
         const errors: Partial<typeof fields> = {};
-        if (!fields.currentPassword)                      errors.currentPassword = 'Required';
-        if (fields.newPassword.length < 8)                errors.newPassword     = 'Min. 8 characters';
+        if (!fields.currentPassword) errors.currentPassword = 'Required';
+        if (fields.newPassword.length < 8) errors.newPassword = 'Min. 8 characters';
         if (fields.confirmPassword !== fields.newPassword) errors.confirmPassword = 'Passwords do not match';
         return errors;
     };
@@ -72,7 +72,7 @@ function SecuritySection() {
             <div className="mb-8 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-3">
                 {([
                     { name: 'currentPassword', label: 'Current Password', placeholder: '••••••••' },
-                    { name: 'newPassword',     label: 'New Password',     placeholder: 'Min. 8 characters' },
+                    { name: 'newPassword', label: 'New Password', placeholder: 'Min. 8 characters' },
                     { name: 'confirmPassword', label: 'Confirm Password', placeholder: 'Repeat new password' },
                 ] as const).map(({ name, label, placeholder }) => (
                     <div key={name}>
@@ -107,16 +107,16 @@ function SecuritySection() {
 
 /* ─── Personal form ──────────────────────────────────────────────────── */
 
-function PersonalPanel({ profile }: { profile: Profile | undefined }) {
+function PersonalPanel({ profile }: { profile: ProfileResponse['data'] | undefined }) {
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '' });
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-    const [isPending, setIsPending] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [apiError, setApiError] = useState<string | null>(null);
+
+    const updateProfile = useUpdateProfile();
 
     useEffect(() => {
         if (!profile) return;
@@ -127,7 +127,7 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
         setSaved(false);
-        setApiError(null);
+        updateProfile.reset();
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,41 +136,24 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
         setAvatarFile(file);
         setAvatarPreview(URL.createObjectURL(file));
         setSaved(false);
-        setApiError(null);
+        updateProfile.reset();
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsPending(true);
-        setApiError(null);
-        try {
-            const token = localStorage.getItem('token') ?? '';
-            const formData = new FormData();
-            formData.append('name', `${form.firstName} ${form.lastName}`.trim());
-            formData.append('email', form.email);
-            if (avatarFile) formData.append('profile_picture', avatarFile);
 
-            const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://mini-man.shaarapp.com';
-            const res = await fetch(`${BASE_URL}/user/auth/profile`, {
-                method: 'PUT',
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
+        const formData = new FormData();
+        formData.append('name', `${form.firstName} ${form.lastName}`.trim());
+        formData.append('email', form.email);
+        if (avatarFile) formData.append('profile_picture', avatarFile);
 
-            if (!res.ok) {
-                const text = await res.text().catch(() => res.statusText);
-                throw new ApiError(res.status, text);
+        updateProfile.mutate(formData, {
+            onSuccess: () => {
+                setAvatarFile(null);
+                setSaved(true);
+                setTimeout(() => setSaved(false), 3000);
             }
-
-            await queryClient.invalidateQueries({ queryKey: ['profile'] });
-            setAvatarFile(null);
-            setSaved(true);
-            setTimeout(() => setSaved(false), 3000);
-        } catch (err) {
-            setApiError(err instanceof Error ? err.message : 'Something went wrong');
-        } finally {
-            setIsPending(false);
-        }
+        });
     };
 
     const avatar = avatarPreview ?? profile?.profile_picture ?? null;
@@ -189,10 +172,10 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
             {/* Stats */}
             {profile && (
                 <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <StatCard label="Orders"    value={profile.orders_numbers} />
+                    <StatCard label="Orders" value={profile.orders_numbers} />
                     <StatCard label="Favourites" value={profile.favourite_quantity} />
                     <StatCard label="Cart Items" value={profile.cart_quantity} />
-                    <StatCard label="Addresses"  value={profile.addresses_number} />
+                    <StatCard label="Addresses" value={profile.addresses_number} />
                 </div>
             )}
 
@@ -235,10 +218,10 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
                 {/* Personal fields */}
                 <div className="mb-8 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 md:gap-y-7">
                     {([
-                        { name: 'firstName', label: 'First Name',    type: 'text',  disabled: false },
-                        { name: 'lastName',  label: 'Last Name',     type: 'text',  disabled: false },
-                        { name: 'email',     label: 'Email Address', type: 'email', disabled: false },
-                        { name: 'phone',     label: 'Phone Number',  type: 'tel',   disabled: true  },
+                        { name: 'firstName', label: 'First Name', type: 'text', disabled: false },
+                        { name: 'lastName', label: 'Last Name', type: 'text', disabled: false },
+                        { name: 'email', label: 'Email Address', type: 'email', disabled: false },
+                        { name: 'phone', label: 'Phone Number', type: 'tel', disabled: true },
                     ] as const).map(({ name, label, type, disabled }) => (
                         <div key={name}>
                             <label htmlFor={name} className="mb-2 block font-beatrice text-[13px] text-[#616161]">
@@ -263,17 +246,17 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
                         {saved && (
                             <p className="font-cairo text-sm text-green-600">✓ Profile updated successfully</p>
                         )}
-                        {apiError && (
-                            <p className="font-cairo text-sm text-red-500">{apiError}</p>
+                        {updateProfile.isError && (
+                            <p className="font-cairo text-sm text-red-500">{updateProfile.error?.message}</p>
                         )}
                     </div>
                     <div className="md:ms-auto">
                         <button
                             type="submit"
-                            disabled={isPending}
+                            disabled={updateProfile.isPending}
                             className="flex items-center justify-between gap-6 bg-black px-5 py-3.5 font-beatrice text-[15px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 sm:px-7"
                         >
-                            <span>{isPending ? 'Saving…' : 'Save Profile'}</span>
+                            <span>{updateProfile.isPending ? 'Saving…' : 'Save Profile'}</span>
                             <svg width="28" height="11" viewBox="0 0 37 14" fill="none">
                                 <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
@@ -293,7 +276,10 @@ function PersonalPanel({ profile }: { profile: Profile | undefined }) {
 /* ─── Main ───────────────────────────────────────────────────────────── */
 
 export default function AccountClient() {
-    const { data: profile, isPending, isError } = useProfile();
+    const { error: isError, isLoading: isPending, ...profile } = useProfile();
+
+    console.log("profile", profile);
+
 
     return (
         <>

@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import TopCategories from './TopCategories';
 import SaleTicker from './SaleTicker';
 import { useAuthState } from '@/lib/hooks/useAuthState';
+import { useProfile, useProfileData } from '@/lib/hooks/useProfile';
 
 type MobileMenuSection = 'men' | 'women' | 'kids' | 'accessories' | null;
 
@@ -66,7 +67,15 @@ export default function Header() {
 
   const pathname = usePathname();
   const isHome = pathname === '/en' || pathname === '/ar';
-  const { user, isLoggedIn, logout } = useAuthState();
+  const { isLoggedIn, logout } = useAuthState();
+  
+  // Fetch and sync profile to Redux
+  useProfile();
+  // Get data from Redux
+  const profile = useProfileData();
+
+  console.log("userData", profile);
+
 
   return (
     <>
@@ -164,19 +173,19 @@ export default function Header() {
             <div className={`flex items-center gap-4 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}>
               {isLoggedIn ? (
                 <div className="flex items-center gap-2">
-                  <Link
-                    href="/account"
-                    className={`flex items-center gap-2 font-cairo text-sm font-medium transition-opacity hover:opacity-70 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}
-                  >
-                    {user?.profile_picture ? (
-                      <img src={user.profile_picture} alt={user.name} className="h-8 w-8 rounded-full object-cover" />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-700">
-                        {user?.name?.[0]?.toUpperCase()}
-                      </div>
-                    )}
-                    <span className="hidden lg:block">{user?.name?.split(' ')[0]}</span>
-                  </Link>
+                    <Link
+                      href="/account"
+                      className={`flex items-center gap-2 font-cairo text-sm font-medium transition-opacity hover:opacity-70 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}
+                    >
+                      {profile.profile_picture ? (
+                        <img src={profile.profile_picture} alt={profile.name} className="h-8 w-8 rounded-full object-cover" />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-700">
+                          {profile.name?.[0]?.toUpperCase()}
+                        </div>
+                      )}
+                      <span className="hidden lg:block">{profile.name?.split(' ')[0]}</span>
+                    </Link>
                   <button
                     onClick={logout}
                     className={`grid h-8 w-8 place-items-center rounded transition-all ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'}`}

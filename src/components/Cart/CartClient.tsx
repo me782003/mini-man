@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { TrashIcon } from '../icons';
 import { useCart, useRemoveCartItem, useUpdateCartItem } from '@/lib/hooks/useCart';
+import { useValidateCoupon, CouponData } from '@/lib/hooks/useOrders';
 
 function TagIcon({ className }: { className?: string }) {
     return (
@@ -31,10 +32,50 @@ export default function CartClient() {
 
     const [promoCode, setPromoCode] = useState('');
     const [agreed, setAgreed] = useState(false);
+    const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null);
+    const [couponError, setCouponError] = useState<string | null>(null);
+
+    const validateCoupon = useValidateCoupon();
 
     const cartData = response?.data;
     const items = cartData?.items ?? [];
     const summary = cartData?.summary;
+
+    const subtotal = summary ? parseFloat(summary.subtotal) : 0;
+    const tax = summary ? parseFloat(summary.tax) : 0;
+
+    let discountAmount = 0;
+    if (appliedCoupon) {
+        if (appliedCoupon.type === 'percentage') {
+            discountAmount = (subtotal * parseFloat(appliedCoupon.value)) / 100;
+            const maxDiscount = parseFloat(appliedCoupon.max_discount);
+            if (discountAmount > maxDiscount) {
+                discountAmount = maxDiscount;
+            }
+        } else {
+            discountAmount = parseFloat(appliedCoupon.value);
+        }
+    }
+
+    const total = subtotal + tax - discountAmount;
+
+    const handleApplyCoupon = () => {
+        if (!promoCode) return;
+        setCouponError(null);
+
+        validateCoupon.mutate({
+            code: promoCode,
+            cart_amount: subtotal
+        }, {
+            onSuccess: (data) => {
+                setAppliedCoupon(data.data);
+            },
+            onError: (error: any) => {
+                setCouponError(error.message || 'Invalid coupon code');
+                setAppliedCoupon(null);
+            }
+        });
+    };
 
     if (isLoading) {
         return (
@@ -110,6 +151,7 @@ export default function CartClient() {
                                     <button
                                         onClick={(e: React.MouseEvent) => {
                                             e.preventDefault();
+                                            e.stopPropagation();
                                             removeItem.mutate(item.cart_item_id);
                                         }}
                                         disabled={removeItem.isPending}
@@ -168,36 +210,56 @@ export default function CartClient() {
 
                         <div className="flex justify-between gap-4 font-beatrice text-[15px] sm:text-[16px]">
                             <span className="text-gray-500">Shipping</span>
-                            <span className="text-right font-bold text-black">??</span>
+                            <span className="text-right font-bold text-black">0 EGP</span>
                         </div>
+
+                        {discountAmount > 0 && (
+                            <div className="flex justify-between gap-4 font-beatrice text-[15px] sm:text-[16px] text-green-600">
+                                <span>Discount ({appliedCoupon?.code})</span>
+                                <span className="text-right font-bold">
+                                    -{discountAmount.toLocaleString()} EGP
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mb-8 border-t border-gray-200 pt-5 sm:mb-10">
                         <div className="flex items-baseline justify-between gap-4 font-beatrice">
                             <span className="text-[18px] font-bold text-black sm:text-[20px]">Total</span>
                             <span className="text-right text-[18px] font-extrabold text-black sm:text-[20px]">
-                                {summary ? parseFloat(summary.total).toLocaleString() : '—'} EGP
+                                {total.toLocaleString()} EGP
                             </span>
                         </div>
                     </div>
 
-                    {/* Promo code */}
-                    <div className="mb-4 flex gap-2">
-                        <div className="relative flex-1">
-                            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-black">
-                                <TagIcon className="h-5 w-5" />
-                            </span>
-                            <input
-                                type="text"
-                                placeholder="Add promo code"
-                                value={promoCode}
-                                onChange={e => setPromoCode(e.target.value)}
-                                className="w-full border border-gray-300 py-3.5 pl-9 pr-2 font-beatrice text-[14px] placeholder:text-gray-400 focus:border-black focus:outline-none"
-                            />
+                    <div className="mb-4">
+                        <div className="flex gap-2">
+                            <div className="relative flex-1">
+                                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-black">
+                                    <TagIcon className="h-5 w-5" />
+                                </span>
+                                <input
+                                    type="text"
+                                    placeholder="Add promo code"
+                                    value={promoCode}
+                                    onChange={e => setPromoCode(e.target.value)}
+                                    className="w-full border border-gray-300 py-3.5 pl-9 pr-2 font-beatrice text-[14px] placeholder:text-gray-400 focus:border-black focus:outline-none"
+                                />
+                            </div>
+                            <button
+                                onClick={handleApplyCoupon}
+                                disabled={validateCoupon.isPending || !promoCode}
+                                className="h-[52px] shrink-0 bg-black px-5 font-beatrice text-[14px] font-semibold tracking-wider text-white transition-colors hover:bg-neutral-800 sm:min-w-[110px] disabled:opacity-50"
+                            >
+                                {validateCoupon.isPending ? '...' : 'Apply'}
+                            </button>
                         </div>
-                        <button className="h-[52px] shrink-0 bg-black px-5 font-beatrice text-[14px] font-semibold tracking-wider text-white transition-colors hover:bg-neutral-800 sm:min-w-[110px]">
-                            Apply
-                        </button>
+                        {couponError && (
+                            <p className="mt-1 text-xs text-red-500 font-beatrice">{couponError}</p>
+                        )}
+                        {appliedCoupon && (
+                            <p className="mt-1 text-xs text-green-600 font-beatrice">Coupon "{appliedCoupon.code}" applied successfully!</p>
+                        )}
                     </div>
 
                     {/* Terms */}

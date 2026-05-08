@@ -19,13 +19,7 @@ export default async function ProductDetailPage({
     return (
         <main className="my-10">
             <ProductDetail id={id} />
-            <SwiperSection
-                primaryTitle="YOU MIGHT ALSO LIKE"
-                secondaryTitle=""
-                count={0}
-                seeAllHref="/products"
-                items={SIMILAR_PRODUCTS}
-            />
+
         </main>
     );
 }

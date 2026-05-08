@@ -12,13 +12,199 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/free-mode";
 
+type ProductImage = {
+    id?: number;
+    image_path: string;
+    is_primary?: number | boolean;
+    sort_order?: number;
+    color_id?: number | null;
+    color_hexa?: string;
+};
+
+type ProductColor = {
+    id: number;
+    hexa: string;
+    images?: string[];
+};
+
+type VariantColor = {
+    id: number;
+    hexa: string;
+    variant_id: number;
+    sku: string;
+    price_modifier: string | number;
+    stock: number;
+    is_active: number | boolean;
+    is_available: number | boolean;
+    images?: string[];
+};
+
+type ProductVariant = {
+    id: number;
+    name: string;
+    colors?: VariantColor[];
+};
+
+type ProductItem = {
+    id: number;
+    slug: string;
+    name: string;
+    price: string | number;
+    stock?: number;
+    is_active?: number | boolean;
+    is_available?: number | boolean;
+    image_url?: string;
+    description?: string;
+    short_description?: string;
+    is_in_favourite?: boolean;
+    favourite_id?: number | null;
+    is_in_cart?: boolean;
+    cart_item_id?: number | null;
+    cart_item_quantity?: number;
+    images?: ProductImage[];
+    colors?: ProductColor[];
+    variants?: ProductVariant[];
+    category_collection?: {
+        collection?: {
+            id: number;
+            name: string;
+        };
+        category?: {
+            id: number;
+            name: string;
+        };
+    };
+    sub_category?: {
+        id: number;
+        name: string;
+    };
+};
+
 interface SwiperSectionProps {
     primaryTitle?: string;
     secondaryTitle?: string;
     count?: number;
     seeAllHref?: string;
-    items: any[];
+    items: ProductItem[];
 }
+
+const getPrimaryImage = (item: ProductItem) => {
+    const primaryImage = item.images?.find((image) => image.is_primary === 1 || image.is_primary === true);
+
+    if (primaryImage?.image_path) {
+        return primaryImage.image_path;
+    }
+
+    const sortedImage = item.images
+        ?.slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        ?.find((image) => image.image_path);
+
+    if (sortedImage?.image_path) {
+        return sortedImage.image_path;
+    }
+
+    const firstColorImage = item.colors?.find((color) => color.images?.length)?.images?.[0];
+
+    if (firstColorImage) {
+        return firstColorImage;
+    }
+
+    const firstVariantColorImage = item.variants
+        ?.flatMap((variant) => variant.colors ?? [])
+        ?.find((color) => color.images?.length)?.images?.[0];
+
+    if (firstVariantColorImage) {
+        return firstVariantColorImage;
+    }
+
+    return item.image_url || "";
+};
+
+const getFirstAvailableVariantColor = (item: ProductItem) => {
+    return (
+        item.variants
+            ?.flatMap((variant) => variant.colors ?? [])
+            ?.find(
+                (color) =>
+                    color.is_active === 1 &&
+                    color.is_available === 1 &&
+                    Number(color.stock || 0) > 0
+            ) ??
+        item.variants?.flatMap((variant) => variant.colors ?? [])?.[0] ??
+        null
+    );
+};
+
+const normalizeProductForCard = (item: ProductItem) => {
+    const firstVariantColor = getFirstAvailableVariantColor(item);
+
+    const finalPrice =
+        Number(item.price || 0) + Number(firstVariantColor?.price_modifier || 0);
+
+    const categoryLabel = [
+        item.category_collection?.collection?.name,
+        item.category_collection?.category?.name,
+        item.sub_category?.name,
+    ]
+        .filter(Boolean)
+        .join(" · ");
+
+    const image = getPrimaryImage(item);
+
+    return {
+        ...item,
+
+        // Common names for ProductCard
+        title: item.name,
+        name: item.name,
+        slug: item.slug,
+        href: `/products/${item.id}`,
+
+        // Image fallbacks
+        image,
+        imageUrl: image,
+        image_url: image,
+
+        // Price
+        price: finalPrice,
+        base_price: item.price,
+        price_modifier: firstVariantColor?.price_modifier ?? 0,
+
+        // Category
+        category: categoryLabel,
+        categoryLabel,
+
+        // Description
+        description: item.description,
+        shortDescription: item.short_description,
+        short_description: item.short_description,
+
+        // Favourite / cart
+        is_in_favourite: item.is_in_favourite,
+        isInFavourite: item.is_in_favourite,
+        favourite_id: item.favourite_id,
+
+        is_in_cart: item.is_in_cart,
+        isInCart: item.is_in_cart,
+        cart_item_id: item.cart_item_id,
+        cart_item_quantity: item.cart_item_quantity,
+
+        // Variant info
+        variant_id: firstVariantColor?.variant_id ?? null,
+        selected_variant_id: firstVariantColor?.variant_id ?? null,
+        sku: firstVariantColor?.sku ?? null,
+
+        // Availability
+        stock: firstVariantColor?.stock ?? item.stock ?? 0,
+        is_available:
+            item.is_available === 1 &&
+            (!firstVariantColor || firstVariantColor.is_available === 1),
+        is_active:
+            item.is_active === 1 &&
+            (!firstVariantColor || firstVariantColor.is_active === 1),
+    };
+};
 
 const SwiperSection = ({
     primaryTitle,
@@ -30,6 +216,8 @@ const SwiperSection = ({
     const [isBeginning, setIsBeginning] = useState(true);
     const [isEnd, setIsEnd] = useState(false);
 
+    const safeItems = Array.isArray(items) ? items : [];
+
     const updateNavState = (swiper: any) => {
         setIsBeginning(swiper.isBeginning);
         setIsEnd(swiper.isEnd);
@@ -40,7 +228,7 @@ const SwiperSection = ({
             <SectionHeader
                 primaryTitle={primaryTitle}
                 secondaryTitle={secondaryTitle}
-                count={count}
+                count={count ?? safeItems.length}
                 seeAllHref={seeAllHref}
             />
 
@@ -52,7 +240,7 @@ const SwiperSection = ({
                         delay: 2500,
                         disableOnInteraction: false,
                     }}
-                    loop={true}
+                    loop={safeItems.length > 4}
                     navigation={{
                         prevEl: ".swiper-button-prev-custom",
                         nextEl: ".swiper-button-next-custom",
@@ -89,13 +277,17 @@ const SwiperSection = ({
                     }}
                     className="product-swiper"
                 >
-                    {items.map((item, index) => (
-                        <SwiperSlide key={index} className="h-auto">
-                            <div className="h-full">
-                                <ProductCard {...item} />
-                            </div>
-                        </SwiperSlide>
-                    ))}
+                    {safeItems.map((item, index) => {
+                        const cardItem = normalizeProductForCard(item);
+
+                        return (
+                            <SwiperSlide key={item.id ?? index} className="h-auto">
+                                <div className="h-full">
+                                    <ProductCard {...cardItem} />
+                                </div>
+                            </SwiperSlide>
+                        );
+                    })}
                 </Swiper>
 
                 {/* Mobile bottom controls */}

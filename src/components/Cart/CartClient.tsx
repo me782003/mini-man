@@ -63,19 +63,21 @@ export default function CartClient() {
         if (!promoCode) return;
         setCouponError(null);
 
-        validateCoupon.mutate({
-            code: promoCode,
-            cart_amount: subtotal
-        }, {
+        validateCoupon.mutate({ code: promoCode, cart_amount: subtotal }, {
             onSuccess: (data) => {
                 setAppliedCoupon(data.data);
+                setPromoCode('');
             },
             onError: (error: any) => {
                 setCouponError(error.message || 'Invalid coupon code');
                 setAppliedCoupon(null);
-            }
+            },
         });
     };
+
+    const shippingHref = appliedCoupon
+        ? `/shipping?coupon=${encodeURIComponent(appliedCoupon.code)}`
+        : '/shipping';
 
     if (isLoading) {
         return (
@@ -120,6 +122,7 @@ export default function CartClient() {
                                                 src={item.product.image_url}
                                                 alt={item.product.name}
                                                 className="h-full w-full object-contain"
+                                                onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
                                             />
                                         </div>
 
@@ -201,12 +204,12 @@ export default function CartClient() {
                             </span>
                         </div>
 
-                        <div className="flex justify-between gap-4 font-beatrice text-[15px] sm:text-[16px]">
+                        {/* <div className="flex justify-between gap-4 font-beatrice text-[15px] sm:text-[16px]">
                             <span className="text-gray-500">Tax</span>
                             <span className="text-right font-bold text-black">
                                 {summary ? parseFloat(summary.tax).toLocaleString() : '—'} EGP
                             </span>
-                        </div>
+                        </div> */}
 
                         <div className="flex justify-between gap-4 font-beatrice text-[15px] sm:text-[16px]">
                             <span className="text-gray-500">Shipping</span>
@@ -276,7 +279,7 @@ export default function CartClient() {
                     </label>
 
                     {/* Checkout */}
-                    <Link href="/shipping">
+                    <Link href={shippingHref}>
                         <button
                             disabled={!agreed || items.length === 0}
                             className="flex w-full items-center justify-between gap-4 bg-black px-4 py-3 font-beatrice text-[17px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40 sm:px-5 sm:text-[20px]"

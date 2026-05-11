@@ -2,15 +2,15 @@
 
 import React, { useState } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
 import CheckoutStepper from '@/components/CheckoutStepper';
 import OrderSummary, { SecurePaymentBadge } from '@/components/OrderSummary';
 import { useAuthState } from '@/lib/hooks/useAuthState';
+import { useCart } from '@/lib/hooks/useCart';
+import { useValidateCoupon } from '@/lib/hooks/useOrders';
 import type { Address } from '@/lib/hooks/useProfile';
 import { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress, useSetDefaultAddress } from '@/lib/hooks/useAddresses';
 import AddressModal, { EMPTY_FORM, type AddressForm } from '@/components/Account/AddressModal';
-
-const FIXED_DISCOUNT = 500;
-const SUBTOTAL = 2590;
 
 
 function AddressCard({
@@ -81,7 +81,33 @@ function AddressCard({
 }
 
 export default function ShippingClient() {
+    const searchParams = useSearchParams();
+    const appliedCoupon = searchParams.get('coupon') ?? '';
+    const paymentHref = appliedCoupon ? `/payment?coupon=${encodeURIComponent(appliedCoupon)}` : '/payment';
+
     const { isLoggedIn } = useAuthState();
+    const { data: cartData, isLoading: cartLoading } = useCart();
+
+    const subtotal = Number(cartData?.data?.summary?.subtotal ?? 0);
+    const validateCoupon = useValidateCoupon();
+
+    React.useEffect(() => {
+        if (appliedCoupon && subtotal > 0) {
+            validateCoupon.mutate({ code: appliedCoupon, cart_amount: subtotal });
+        }
+    }, [appliedCoupon, subtotal]);
+
+    const discountAmount = validateCoupon.data
+        ? (() => {
+            const c = validateCoupon.data.data;
+            if (c.type === 'percentage') {
+                const d = (subtotal * parseFloat(c.value)) / 100;
+                return Math.min(d, parseFloat(c.max_discount));
+            }
+            return parseFloat(c.value);
+        })()
+        : 0;
+
     const { data: addresses, isLoading: profileLoading } = useAddresses();
 
     const createAddress = useCreateAddress();
@@ -128,10 +154,13 @@ export default function ShippingClient() {
         setFormState({
             first_name: address.first_name,
             last_name: address.last_name,
+            phone: address.phone ?? '',
             city: address.city,
             street_address: address.street_address,
             apartment: address.apartment ?? '',
             country_id: address.country_id,
+            latitude: address.latitude ?? null,
+            longitude: address.longitude ?? null,
             is_default: address.is_default === 1,
         });
         setModal({ open: true, mode: 'edit', editId: address.id });
@@ -234,7 +263,7 @@ export default function ShippingClient() {
                     )}
 
                     <Link
-                        href="/payment"
+                        href={paymentHref}
                         className="mt-6 hidden w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[20px] font-semibold text-white transition-colors hover:bg-neutral-800 md:flex"
                     >
                         <span>Continue to delivery</span>
@@ -246,15 +275,24 @@ export default function ShippingClient() {
 
                 {/* Order Summary */}
                 <OrderSummary
-                    subtotal={SUBTOTAL}
-                    discount={FIXED_DISCOUNT}
+                    summary={cartData?.data?.summary}
+                    isLoading={cartLoading}
+                    couponCode={appliedCoupon || undefined}
+                    discountAmount={discountAmount || undefined}
                     className="md:w-[507px] shrink-0 bg-[#E0E0E080] p-5 md:border md:border-gray-200 md:bg-transparent md:p-10"
                 >
+                    {appliedCoupon && (
+                        <div className="mb-5 flex items-center gap-2 border border-green-300 bg-green-50 px-4 py-3">
+                            <span className="font-beatrice text-[13px] font-semibold text-green-700">
+                                Coupon applied: <span className="uppercase">{appliedCoupon}</span>
+                            </span>
+                        </div>
+                    )}
                     <SecurePaymentBadge />
                 </OrderSummary>
 
                 <Link
-                    href="/payment"
+                    href={paymentHref}
                     className="flex w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] font-semibold text-white transition-colors hover:bg-neutral-800 md:hidden"
                 >
                     <span>Continue to delivery</span>

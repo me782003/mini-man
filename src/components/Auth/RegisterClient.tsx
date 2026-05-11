@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRegister } from '@/lib/hooks/useAuth';
+import { useDispatch } from 'react-redux';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRegister, useGoogleAuth } from '@/lib/hooks/useAuth';
+import { setProfile } from '@/lib/store/features/profileSlice';
+import { GoogleLogin } from '@react-oauth/google';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -22,7 +26,10 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function RegisterClient() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const { mutate: register, isPending, isError, error } = useRegister();
+  const { mutate: googleAuth } = useGoogleAuth();
 
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', confirmPassword: '' });
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
@@ -55,6 +62,8 @@ export default function RegisterClient() {
       onSuccess: (res) => {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
+        document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+        dispatch(setProfile(res.data.user));
         if (res.data.user.is_verified === 0) {
           router.push(`/verify-otp?phone=${encodeURIComponent(payload.phone)}`);
         } else {
@@ -155,6 +164,30 @@ export default function RegisterClient() {
             </svg>
           </button>
         </form>
+
+        <div className="mt-6">
+          <GoogleLogin
+            onSuccess={credentialResponse => {
+              const token = credentialResponse.credential;
+              if (!token) return;
+              const { sub, email, name, picture } = JSON.parse(atob(token.split('.')[1]));
+              googleAuth(
+                { google_id: sub, email, name, picture },
+                {
+                  onSuccess: (res) => {
+                    localStorage.setItem('token', res.data.token);
+                    localStorage.setItem('user', JSON.stringify(res.data.user));
+                    document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+                    dispatch(setProfile(res.data.user));
+                    queryClient.invalidateQueries({ queryKey: ['profile'] });
+                    router.push('/account');
+                  },
+                }
+              );
+            }}
+            onError={() => console.log('Google login failed')}
+          />
+        </div>
 
         <p className="mt-8 text-center font-cairo text-sm text-neutral-500">
           Already have an account?{' '}

@@ -7,10 +7,13 @@ import type { Address } from './useProfile';
 interface AddressPayload {
   first_name: string;
   last_name: string;
+  phone: string;
   country_id: number;
   street_address: string;
   apartment?: string;
   city: string;
+  latitude?: number | null;
+  longitude?: number | null;
   is_default?: boolean;
 }
 

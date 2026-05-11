@@ -66,6 +66,7 @@ export default function VerifyOtpClient() {
       onSuccess: (res) => {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
+        document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         router.push('/account');
       },
     });

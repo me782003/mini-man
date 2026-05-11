@@ -15,6 +15,12 @@ export class ApiError extends Error {
   }
 }
 
+function getLocale(): 'en' | 'ar' {
+  if (typeof window === 'undefined') return 'en';
+  const match = window.location.pathname.match(/^\/(en|ar)(\/|$)/);
+  return (match?.[1] as 'en' | 'ar') ?? 'en';
+}
+
 export async function fetcher<T>(
   path: string,
   options: FetchOptions = {}
@@ -25,6 +31,7 @@ export async function fetcher<T>(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'locale': getLocale(),
     ...(options.headers as Record<string, string> | undefined),
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -40,6 +47,34 @@ export async function fetcher<T>(
   if (res.status === 204) return undefined as unknown as T;
 
   return res.json() as Promise<T>;
+}
+
+export async function fetcherWithStatus<T>(
+  path: string,
+  options: FetchOptions = {}
+): Promise<{ data: T; status: number }> {
+  const url = `${BASE_URL}${path}`;
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'locale': getLocale(),
+    ...(options.headers as Record<string, string> | undefined),
+  };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(url, { ...options, headers });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new ApiError(res.status, text);
+  }
+
+  if (res.status === 204) return { data: undefined as unknown as T, status: 204 };
+
+  const data = await res.json() as T;
+  return { data, status: res.status };
 }
 
 // Convenience helpers

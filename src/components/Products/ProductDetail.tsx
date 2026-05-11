@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
 import { HeartIcon } from '../icons';
 import { useProductDetail } from '@/lib/hooks/useProducts';
 import { useAddToWishlist, useRemoveFromWishlist } from '@/lib/hooks/useWishlist';
-import { useCart, useRemoveCartItem, useAddToCart } from '@/lib/hooks/useCart';
+import { useRemoveCartItem, useAddToCart, useUpdateCartItem } from '@/lib/hooks/useCart';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, FreeMode, Navigation, Thumbs } from 'swiper/modules';
@@ -17,16 +17,21 @@ import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 import SwiperSection from '../SwiperSection';
 
+type ProductColorImage = { id: number; url: string };
+
 type ProductColorLike = {
     id: number;
     hexa: string;
-    images?: string[];
+    images?: ProductColorImage[] | string[];
     variant_id?: number;
     sku?: string;
     price_modifier?: string | number;
     stock?: number;
     is_active?: number | boolean;
     is_available?: number | boolean;
+    is_in_cart?: boolean;
+    cart_item_id?: number | null;
+    cart_item_quantity?: number;
 };
 
 type ProductVariantLike = {
@@ -48,19 +53,54 @@ function isEnabled(value: number | boolean | undefined | null) {
     return value === undefined || value === null || value === 1 || value === true;
 }
 
+function hasStock(color: ProductColorLike) {
+    return isEnabled(color.is_active) && isEnabled(color.is_available) && Number(color.stock || 0) > 0;
+}
+
+function firstInStockColor(colors: ProductColorLike[]): ProductColorLike | null {
+    return colors.find(hasStock) ?? null;
+}
+
+// Returns [variantIdx, colorId] for the first variant+color with stock.
+// If the given variantIdx has an in-stock color, stays on that variant.
+// Otherwise walks forward (then wraps) to find one that does.
+function resolveInitialSelection(
+    variants: ProductVariantLike[],
+    preferredVariantIdx: number
+): [number, number | null] {
+    const total = variants.length;
+    for (let i = 0; i < total; i++) {
+        const idx = (preferredVariantIdx + i) % total;
+        const color = firstInStockColor(variants[idx]?.colors ?? []);
+        if (color) return [idx, color.id];
+    }
+    // All out of stock — stay on preferred variant, first color
+    const firstColor = variants[preferredVariantIdx]?.colors?.[0] ?? null;
+    return [preferredVariantIdx, firstColor?.id ?? null];
+}
+
+
 export default function ProductDetail({ id }: { id: string }) {
     const { data, isPending, isError } = useProductDetail(id);
 
     const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
     const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
-    const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
+    const thumbsSwiperRef = React.useRef<SwiperType | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+
+    useEffect(() => {
+        const v = (data?.data?.variants ?? []) as ProductVariantLike[];
+        if (v.length === 0) return;
+        const [resolvedIdx, resolvedColorId] = resolveInitialSelection(v, 0);
+        setSelectedVariantIdx(resolvedIdx);
+        setSelectedColorId(resolvedColorId);
+    }, [data]);
 
     const addToWishlist = useAddToWishlist();
     const removeFromWishlist = useRemoveFromWishlist();
     const addToCart = useAddToCart();
-    const { data: cartResponse } = useCart();
     const removeFromCart = useRemoveCartItem();
+    const updateCartItem = useUpdateCartItem();
     const mainSwiperRef = React.useRef<SwiperType | null>(null);
 
     if (isPending) {
@@ -113,18 +153,22 @@ export default function ProductDetail({ id }: { id: string }) {
             ? selectedVariant.colors
             : productColors;
 
-    // Active selected color
+    // Active selected color — prefer explicit selection, else first in-stock, else first
     const activeColor =
         availableColors.find((color) => color.id === selectedColorId) ??
+        firstInStockColor(availableColors) ??
         availableColors[0] ??
         null;
 
     const activeColorId = activeColor?.id ?? null;
 
+    const normalizeImages = (imgs: ProductColorImage[] | string[]): string[] =>
+        imgs.map((img) => (typeof img === 'string' ? img : img.url));
+
     // Build gallery based on active color images first
     const gallery =
         activeColor?.images && activeColor.images.length > 0
-            ? activeColor.images
+            ? normalizeImages(activeColor.images)
             : productImages.length > 0
                 ? productImages
                     .filter((img) => !activeColorId || img.color_id === activeColorId)
@@ -149,32 +193,29 @@ export default function ProductDetail({ id }: { id: string }) {
         !isEnabled(activeColor.is_available) ||
         Number(activeColor.stock || 0) <= 0;
 
-    const cartItems = cartResponse?.data?.items ?? [];
-    const cartItem = cartItems.find(item => item.variant.id === activeColor?.variant_id);
-    const isInCart = !!cartItem;
+    const isInCart = !!activeColor?.is_in_cart && !!activeColor?.cart_item_id;
+    const cartItemId = activeColor?.cart_item_id ?? null;
+    const cartItemQuantity = activeColor?.cart_item_quantity ?? 0;
 
     const handleSizeSelect = (idx: number) => {
-        const nextVariant = variants[idx];
-        const firstColor = nextVariant?.colors?.[0] ?? null;
-
-        setSelectedVariantIdx(idx);
-        setSelectedColorId(firstColor?.id ?? null);
-
+        const [resolvedIdx, resolvedColorId] = resolveInitialSelection(variants, idx);
+        setSelectedVariantIdx(resolvedIdx);
+        setSelectedColorId(resolvedColorId);
         mainSwiperRef.current?.slideTo(0);
-        setThumbsSwiper(null);
+        thumbsSwiperRef.current?.slideTo(0);
     };
 
     const handleColorSelect = (colorId: number) => {
         setSelectedColorId(colorId);
         mainSwiperRef.current?.slideTo(0);
-        setThumbsSwiper(null);
+        thumbsSwiperRef.current?.slideTo(0);
     };
 
     const handleCartAction = () => {
         if (!activeColor?.variant_id || isUnavailable) return;
 
-        if (isInCart && cartItem) {
-            removeFromCart.mutate(cartItem.cart_item_id);
+        if (isInCart && cartItemId) {
+            removeFromCart.mutate(cartItemId);
             return;
         }
 
@@ -228,12 +269,11 @@ export default function ProductDetail({ id }: { id: string }) {
                     <div className="flex md:w-[647px] h-[290px] flex-1 gap-[10px] md:h-[558px] md:gap-5">
                         <div className="flex-1 overflow-hidden bg-[#e8e8e8]">
                             <Swiper
-                                key={`main-${selectedVariant?.id ?? 'no-variant'}-${activeColorId ?? 'no-color'}`}
                                 spaceBetween={10}
                                 thumbs={{
                                     swiper:
-                                        thumbsSwiper && !thumbsSwiper.destroyed
-                                            ? thumbsSwiper
+                                        thumbsSwiperRef.current && !thumbsSwiperRef.current.destroyed
+                                            ? thumbsSwiperRef.current
                                             : null,
                                 }}
                                 modules={[Navigation, Thumbs, Autoplay]}
@@ -251,6 +291,7 @@ export default function ProductDetail({ id }: { id: string }) {
                                                 src={image}
                                                 alt={`${product.name} image ${i + 1}`}
                                                 className="h-full w-full object-contain transition-all duration-300"
+                                                onError={e => { const img = (e.target ?? e.nativeEvent?.target) as HTMLImageElement | null; if (img) { img.src = '/images/logo.png'; img.classList.add('opacity-20'); } }}
                                             />
                                         </div>
                                     </SwiperSlide>
@@ -261,8 +302,7 @@ export default function ProductDetail({ id }: { id: string }) {
                         {/* Thumbnails */}
                         <div className="h-full shrink-0">
                             <Swiper
-                                key={`thumbs-${selectedVariant?.id ?? 'no-variant'}-${activeColorId ?? 'no-color'}`}
-                                onSwiper={setThumbsSwiper}
+                                onSwiper={(s) => { thumbsSwiperRef.current = s; }}
                                 direction="vertical"
                                 spaceBetween={8}
                                 breakpoints={{
@@ -294,6 +334,7 @@ export default function ProductDetail({ id }: { id: string }) {
                                                 src={thumb}
                                                 alt={`${product.name} thumbnail ${i + 1}`}
                                                 className="h-full w-full object-contain"
+                                                onError={e => { const img = (e.target ?? e.nativeEvent?.target) as HTMLImageElement | null; if (img) { img.src = '/images/logo.png'; img.classList.add('opacity-20'); } }}
                                             />
                                         </div>
                                     </SwiperSlide>
@@ -384,72 +425,72 @@ export default function ProductDetail({ id }: { id: string }) {
                                         : 'Add to wishlist'
                                 }
                             >
-                                {addToWishlist.isPending ||
-                                    removeFromWishlist.isPending ? (
-                                    <svg
-                                        className="h-5 w-5 animate-spin text-black"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <circle
-                                            className="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            strokeWidth="4"
-                                            fill="none"
-                                        />
-                                        <path
-                                            className="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                        />
+                                {addToWishlist.isPending || removeFromWishlist.isPending ? (
+                                    <svg className="h-5 w-5 animate-spin text-black" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                     </svg>
                                 ) : (
                                     <HeartIcon
                                         width={22}
                                         height={22}
-                                        className={
-                                            product.is_in_favourite
-                                                ? '[&_path]:fill-black'
-                                                : ''
-                                        }
+                                        className={product.is_in_favourite ? '[&_path]:fill-black' : ''}
                                     />
                                 )}
                             </button>
 
-                            <button
-                                onClick={handleCartAction}
-                                disabled={addToCart.isPending || removeFromCart.isPending || isUnavailable}
-                                className={`flex h-12 flex-1 items-center justify-between px-3 font-beatrice text-base font-semibold text-white transition-all disabled:opacity-50 md:px-5 md:text-[20px] ${showSuccess ? 'bg-green-600' : isInCart ? 'bg-red-600 hover:bg-red-700' : 'bg-black hover:bg-neutral-800'
-                                    }`}
-                            >
-                                <span>
-                                    {addToCart.isPending || removeFromCart.isPending
-                                        ? (addToCart.isPending ? 'Adding...' : 'Removing...')
-                                        : isUnavailable
-                                            ? 'Out of Stock'
-                                            : showSuccess
-                                                ? 'Added!'
-                                                : isInCart
-                                                    ? 'Remove From Cart'
-                                                    : 'Add To Shopping Cart'}
-                                </span>
-                                <svg
-                                    width="30"
-                                    height="12"
-                                    viewBox="0 0 37 14"
-                                    fill="none"
+                            {isInCart && cartItemId ? (
+                                <div className="flex flex-1 flex-col gap-2">
+                                    <div className="flex items-center border border-black">
+                                        <button
+                                            onClick={() => updateCartItem.mutate({ itemId: cartItemId, action: 'minus' })}
+                                            disabled={cartItemQuantity <= 1 || updateCartItem.isPending}
+                                            className="flex h-12 w-12 shrink-0 items-center justify-center font-beatrice text-xl font-semibold transition-colors hover:bg-neutral-100 disabled:opacity-30"
+                                        >
+                                            −
+                                        </button>
+                                        <span className="flex-1 text-center font-beatrice text-base font-semibold">
+                                            {cartItemQuantity}
+                                        </span>
+                                        <button
+                                            onClick={() => updateCartItem.mutate({ itemId: cartItemId, action: 'plus' })}
+                                            disabled={updateCartItem.isPending}
+                                            className="flex h-12 w-12 shrink-0 items-center justify-center font-beatrice text-xl font-semibold transition-colors hover:bg-neutral-100 disabled:opacity-50"
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={() => removeFromCart.mutate(cartItemId)}
+                                        disabled={removeFromCart.isPending}
+                                        className="flex h-10 w-full items-center justify-between bg-red-600 px-3 font-beatrice text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50 md:px-5"
+                                    >
+                                        <span>{removeFromCart.isPending ? 'Removing...' : 'Remove From Cart'}</span>
+                                        <svg width="24" height="10" viewBox="0 0 37 14" fill="none">
+                                            <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleCartAction}
+                                    disabled={addToCart.isPending || isUnavailable}
+                                    className={`flex h-12 flex-1 items-center justify-between px-3 font-beatrice text-base font-semibold text-white transition-all disabled:opacity-50 md:px-5 md:text-[20px] ${showSuccess ? 'bg-green-600' : 'bg-black hover:bg-neutral-800'}`}
                                 >
-                                    <path
-                                        d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
-                                        stroke="white"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </button>
+                                    <span>
+                                        {addToCart.isPending
+                                            ? 'Adding...'
+                                            : isUnavailable
+                                                ? 'Out of Stock'
+                                                : showSuccess
+                                                    ? 'Added!'
+                                                    : 'Add To Shopping Cart'}
+                                    </span>
+                                    <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+                                        <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -459,9 +500,10 @@ export default function ProductDetail({ id }: { id: string }) {
                     <h2 className="mb-4 font-beatrice text-[18px] font-bold text-black">
                         Product Description
                     </h2>
-                    <p className="max-w-[700px] font-beatrice text-[14px] leading-relaxed text-[#5a5a5a]">
-                        {product.description}
-                    </p>
+                    <div
+                        className="max-w-[700px] font-beatrice text-[14px] leading-relaxed text-[#5a5a5a] [&_strong]:font-bold [&_em]:italic [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1 [&_a]:underline [&_a]:text-black [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mb-2 [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mb-1 [&_p]:mb-2 [&_br]:block"
+                        dangerouslySetInnerHTML={{ __html: product.description }}
+                    />
                 </div>
             </section>
             <SwiperSection

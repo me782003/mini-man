@@ -73,6 +73,7 @@ export default function FavoritesClient() {
                                         src={item.image_url}
                                         alt={item.name}
                                         className="h-full w-full object-contain"
+                                        onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
                                     />
                                 </div>
 

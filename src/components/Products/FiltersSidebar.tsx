@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useId, useState } from 'react';
 import { X } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCatalogFilters } from '@/lib/hooks/useCatalog';
+import type { CatalogCategory } from '@/lib/hooks/useCatalog';
 import { Slider } from '@/components/ui/slider';
 
 interface AccordionSectionProps {
@@ -19,9 +20,9 @@ interface FiltersSidebarProps {
 
 interface LocalFilters {
   sizes: string[];
-  categoryId: number | null;
-  subCategoryId: number | null;
-  collectionId: number | null;
+  categoryIds: number[];
+  subCategoryIds: number[];
+  collectionIds: number[];
   isAvailable: string | null;
   minPrice: number | null;
   maxPrice: number | null;
@@ -50,12 +51,124 @@ function AccordionSection({ title, children, defaultOpen = false }: AccordionSec
   );
 }
 
+function parseIds(param: string | null): number[] {
+  return param?.split(',').filter(Boolean).map(Number) ?? [];
+}
+
+const SIZES_VISIBLE = 8;
+
+function SizesSection({ sizes, selected, loading, onToggle }: {
+  sizes: string[];
+  selected: string[];
+  loading: boolean;
+  onToggle: (size: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? sizes : sizes.slice(0, SIZES_VISIBLE);
+
+  return (
+    <div className="border-t border-gray-200 py-6">
+      <p className="mb-5 font-beatrice text-[16px] font-bold text-black">Size</p>
+      {loading ? (
+        <div className="flex flex-wrap gap-2">
+          {Array.from({ length: SIZES_VISIBLE }).map((_, i) => (
+            <div key={i} className="h-9 w-9 animate-pulse bg-neutral-200" />
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-2">
+            {visible.map((size) => {
+              const isSelected = selected.includes(size);
+              return (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => onToggle(size)}
+                  aria-pressed={isSelected}
+                  className={`h-9 min-w-[36px] border px-2 text-[13px] font-beatrice font-medium transition-colors ${isSelected ? 'border-black bg-black text-white' : 'border-gray-300 bg-white text-black hover:border-black'}`}
+                >
+                  {size}
+                </button>
+              );
+            })}
+          </div>
+          {sizes.length > SIZES_VISIBLE && (
+            <button
+              type="button"
+              onClick={() => setExpanded((p) => !p)}
+              className="mt-3 font-beatrice text-[13px] text-gray-500 underline underline-offset-2 hover:text-black"
+            >
+              {expanded ? 'See less' : `See more (${sizes.length - SIZES_VISIBLE})`}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+const CATS_VISIBLE = 6;
+
+function CategoriesList({ categories, categoryIds, subCategoryIds, onCategoryChange, onSubCategoryChange }: {
+  categories: CatalogCategory[];
+  categoryIds: number[];
+  subCategoryIds: number[];
+  onCategoryChange: (cat: CatalogCategory) => void;
+  onSubCategoryChange: (catId: number, subId: number) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? categories : categories.slice(0, CATS_VISIBLE);
+
+  return (
+    <div className="flex flex-col gap-1">
+      {visible.map((cat) => (
+        <div key={cat.id}>
+          <label className="flex cursor-pointer items-center gap-2.5 py-1">
+            <input
+              type="checkbox"
+              checked={categoryIds.includes(cat.id)}
+              onChange={() => onCategoryChange(cat)}
+              className="h-4 w-4 cursor-pointer accent-black"
+            />
+            <span className="font-beatrice text-[14px] font-medium text-black">{cat.name}</span>
+          </label>
+          {(cat.subcategories?.length ?? 0) > 0 && (
+            <div className="ml-6 flex flex-col gap-0.5">
+              {cat.subcategories.map((sub) => (
+                <label key={sub.id} className="flex cursor-pointer items-center gap-2.5 py-0.5">
+                  <input
+                    type="checkbox"
+                    checked={subCategoryIds.includes(sub.id)}
+                    onChange={() => onSubCategoryChange(cat.id, sub.id)}
+                    className="h-4 w-4 cursor-pointer accent-black"
+                  />
+                  <span className="font-beatrice text-[13px] text-gray-600">{sub.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+      {categories.length > CATS_VISIBLE && (
+        <button
+          type="button"
+          onClick={() => setExpanded((p) => !p)}
+          className="mt-1 text-left font-beatrice text-[13px] text-gray-500 underline underline-offset-2 hover:text-black"
+        >
+          {expanded ? 'See less' : `See more (${categories.length - CATS_VISIBLE})`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function readFiltersFromParams(searchParams: ReturnType<typeof useSearchParams>, priceMin: number, priceMax: number): LocalFilters {
   return {
     sizes: searchParams.get('size_name')?.split(',').filter(Boolean) ?? [],
-    categoryId: searchParams.get('category_id') ? Number(searchParams.get('category_id')) : null,
-    subCategoryId: searchParams.get('sub_category_id') ? Number(searchParams.get('sub_category_id')) : null,
-    collectionId: searchParams.get('collection_id') ? Number(searchParams.get('collection_id')) : null,
+    categoryIds: parseIds(searchParams.get('category_id')),
+    subCategoryIds: parseIds(searchParams.get('sub_category_id')),
+    collectionIds: parseIds(searchParams.get('collection_id')),
     isAvailable: searchParams.get('is_available'),
     minPrice: searchParams.get('min_price') ? Number(searchParams.get('min_price')) : priceMin,
     maxPrice: searchParams.get('max_price') ? Number(searchParams.get('max_price')) : priceMax,
@@ -74,9 +187,9 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
 
   const [local, setLocal] = useState<LocalFilters>({
     sizes: [],
-    categoryId: null,
-    subCategoryId: null,
-    collectionId: null,
+    categoryIds: [],
+    subCategoryIds: [],
+    collectionIds: [],
     isAvailable: null,
     minPrice: priceMin,
     maxPrice: priceMax,
@@ -105,9 +218,9 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
     if (search) params.set('search', search);
 
     if (local.sizes.length > 0) params.set('size_name', local.sizes.join(','));
-    if (local.collectionId != null) params.set('collection_id', String(local.collectionId));
-    if (local.categoryId != null) params.set('category_id', String(local.categoryId));
-    if (local.subCategoryId != null) params.set('sub_category_id', String(local.subCategoryId));
+    if (local.collectionIds.length > 0) params.set('collection_id', local.collectionIds.join(','));
+    if (local.categoryIds.length > 0) params.set('category_id', local.categoryIds.join(','));
+    if (local.subCategoryIds.length > 0) params.set('sub_category_id', local.subCategoryIds.join(','));
     if (local.isAvailable != null) params.set('is_available', local.isAvailable);
     if (local.minPrice != null && local.minPrice > priceMin) params.set('min_price', String(local.minPrice));
     if (local.maxPrice != null && local.maxPrice < priceMax) params.set('max_price', String(local.maxPrice));
@@ -119,9 +232,9 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
   function clearAll() {
     const fresh: LocalFilters = {
       sizes: [],
-      categoryId: null,
-      subCategoryId: null,
-      collectionId: null,
+      categoryIds: [],
+      subCategoryIds: [],
+      collectionIds: [],
       isAvailable: null,
       minPrice: priceMin,
       maxPrice: priceMax,
@@ -155,33 +268,12 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
         </div>
 
         {/* Sizes */}
-        <div className="border-t border-gray-200 py-6">
-          <p className="mb-5 font-beatrice text-[16px] font-bold text-black">Size</p>
-          {filtersLoading ? (
-            <div className="flex flex-wrap gap-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-9 w-9 animate-pulse bg-neutral-200" />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {(filters?.sizes ?? []).map((size) => {
-                const isSelected = local.sizes.includes(size);
-                return (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => toggleSize(size)}
-                    aria-pressed={isSelected}
-                    className={`h-9 min-w-[36px] border px-2 text-[13px] font-beatrice font-medium transition-colors ${isSelected ? 'border-black bg-black text-white' : 'border-gray-300 bg-white text-black hover:border-black'}`}
-                  >
-                    {size}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <SizesSection
+          sizes={filters?.sizes ?? []}
+          selected={local.sizes}
+          loading={filtersLoading}
+          onToggle={toggleSize}
+        />
 
         {/* Collections */}
         {(filtersLoading || (filters?.collections?.length ?? 0) > 0) && (
@@ -192,23 +284,17 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
               </div>
             ) : (
               <div className="flex flex-col gap-2.5">
-                <label className="flex cursor-pointer items-center gap-2.5">
-                  <input
-                    type="radio"
-                    name="collection"
-                    checked={local.collectionId === null}
-                    onChange={() => setLocal((p) => ({ ...p, collectionId: null }))}
-                    className="h-4 w-4 cursor-pointer accent-black"
-                  />
-                  <span className="font-beatrice text-[14px] text-black">All</span>
-                </label>
                 {filters?.collections.map((col) => (
                   <label key={col.id} className="flex cursor-pointer items-center gap-2.5">
                     <input
-                      type="radio"
-                      name="collection"
-                      checked={local.collectionId === col.id}
-                      onChange={() => setLocal((p) => ({ ...p, collectionId: col.id }))}
+                      type="checkbox"
+                      checked={local.collectionIds.includes(col.id)}
+                      onChange={() => setLocal((p) => ({
+                        ...p,
+                        collectionIds: p.collectionIds.includes(col.id)
+                          ? p.collectionIds.filter((id) => id !== col.id)
+                          : [...p.collectionIds, col.id],
+                      }))}
                       className="h-4 w-4 cursor-pointer accent-black"
                     />
                     <span className="font-beatrice text-[14px] text-black">{col.name}</span>
@@ -226,59 +312,30 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
               {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-4 w-2/3 animate-pulse rounded bg-neutral-200" />)}
             </div>
           ) : (
-            <div className="flex flex-col gap-2.5">
-              <label className="flex cursor-pointer items-center gap-2.5">
-                <input
-                  type="radio"
-                  name="category"
-                  checked={local.categoryId === null}
-                  onChange={() => setLocal((p) => ({ ...p, categoryId: null, subCategoryId: null }))}
-                  className="h-4 w-4 cursor-pointer accent-black"
-                />
-                <span className="font-beatrice text-[14px] font-medium text-black">All</span>
-              </label>
-              {filters?.categories.map((cat) => (
-                <div key={cat.id}>
-                  <label className="flex cursor-pointer items-center gap-2.5">
-                    <input
-                      type="radio"
-                      name="category"
-                      checked={local.categoryId === cat.id}
-                      onChange={() => setLocal((p) => ({ ...p, categoryId: cat.id, subCategoryId: null }))}
-                      className="h-4 w-4 cursor-pointer accent-black"
-                    />
-                    <span className="font-beatrice text-[14px] font-medium text-black">{cat.name}</span>
-                  </label>
-
-                  {local.categoryId === cat.id && (cat.sub_categories?.length ?? 0) > 0 && (
-                    <div className="ml-6 mt-2 flex flex-col gap-2">
-                      <label className="flex cursor-pointer items-center gap-2.5">
-                        <input
-                          type="radio"
-                          name="sub_category"
-                          checked={local.subCategoryId === null}
-                          onChange={() => setLocal((p) => ({ ...p, subCategoryId: null }))}
-                          className="h-4 w-4 cursor-pointer accent-black"
-                        />
-                        <span className="font-beatrice text-[13px] text-black">All</span>
-                      </label>
-                      {(cat.sub_categories ?? []).map((sub) => (
-                        <label key={sub.id} className="flex cursor-pointer items-center gap-2.5">
-                          <input
-                            type="radio"
-                            name="sub_category"
-                            checked={local.subCategoryId === sub.id}
-                            onChange={() => setLocal((p) => ({ ...p, subCategoryId: sub.id }))}
-                            className="h-4 w-4 cursor-pointer accent-black"
-                          />
-                          <span className="font-beatrice text-[13px] text-black">{sub.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+            <CategoriesList
+              categories={filters?.categories ?? []}
+              categoryIds={local.categoryIds}
+              subCategoryIds={local.subCategoryIds}
+              onCategoryChange={(cat) => setLocal((p) => {
+                const removing = p.categoryIds.includes(cat.id);
+                const subIds = cat.subcategories?.map((s) => s.id) ?? [];
+                return {
+                  ...p,
+                  categoryIds: removing
+                    ? p.categoryIds.filter((id) => id !== cat.id)
+                    : [...p.categoryIds, cat.id],
+                  subCategoryIds: removing
+                    ? p.subCategoryIds.filter((id) => !subIds.includes(id))
+                    : [...p.subCategoryIds.filter((id) => !subIds.includes(id)), ...subIds],
+                };
+              })}
+              onSubCategoryChange={(catId, subId) => setLocal((p) => ({
+                ...p,
+                subCategoryIds: p.subCategoryIds.includes(subId)
+                  ? p.subCategoryIds.filter((id) => id !== subId)
+                  : [...p.subCategoryIds, subId],
+              }))}
+            />
           )}
         </AccordionSection>
 

@@ -33,10 +33,13 @@ export default function SavedAddressesClient() {
         setForm({
             first_name: address.first_name,
             last_name: address.last_name,
+            phone: address.phone,
             city: address.city,
             street_address: address.street_address,
             apartment: address.apartment ?? '',
             country_id: address.country_id,
+            latitude: address.latitude ?? null,
+            longitude: address.longitude ?? null,
             is_default: address.is_default === 1,
         });
         setModal({ open: true, mode: 'edit', editId: address.id });

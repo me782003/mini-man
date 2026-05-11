@@ -92,3 +92,17 @@ export function useChangePassword() {
       post<{ data: object; message: string; error: string }>('/user/auth/change-password', payload),
   });
 }
+
+export interface GoogleAuthPayload {
+  google_id: string;
+  email: string;
+  name: string;
+  picture: string;
+}
+
+export function useGoogleAuth() {
+  return useMutation({
+    mutationFn: (payload: GoogleAuthPayload) =>
+      post<AuthResponse>('/user/auth/google', payload),
+  });
+}

@@ -1,54 +1,65 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import CheckoutStepper from '@/components/CheckoutStepper';
 import OrderSummary from '@/components/OrderSummary';
-
-interface OrderItem {
-    id: number;
-    image: string;
-    category: string;
-    title: string;
-    price: number;
-    color: string;
-    size: number;
-}
-
-const ORDER_ITEMS: OrderItem[] = [
-    {
-        id: 1,
-        image: '/images/image 9.png',
-        category: "Men's Shoes",
-        title: 'Nike Air Max Plus',
-        price: 2590,
-        color: '#9ea0a3',
-        size: 41,
-    },
-    {
-        id: 2,
-        image: '/images/image 10.png',
-        category: "Men's Shoes",
-        title: 'Nike Air Max Plus',
-        price: 2000,
-        color: '#c4a882',
-        size: 44,
-    },
-];
-
-const SHIPPING_INFO = {
-    name: 'Ahmed Al Saud',
-    phone: '+20 15578 15 853',
-    address: 'Cairo, Building 123',
-    country: 'Egypt, 12345',
-};
-
-const PAYMENT_METHOD = 'Credit/Debit Card';
-
-const SUBTOTAL = 2590;
-const FIXED_DISCOUNT = 500;
+import { useCheckout, useValidateCoupon } from '@/lib/hooks/useOrders';
+import { useCart } from '@/lib/hooks/useCart';
 
 export default function CheckoutClient() {
     const currentStep = 2;
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const coupon = searchParams.get('coupon') ?? undefined;
+    const checkout = useCheckout();
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
+    const { data: cartResponse, isLoading: cartLoading } = useCart();
+    const items = cartResponse?.data.items ?? [];
+    const summary = cartResponse?.data.summary;
+    const subtotal = Number(summary?.subtotal ?? 0);
+
+    const validateCoupon = useValidateCoupon();
+    useEffect(() => {
+        if (coupon && subtotal > 0) {
+            validateCoupon.mutate({ code: coupon, cart_amount: subtotal });
+        }
+    }, [coupon, subtotal]);
+
+    const discountAmount = validateCoupon.data
+        ? (() => {
+            const c = validateCoupon.data.data;
+            if (c.type === 'percentage') {
+                const d = (subtotal * parseFloat(c.value)) / 100;
+                return Math.min(d, parseFloat(c.max_discount));
+            }
+            return parseFloat(c.value);
+        })()
+        : 0;
+
+    useEffect(() => {
+        if (!cartLoading && items.length === 0) {
+            router.replace('/cart');
+        }
+    }, [cartLoading, items.length]);
+
+    const handleCompleteOrder = () => {
+        setCheckoutError(null);
+        checkout.mutate(coupon, {
+            onSuccess: ({ status }) => {
+                if (status === 201) {
+                    router.push('/account/orders');
+                } else {
+                    router.push('/payment');
+                }
+            },
+            onError: (err: any) => {
+                setCheckoutError(err.message || 'Failed to place order. Please try again.');
+            },
+        });
+    };
 
     return (
         <div className="container">
@@ -78,10 +89,10 @@ export default function CheckoutClient() {
                             Shipping
                         </h2>
                         <div className="space-y-1">
-                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">{SHIPPING_INFO.name}</p>
-                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">{SHIPPING_INFO.phone}</p>
-                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">{SHIPPING_INFO.address}</p>
-                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">{SHIPPING_INFO.country}</p>
+                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">Ahmed Al Saud</p>
+                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">+20 15578 15 853</p>
+                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">Cairo, Building 123</p>
+                            <p className="font-beatrice text-[14px] text-[#616161] font-medium">Egypt, 12345</p>
                         </div>
                     </div>
 
@@ -90,81 +101,94 @@ export default function CheckoutClient() {
                         <h2 className="mb-4 font-beatrice text-[20px] font-bold text-black">
                             Payment
                         </h2>
-                        <p className="font-beatrice text-[14px] text-black">{PAYMENT_METHOD}</p>
+                        <p className="font-beatrice text-[14px] text-black">Cash on Delivery</p>
                     </div>
 
                     {/* Products box */}
                     <div className="border border-[#E0E0E0] bg-[#F5F5F5] p-5">
-                        <div className="flex flex-col gap-5  divide-gray-200">
-                            {ORDER_ITEMS.map(item => (
-                                <div key={item.id} className="flex gap-5 ">
-                                    {/* Image */}
-                                    <div className="h-[126px] w-[126px] md:h-[159px] md:w-[159px] shrink-0 bg-[#e8e8e8] flex items-center justify-center">
-                                        <img
-                                            src={item.image}
-                                            alt={item.title}
-                                            className="h-full w-full object-contain border-[#D7D7D7]"
-                                        />
-                                    </div>
+                        {cartLoading ? (
+                            <div className="flex justify-center py-8">
+                                <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-black" />
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-5 divide-gray-200">
+                                {items.map(item => (
+                                    <div key={item.cart_item_id} className="flex gap-5">
+                                        {/* Image */}
+                                        <div className="h-[126px] w-[126px] md:h-[159px] md:w-[159px] shrink-0 bg-[#e8e8e8] flex items-center justify-center">
+                                            <img
+                                                src={item.product.image_url}
+                                                alt={item.product.name}
+                                                className="h-full w-full object-contain border-[#D7D7D7]"
+                                                onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
+                                            />
+                                        </div>
 
-                                    {/* Details */}
-                                    <div className="flex-1">
-                                        <p className="font-beatrice text-[12px] md:text-[14px] font-medium text-gray-500 mb-0.5">
-                                            {item.category}
-                                        </p>
-                                        <h3 className="font-beatrice font-medium text-[14px] md:text-[20px] text-black mb-1">
-                                            {item.title}
-                                        </h3>
-                                        <p className="font-beatrice text-[14px] md:text-[20px] font-extrabold text-black mb-3">
-                                            {item.price.toLocaleString()} EGP
-                                        </p>
-                                        <div className="flex flex-col items-start gap-1 md:gap-2 font-beatrice text-[12px] md:text-[13px] text-black">
-                                            <span className="flex items-center gap-1.5">
-                                                Color
-                                                <span
-                                                    className="inline-block h-5 w-5 rounded-full border border-gray-200"
-                                                    style={{ backgroundColor: item.color }}
-                                                />
-                                            </span>
-                                            <div></div>
-                                            <span>
-                                                Size{' '}
-                                                <span className="font-semibold">{item.size}</span>
-                                            </span>
+                                        {/* Details */}
+                                        <div className="flex-1">
+                                            <h3 className="font-beatrice font-medium text-[14px] md:text-[20px] text-black mb-1">
+                                                {item.product.name}
+                                            </h3>
+                                            <p className="font-beatrice text-[14px] md:text-[20px] font-extrabold text-black mb-3">
+                                                {item.total_item_price.toLocaleString()} EGP
+                                            </p>
+                                            <div className="flex flex-col items-start gap-1 md:gap-2 font-beatrice text-[12px] md:text-[13px] text-black">
+                                                <span className="flex items-center gap-1.5">
+                                                    Color
+                                                    <span
+                                                        className="inline-block h-5 w-5 rounded-full border border-gray-200"
+                                                        style={{ backgroundColor: item.variant.color_hexa }}
+                                                    />
+                                                </span>
+                                                <span>
+                                                    Size{' '}
+                                                    <span className="font-semibold">{item.variant.size}</span>
+                                                </span>
+                                                {item.quantity > 1 && (
+                                                    <span>Qty <span className="font-semibold">{item.quantity}</span></span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Right: Order Summary */}
-                <OrderSummary subtotal={SUBTOTAL} discount={FIXED_DISCOUNT} >
-                    <button className="  hidden md:flex w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800">
-                        <span>Complete the request</span>
+                <OrderSummary
+                    summary={summary}
+                    isLoading={cartLoading}
+                    couponCode={coupon}
+                    discountAmount={discountAmount || undefined}
+                >
+                    {checkoutError && (
+                        <p className="mb-3 text-sm text-red-500 font-beatrice">{checkoutError}</p>
+                    )}
+                    <button
+                        onClick={handleCompleteOrder}
+                        disabled={checkout.isPending}
+                        className="hidden md:flex w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] md:text-[20px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-50"
+                    >
+                        <span>{checkout.isPending ? 'Placing order...' : 'Complete the request'}</span>
                         <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
-                            <path
-                                d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
+                            <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </button>
                 </OrderSummary>
 
-                <button className=" flex md:hidden w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800">
-                    <span>Complete the request</span>
+                {checkoutError && (
+                    <p className="flex md:hidden mb-2 text-sm text-red-500 font-beatrice">{checkoutError}</p>
+                )}
+                <button
+                    onClick={handleCompleteOrder}
+                    disabled={checkout.isPending}
+                    className="flex md:hidden w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] md:text-[20px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-50"
+                >
+                    <span>{checkout.isPending ? 'Placing order...' : 'Complete the request'}</span>
                     <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
-                        <path
-                            d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
-                            stroke="white"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                        />
+                        <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </button>
             </div>

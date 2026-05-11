@@ -1,26 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { AuthUser } from './useAuth';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { clearProfile } from '@/lib/store/features/profileSlice';
+import { RootState } from '@/lib/store/store';
 
 export function useAuthState() {
-  const [user, setUser] = useState<AuthUser | null>(null);
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    const raw = localStorage.getItem('user');
-    if (raw) setUser(JSON.parse(raw));
-  }, []);
+  const profile = useSelector((state: RootState) => state.profile);
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax';
     dispatch(clearProfile());
-    setUser(null);
     window.location.href = '/login';
   };
 
-  return { user, isLoggedIn: !!user, logout };
+  return { user: profile.id ? profile : null, isLoggedIn: !!profile.id, logout };
 }

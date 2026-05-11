@@ -70,9 +70,9 @@ export interface CatalogQuery {
   page?: number;
   per_page?: number;
   search?: string;
-  category_id?: number;
-  sub_category_id?: number;
-  collection_id?: number;
+  category_id?: string;
+  sub_category_id?: string;
+  collection_id?: string;
   size_name?: string;
   min_price?: number;
   max_price?: number;
@@ -91,7 +91,7 @@ export interface CatalogCategory {
   id: number;
   name: string;
   products_count: number;
-  sub_categories: CatalogSubCategory[];
+  subcategories: CatalogSubCategory[];
 }
 
 export interface CatalogCollection {
@@ -123,20 +123,25 @@ export interface CatalogFiltersResponse {
 
 function buildUrl(query: CatalogQuery): string {
   const params = new URLSearchParams();
-  if (query.page)            params.set('page', String(query.page));
-  if (query.per_page)        params.set('per_page', String(query.per_page));
-  if (query.search)          params.set('search', query.search);
-  if (query.category_id)     params.set('category_id', String(query.category_id));
-  if (query.sub_category_id) params.set('sub_category_id', String(query.sub_category_id));
-  if (query.collection_id)   params.set('collection_id', String(query.collection_id));
-  if (query.size_name)       params.set('size_name', query.size_name);
-  if (query.min_price != null) params.set('min_price', String(query.min_price));
-  if (query.max_price != null) params.set('max_price', String(query.max_price));
+  if (query.page)               params.set('page', String(query.page));
+  if (query.per_page)           params.set('per_page', String(query.per_page));
+  if (query.search)             params.set('search', query.search);
+  if (query.size_name)          params.set('size_name', query.size_name);
+  if (query.min_price != null)  params.set('min_price', String(query.min_price));
+  if (query.max_price != null)  params.set('max_price', String(query.max_price));
   if (query.is_available != null) params.set('is_available', String(query.is_available));
-  if (query.sort_by)         params.set('sort_by', query.sort_by);
-  if (query.sort_order)      params.set('sort_order', query.sort_order);
+  if (query.sort_by)            params.set('sort_by', query.sort_by);
+  if (query.sort_order)         params.set('sort_order', query.sort_order);
+
+  // Append comma-separated IDs without encoding the comma
+  const parts: string[] = [];
   const qs = params.toString();
-  return `/user/catalog/products${qs ? `?${qs}` : ''}`;
+  if (qs) parts.push(qs);
+  if (query.category_id)     parts.push(`category_id=${query.category_id}`);
+  if (query.sub_category_id) parts.push(`sub_category_id=${query.sub_category_id}`);
+  if (query.collection_id)   parts.push(`collection_id=${query.collection_id}`);
+
+  return `/user/catalog/products${parts.length ? `?${parts.join('&')}` : ''}`;
 }
 
 export function useCatalogFilters() {

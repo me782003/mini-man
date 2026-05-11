@@ -25,7 +25,7 @@ export default async function RootLayout({
       dir={dir}
       suppressHydrationWarning className={cn("font-sans", geist.variable)}
     >
-      <body>{children}</body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

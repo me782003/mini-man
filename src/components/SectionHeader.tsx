@@ -1,7 +1,7 @@
 import React, { JSX } from "react";
 
 interface SectionHeaderProps {
-    primaryTitle?: string;
+    primaryTitle?: string | React.ReactNode;
     secondaryTitle?: string;
     count?: number;
     seeAllHref?: string;

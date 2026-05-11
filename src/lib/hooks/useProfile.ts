@@ -9,11 +9,14 @@ export interface Address {
     id: number;
     first_name: string;
     last_name: string;
+    phone: string;
     city: string;
     street_address: string;
     apartment: string | null;
     country_id: number;
     country_name?: string;
+    latitude?: number | null;
+    longitude?: number | null;
     is_default: number;
 }
 

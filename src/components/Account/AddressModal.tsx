@@ -1,26 +1,33 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { Search, ChevronDown, Check } from 'lucide-react';
 import { useCountries } from '@/lib/hooks/useCountries';
 
 export interface AddressForm {
     first_name: string;
     last_name: string;
+    phone: string;
     city: string;
     street_address: string;
     apartment: string;
     country_id: number;
+    latitude: number | null;
+    longitude: number | null;
     is_default: boolean;
 }
 
 export const EMPTY_FORM: AddressForm = {
     first_name: '',
     last_name: '',
+    phone: '',
     city: '',
     street_address: '',
     apartment: '',
     country_id: 0,
+    latitude: null,
+    longitude: null,
     is_default: false,
 };
 
@@ -47,8 +54,11 @@ export default function AddressModal({
 }: AddressModalProps) {
     const { data: countries = [] } = useCountries();
     const selectedCountry = countries.find(c => c.id === form.country_id);
+    const singleCountry = countries.length === 1;
 
     if (typeof document === 'undefined') return null;
+
+    console.log("form", form);
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -79,32 +89,23 @@ export default function AddressModal({
                     />
                 </div>
 
+                {/* Phone */}
+                <input
+                    name="phone"
+                    value={form.phone}
+                    onChange={onChange}
+                    placeholder="Phone Number"
+                    className="mb-4 w-full border border-gray-300 px-4 py-3 font-beatrice text-[14px] text-black placeholder:text-gray-400 focus:border-black focus:outline-none"
+                />
+
                 {/* Country select */}
-                <div className="relative mb-4">
-                    <select
-                        value={form.country_id || ''}
-                        onChange={e => onCountryChange(Number(e.target.value))}
-                        className="w-full appearance-none border border-gray-300 bg-white px-4 py-3 font-beatrice text-[14px] text-black focus:border-black focus:outline-none"
-                    >
-                        <option value="" disabled>
-                            Select Country
-                        </option>
-                        {countries.map(c => (
-                            <option key={c.id} value={c.id}>
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
-                    {selectedCountry ? (
-                        <img
-                            src={selectedCountry.flag_url}
-                            alt={selectedCountry.name}
-                            className="pointer-events-none absolute right-8 top-1/2 h-4 w-6 -translate-y-1/2 object-cover"
-                        />
-                    ) : null}
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-                        ▾
-                    </span>
+                <div className="mb-4">
+                    <CountryCombobox
+                        countries={countries}
+                        value={form.country_id}
+                        onChange={onCountryChange}
+                        disabled={singleCountry}
+                    />
                 </div>
 
                 {/* Street */}
@@ -187,5 +188,104 @@ export default function AddressModal({
             </div>
         </div>,
         document.body
+    );
+}
+
+interface CountryComboboxProps {
+    countries: import('@/lib/hooks/useCountries').Country[];
+    value: number;
+    onChange: (id: number) => void;
+    disabled?: boolean;
+}
+
+function CountryCombobox({ countries, value, onChange, disabled }: CountryComboboxProps) {
+    const [open, setOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const ref = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const selected = countries.find(c => c.id === value);
+    const filtered = countries.filter(c =>
+        c.name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    useEffect(() => {
+        if (countries.length === 1 && value !== countries[0].id) {
+            onChange(countries[0].id);
+        }
+    }, [countries]);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setOpen(false);
+                setSearch('');
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    useEffect(() => {
+        if (open) inputRef.current?.focus();
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                type="button"
+                disabled={disabled}
+                onClick={() => { setOpen(v => !v); setSearch(''); }}
+                className={`flex w-full items-center justify-between border px-4 py-3 font-beatrice text-[14px] transition-colors ${open ? 'border-black' : 'border-gray-300'} ${disabled ? 'cursor-not-allowed bg-gray-50 opacity-70' : 'bg-white hover:border-gray-400'}`}
+            >
+                <span className="flex items-center gap-2">
+                    {selected ? (
+                        <>
+                            <img src={selected.flag_url} alt={selected.name} className="h-4 w-6 object-cover" />
+                            <span className="text-black">{selected.name}</span>
+                        </>
+                    ) : (
+                        <span className="text-gray-400">Select Country</span>
+                    )}
+                </span>
+                <ChevronDown size={16} className={`text-gray-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute left-0 right-0 top-full z-50 border border-t-0 border-gray-300 bg-white shadow-lg">
+                    <div className="flex items-center gap-2 border-b border-gray-200 px-3 py-2">
+                        <Search size={14} className="shrink-0 text-gray-400" />
+                        <input
+                            ref={inputRef}
+                            value={search}
+                            onChange={e => setSearch(e.target.value)}
+                            placeholder="Search country…"
+                            className="w-full font-beatrice text-[13px] text-black placeholder:text-gray-400 outline-none"
+                        />
+                    </div>
+                    <ul className="max-h-48 overflow-y-auto">
+                        {filtered.length === 0 ? (
+                            <li className="px-4 py-3 font-beatrice text-[13px] text-gray-400">No results</li>
+                        ) : (
+                            filtered.map(c => (
+                                <li key={c.id}>
+                                    <button
+                                        type="button"
+                                        onClick={() => { onChange(c.id); setOpen(false); setSearch(''); }}
+                                        className="flex w-full items-center justify-between px-4 py-2.5 font-beatrice text-[14px] text-black transition-colors hover:bg-gray-50"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <img src={c.flag_url} alt={c.name} className="h-4 w-6 object-cover" />
+                                            {c.name}
+                                        </span>
+                                        {c.id === value && <Check size={14} className="text-black" />}
+                                    </button>
+                                </li>
+                            ))
+                        )}
+                    </ul>
+                </div>
+            )}
+        </div>
     );
 }

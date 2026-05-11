@@ -81,7 +81,7 @@ type ProductItem = {
 };
 
 interface SwiperSectionProps {
-    primaryTitle?: string;
+    primaryTitle?: string | React.ReactNode;
     secondaryTitle?: string;
     count?: number;
     seeAllHref?: string;

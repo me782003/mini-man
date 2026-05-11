@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useLogin } from '@/lib/hooks/useAuth';
+import { useDispatch } from 'react-redux';
+import { useQueryClient } from '@tanstack/react-query';
+import { useLogin, useGoogleAuth } from '@/lib/hooks/useAuth';
+import { setProfile } from '@/lib/store/features/profileSlice';
+import { GoogleLogin } from '@react-oauth/google';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -22,7 +26,10 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function LoginClient() {
   const router = useRouter();
+  const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const { mutate: login, isPending, isError, error } = useLogin();
+  const { mutate: googleAuth } = useGoogleAuth();
 
   const [form, setForm] = useState({ phone: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
@@ -30,7 +37,7 @@ export default function LoginClient() {
 
   const validate = () => {
     const errors: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.phone.trim())    errors.phone    = 'Phone number is required';
+    if (!form.phone.trim()) errors.phone = 'Phone number is required';
     if (!form.password.trim()) errors.password = 'Password is required';
     return errors;
   };
@@ -50,6 +57,8 @@ export default function LoginClient() {
       onSuccess: (res) => {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('user', JSON.stringify(res.data.user));
+        document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+        dispatch(setProfile(res.data.user));
         router.push('/account');
       },
     });
@@ -66,6 +75,38 @@ export default function LoginClient() {
             Welcome Back
           </h1>
           <p className="mt-2 font-cairo text-sm text-neutral-500">Sign in to your account</p>
+        </div>
+
+
+        <GoogleLogin
+          text='continue_with'
+          auto_select
+          onSuccess={credentialResponse => {
+            const token = credentialResponse.credential;
+            if (!token) return;
+            const { sub, email, name, picture } = JSON.parse(atob(token.split('.')[1]));
+            googleAuth(
+              { google_id: sub, email, name, picture },
+              {
+                onSuccess: (res) => {
+                  localStorage.setItem('token', res.data.token);
+                  localStorage.setItem('user', JSON.stringify(res.data.user));
+                  document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+                  dispatch(setProfile(res.data.user));
+                  queryClient.invalidateQueries({ queryKey: ['profile'] });
+                  router.push('/account');
+                },
+              }
+            );
+          }}
+          onError={() => console.log('Google login failed')}
+        />
+
+        {/* or deisgn */}
+        <div className="flex items-center my-7">
+          <div className="flex-1 border-b border-neutral-200"></div>
+          <div className="px-4 font-cairo text-sm text-neutral-500">OR</div>
+          <div className="flex-1 border-b border-neutral-200"></div>
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -121,6 +162,8 @@ export default function LoginClient() {
           </button>
         </form>
 
+
+
         <p className="mt-8 text-center font-cairo text-sm text-neutral-500">
           Don&apos;t have an account?{' '}
           <Link href="/register" className="font-semibold text-neutral-900 underline underline-offset-2 hover:opacity-70">
@@ -145,7 +188,6 @@ function Field({ label, error, children }: { label: string; error?: string; chil
 }
 
 function inputCls(hasError: boolean) {
-  return `h-[50px] w-full border px-4 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${
-    hasError ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'
-  }`;
+  return `h-[50px] w-full border px-4 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${hasError ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'
+    }`;
 }

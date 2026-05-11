@@ -29,15 +29,24 @@ export function SecurePaymentBadge() {
     );
 }
 
+import type { CartSummary } from '@/lib/hooks/useCart';
+
 interface OrderSummaryProps {
-    subtotal: number;
-    discount: number;
+    summary?: CartSummary;
+    isLoading?: boolean;
+    couponCode?: string;
+    discountAmount?: number;
     className?: string;
     children?: React.ReactNode;
 }
 
-export default function OrderSummary({ subtotal, discount, className, children }: OrderSummaryProps) {
-    const total = subtotal - discount;
+export default function OrderSummary({ summary, isLoading, couponCode, discountAmount, className, children }: OrderSummaryProps) {
+    const subtotal  = Number(summary?.subtotal ?? 0);
+    const tax       = Number(summary?.tax ?? 0);
+    const shipping  = Number(summary?.shipping ?? 0);
+    const discount  = discountAmount ?? Number(summary?.discount ?? 0);
+    const coupon    = couponCode ?? summary?.coupon_code ?? null;
+    const total     = subtotal - discount + shipping + tax;
 
     return (
         <div className={className ?? ' w-full md:w-[507px] shrink-0 border border-gray-200 p-5 md:p-10'}>
@@ -45,22 +54,42 @@ export default function OrderSummary({ subtotal, discount, className, children }
                 Order Summary
             </h2>
 
-            <div className="mb-4 space-y-[20px]">
-                <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
-                    <span className="text-gray-500">Subtotal</span>
-                    <span className="font-bold text-black">{subtotal.toLocaleString()} EGP</span>
+            {isLoading ? (
+                <div className="mb-6 space-y-4">
+                    {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-5 w-full animate-pulse rounded bg-gray-100" />
+                    ))}
                 </div>
-                <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
-                    <span className="text-gray-500">Shipping</span>
-                    <span className="font-bold text-black">??</span>
+            ) : (
+                <div className="mb-4 space-y-[20px]">
+                    <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
+                        <span className="text-gray-500">Subtotal</span>
+                        <span className="font-bold text-black">{subtotal.toLocaleString()} EGP</span>
+                    </div>
+                    {discount > 0 && (
+                        <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
+                            <span className="text-gray-500">
+                                Discount{coupon ? ` (${coupon})` : ''}
+                            </span>
+                            <span className="font-bold text-[#FF383C]">-{discount.toLocaleString()} EGP</span>
+                        </div>
+                    )}
+                    <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
+                        <span className="text-gray-500">Shipping</span>
+                        <span className="font-bold text-black">
+                            {shipping > 0 ? `${shipping.toLocaleString()} EGP` : 'Free'}
+                        </span>
+                    </div>
+                    {tax > 0 && (
+                        <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
+                            <span className="text-gray-500">Tax</span>
+                            <span className="font-bold text-black">{tax.toLocaleString()} EGP</span>
+                        </div>
+                    )}
                 </div>
-                <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
-                    <span className="text-gray-500">Discount</span>
-                    <span className="font-bold text-[#FF383C]">-{discount.toLocaleString()} EGP</span>
-                </div>
-            </div>
+            )}
 
-            <div className={` mb-6    border-t border-gray-200 pt-4`}>
+            <div className="mb-6 border-t border-gray-200 pt-4">
                 <div className="flex items-baseline justify-between font-beatrice">
                     <span className="text-[20px] font-bold text-black">Total</span>
                     <span className="text-[20px] font-extrabold text-black">{total.toLocaleString()} EGP</span>
@@ -68,6 +97,6 @@ export default function OrderSummary({ subtotal, discount, className, children }
             </div>
 
             {children}
-        </div >
+        </div>
     );
 }

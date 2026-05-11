@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Gift, LogOut, X } from 'lucide-react';
+import { LogOut, X } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
+import { useAuthState } from '@/lib/hooks/useAuthState';
 import {
     AccountOrdersHistoryIcon,
     AccountSavedAddressesIcon,
@@ -22,7 +23,7 @@ const NAV_ITEMS: NavItem[] = [
     { key: 'personal', label: 'Personal Information', icon: AccountUserIcon, href: '/account' },
     { key: 'orders', label: 'Order History', icon: AccountOrdersHistoryIcon, href: '/account/orders' },
     { key: 'addresses', label: 'Saved Addresses', icon: AccountSavedAddressesIcon, href: '/account/addresses' },
-    { key: 'rewards', label: 'Rewards points', icon: Gift, href: '/account/rewards' },
+    // { key: 'rewards', label: 'Rewards points', icon: Gift, href: '/account/rewards' },
 ];
 
 interface AccountSidebarProps {
@@ -34,6 +35,7 @@ interface AccountSidebarProps {
 
 export default function AccountSidebar({ activeTab, onTabChange, isOpen = false, onClose }: AccountSidebarProps) {
     const pathname = usePathname();
+    const { logout } = useAuthState();
 
     function isActive(item: NavItem): boolean {
         if (item.href) return pathname == (item.href);
@@ -88,7 +90,7 @@ export default function AccountSidebar({ activeTab, onTabChange, isOpen = false,
 
             <hr className="my-5 border-gray-200" />
 
-            <button className="flex w-full items-center gap-3 px-3 py-2.5 font-beatrice text-[14px] font-medium text-red-500 transition-colors hover:text-red-600">
+            <button onClick={logout} className="flex w-full items-center gap-3 px-3 py-2.5 font-beatrice text-[14px] font-medium text-red-500 transition-colors hover:text-red-600">
                 <LogOut size={15} strokeWidth={1.8} />
                 Log Out
             </button>

@@ -442,7 +442,7 @@ export default function ProductCard({
         >
             {/* Image area */}
             <div
-                className="relative aspect-square w-full overflow-hidden bg-[#e8e8e8]"
+                className="relative aspect-square  w-full overflow-hidden bg-[#e8e8e8]"
                 onMouseEnter={() => setHovered(true)}
                 onMouseLeave={() => setHovered(false)}
             >
@@ -452,6 +452,7 @@ export default function ProductCard({
                     alt={displayTitle}
                     className="absolute inset-0 h-full w-full object-contain"
                     style={{ animation: "imgFadeIn 0.35s ease forwards" }}
+                    onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
                 />
 
                 {/* Navigation */}
@@ -584,11 +585,11 @@ export default function ProductCard({
                         </span>
                     )}
                 </div>
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <button
                         onClick={handleCartAction}
                         disabled={addToCart.isPending || removeFromCart.isPending || !currentVariant?.variant_id}
-                        className={`flex h-10 w-full items-center justify-between px-4 font-beatrice text-sm font-semibold text-white transition-all disabled:opacity-50 ${showSuccess ? 'bg-green-600' : isInCart ? 'bg-red-600 hover:bg-red-700' : 'bg-black hover:bg-neutral-800'
+                        className={`flex h-10 w-full items-center justify-between px-4 font-beatrice text-sm font-semibold text-white transition-all disabled:opacity-50 ${showSuccess ? 'bg-green-600/70' : isInCart ? 'bg-red-600/70 hover:bg-red-700/70' : 'bg-black/70 hover:bg-neutral-800/70'
                             }`}
                     >
                         <span>
@@ -615,7 +616,7 @@ export default function ProductCard({
                             />
                         </svg>
                     </button>
-                </div>
+                </div> */}
             </div>
         </Link>
     );

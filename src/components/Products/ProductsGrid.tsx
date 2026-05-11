@@ -57,9 +57,9 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
   const query = {
     per_page: PER_PAGE,
     search: searchParams.get('search') || undefined,
-    category_id: searchParams.get('category_id') ? Number(searchParams.get('category_id')) : undefined,
-    sub_category_id: searchParams.get('sub_category_id') ? Number(searchParams.get('sub_category_id')) : undefined,
-    collection_id: searchParams.get('collection_id') ? Number(searchParams.get('collection_id')) : undefined,
+    category_id: searchParams.get('category_id') ?? undefined,
+    sub_category_id: searchParams.get('sub_category_id') ?? undefined,
+    collection_id: searchParams.get('collection_id') ?? undefined,
     size_name: searchParams.get('size_name') || undefined,
     min_price: searchParams.get('min_price') ? Number(searchParams.get('min_price')) : undefined,
     max_price: searchParams.get('max_price') ? Number(searchParams.get('max_price')) : undefined,

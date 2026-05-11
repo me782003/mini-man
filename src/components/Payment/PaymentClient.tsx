@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from '@/i18n/navigation';
+import { useRouter } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
 import CheckoutStepper from '@/components/CheckoutStepper';
 import OrderSummary, { SecurePaymentBadge } from '@/components/OrderSummary';
+import { useCart } from '@/lib/hooks/useCart';
+import { useValidateCoupon } from '@/lib/hooks/useOrders';
 
 function AppleIcon() {
     return (
@@ -13,12 +17,42 @@ function AppleIcon() {
     );
 }
 
-const FIXED_DISCOUNT = 500;
-const SUBTOTAL = 2590;
-
 type PaymentMethod = 'card' | 'apple';
 
 export default function PaymentClient() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const coupon = searchParams.get('coupon') ?? '';
+    const checkoutHref = coupon ? `/checkout?coupon=${encodeURIComponent(coupon)}` : '/checkout';
+    const { data: cartResponse, isLoading: cartLoading } = useCart();
+    const items = cartResponse?.data.items ?? [];
+    const summary = cartResponse?.data.summary;
+    const subtotal = Number(summary?.subtotal ?? 0);
+
+    const validateCoupon = useValidateCoupon();
+    useEffect(() => {
+        if (coupon && subtotal > 0) {
+            validateCoupon.mutate({ code: coupon, cart_amount: subtotal });
+        }
+    }, [coupon, subtotal]);
+
+    const discountAmount = validateCoupon.data
+        ? (() => {
+            const c = validateCoupon.data.data;
+            if (c.type === 'percentage') {
+                const d = (subtotal * parseFloat(c.value)) / 100;
+                return Math.min(d, parseFloat(c.max_discount));
+            }
+            return parseFloat(c.value);
+        })()
+        : 0;
+
+    useEffect(() => {
+        if (!cartLoading && items.length === 0) {
+            router.replace('/cart');
+        }
+    }, [cartLoading, items.length]);
+
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
     const [form, setForm] = useState({
         cardNumber: '',
@@ -158,24 +192,29 @@ export default function PaymentClient() {
                     )}
 
                     {/* Actions */}
-                    <Actions mobile={false} />
+                    <Actions mobile={false} checkoutHref={checkoutHref} />
                 </div>
 
                 {/* Order Summary */}
-                <OrderSummary subtotal={SUBTOTAL} discount={FIXED_DISCOUNT}>
+                <OrderSummary
+                    summary={cartResponse?.data?.summary}
+                    isLoading={cartLoading}
+                    couponCode={coupon || undefined}
+                    discountAmount={discountAmount || undefined}
+                >
                     <SecurePaymentBadge />
                 </OrderSummary>
             </div>
-            <Actions mobile={true} />
+            <Actions mobile={true} checkoutHref={checkoutHref} />
         </div>
     );
 }
 
 
 
-const Actions = ({ mobile, ...props }: { mobile?: boolean, props?: any }) => {
-    return <div className={`mt-5 md:mt-6 flex  gap-[10px] md:gap-4 ${mobile ? 'md:hidden' : 'hidden md:flex'}`} {...props}>
-        <Link href="/checkout" className={`flex w-full items-center justify-between bg-black px-[14px] md:px-5 py-[10px] md:py-3 font-beatrice text-[16px] md:text-[20px] font-semibold  text-white transition-colors hover:bg-neutral-800`}>
+const Actions = ({ mobile, checkoutHref }: { mobile?: boolean; checkoutHref: string }) => {
+    return <div className={`mt-5 md:mt-6 flex gap-[10px] md:gap-4 ${mobile ? 'md:hidden' : 'hidden md:flex'}`}>
+        <Link href={checkoutHref} className={`flex w-full items-center justify-between bg-black px-[14px] md:px-5 py-[10px] md:py-3 font-beatrice text-[16px] md:text-[20px] font-semibold text-white transition-colors hover:bg-neutral-800`}>
             <span>Continue to delivery</span>
             <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
                 <path

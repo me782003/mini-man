@@ -12,6 +12,7 @@ import TopCategories from './TopCategories';
 import SaleTicker from './SaleTicker';
 import { useAuthState } from '@/lib/hooks/useAuthState';
 import { useProfile, useProfileData } from '@/lib/hooks/useProfile';
+import { useCart } from '@/lib/hooks/useCart';
 
 type MobileMenuSection = 'men' | 'women' | 'kids' | 'accessories' | null;
 
@@ -65,14 +66,30 @@ export default function Header() {
     setIsMobileMenuOpen(false);
   };
 
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(e.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const pathname = usePathname();
   const isHome = pathname === '/en' || pathname === '/ar';
   const { isLoggedIn, logout } = useAuthState();
-  
+
   // Fetch and sync profile to Redux
   useProfile();
   // Get data from Redux
   const profile = useProfileData();
+
+  const { data: cartResponse } = useCart();
+  const cartCount = cartResponse?.data?.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   console.log("userData", profile);
 
@@ -127,10 +144,15 @@ export default function Header() {
 
               <Link
                 href="/cart"
-                className="grid place-items-center rounded"
+                className="relative grid place-items-center rounded"
                 aria-label="Cart"
               >
                 <BagIcon className="h-[24px] w-[24px]" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-0.5 font-beatrice text-[10px] font-bold leading-none text-white">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
               </Link>
 
               <LanguageSwitch className={`  ${isHome && !isFixed ? "!text-white" : "!text-neutral-900"} !font-bold`} />
@@ -172,31 +194,54 @@ export default function Header() {
 
             <div className={`flex items-center gap-4 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}>
               {isLoggedIn ? (
-                <div className="flex items-center gap-2">
-                    <Link
-                      href="/account"
-                      className={`flex items-center gap-2 font-cairo text-sm font-medium transition-opacity hover:opacity-70 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}
-                    >
-                      {profile.profile_picture ? (
-                        <img src={profile.profile_picture} alt={profile.name} className="h-8 w-8 rounded-full object-cover" />
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-700">
-                          {profile.name?.[0]?.toUpperCase()}
-                        </div>
-                      )}
-                      <span className="hidden lg:block">{profile.name?.split(' ')[0]}</span>
-                    </Link>
+                <div className="relative" ref={profileDropdownRef}>
                   <button
-                    onClick={logout}
-                    className={`grid h-8 w-8 place-items-center rounded transition-all ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'}`}
-                    aria-label="Logout"
+                    onClick={() => setIsProfileDropdownOpen(v => !v)}
+                    className={`flex items-center gap-2 font-cairo text-sm font-medium transition-opacity hover:opacity-70 ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}
                   >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
+                    {profile.profile_picture ? (
+                      <img src={profile.profile_picture} alt={profile.name} className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-neutral-200 text-xs font-bold text-neutral-700">
+                        {profile.name?.[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <span className="hidden lg:block">{profile.name?.split(' ')[0]}</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isProfileDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
+
+                  {isProfileDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-52 bg-white shadow-lg border border-neutral-100 z-50">
+                      {[
+                        { href: '/account', label: 'My Account' },
+                        { href: '/account/orders', label: 'Orders' },
+                        { href: '/account/addresses', label: 'Addresses' },
+                        { href: '/favorites', label: 'Wishlist' },
+                      ].map(({ href, label }) => (
+                        <Link
+                          key={href}
+                          href={href}
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="block px-4 py-3 font-cairo text-sm text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                        >
+                          {label}
+                        </Link>
+                      ))}
+                      <div className="border-t border-neutral-100">
+                        <button
+                          onClick={() => { setIsProfileDropdownOpen(false); logout(); }}
+                          className="flex w-full items-center gap-2 px-4 py-3 font-cairo text-sm text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                          </svg>
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link
@@ -218,10 +263,15 @@ export default function Header() {
 
               <Link
                 href="/cart"
-                className={`${"grid h-8 w-8 place-items-center rounded  transition-all"} ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950 hover:bg-neutral-200'}`}
+                className={`relative ${"grid h-8 w-8 place-items-center rounded  transition-all"} ${isHome && !isFixed ? 'text-white hover:text-white/70' : 'text-neutral-800 hover:text-neutral-950 hover:bg-neutral-200'}`}
                 aria-label="Cart"
               >
                 <BagIcon className="h-[32px] w-[32px]" />
+                {cartCount > 0 && (
+                  <span className="absolute -right-1 -top-[23px] flex h-[25px] min-w-[25px] items-center justify-center rounded-full bg-black px-0.5 font-beatrice text-[10px] font-bold leading-none text-white">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
               </Link>
 
               <LanguageSwitch className='!font-bold' />
@@ -487,10 +537,15 @@ export default function Header() {
               <Link
                 href="/cart"
                 onClick={closeMobileMenu}
-                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
+                className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
                 aria-label="Cart"
               >
                 <BagIcon className="h-[24px] w-[24px]" />
+                {cartCount > 0 && (
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-0.5 font-beatrice text-[10px] font-bold leading-none text-white">
+                    {cartCount > 99 ? '99+' : cartCount}
+                  </span>
+                )}
               </Link>
             </div>
 

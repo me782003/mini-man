@@ -27,6 +27,9 @@ export interface CartItem {
 export interface CartSummary {
   subtotal: string;
   tax: string;
+  shipping: string;
+  discount: string;
+  coupon_code: string | null;
   total: string;
 }
 
@@ -69,7 +72,31 @@ export function useUpdateCartItem() {
   return useMutation({
     mutationFn: ({ itemId, action }: { itemId: number; action: 'plus' | 'minus' }) =>
       put('/user/cart', { cart_item_id: itemId, action }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: cartKeys.all() }),
+    onMutate: async ({ itemId, action }) => {
+      await qc.cancelQueries({ queryKey: cartKeys.all() });
+      const previous = qc.getQueryData<CartResponse>(cartKeys.all());
+
+      qc.setQueryData<CartResponse>(cartKeys.all(), (old) => {
+        if (!old) return old;
+        const delta = action === 'plus' ? 1 : -1;
+        const updatedItems = old.data.items.map((item) => {
+          if (item.cart_item_id !== itemId) return item;
+          const newQty = item.quantity + delta;
+          const unitPrice = item.total_item_price / item.quantity;
+          return { ...item, quantity: newQty, total_item_price: unitPrice * newQty };
+        });
+        return { ...old, data: { ...old.data, items: updatedItems } };
+      });
+
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(cartKeys.all(), ctx.previous);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: cartKeys.all() });
+      qc.invalidateQueries({ queryKey: ['products', 'detail-v2'] });
+    },
   });
 }
 
@@ -77,6 +104,9 @@ export function useRemoveCartItem() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (itemId: number) => del(`/user/cart/${itemId}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: cartKeys.all() }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: cartKeys.all() });
+      qc.invalidateQueries({ queryKey: ['products', 'detail-v2'] });
+    },
   });
 }

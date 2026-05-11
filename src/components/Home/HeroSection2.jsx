@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import { ArrowRightIcon } from "@/components/icons";
@@ -11,74 +11,76 @@ import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/pagination";
 
-const SLIDES = [
+const SLIDE_DEFAULTS = [
   {
-    id: 1,
-    image: "/images/hero-1.png",
     tag: "New Arrival",
     title: ["Step Into", "The Future"],
     subtitle: "Spring / Summer 2025",
     cta: "Shop Now",
     accent: "#E8D5B7",
-    href: "/products",
   },
   {
-    id: 2,
-    image: "/images/hero-2.png",
     tag: "Exclusive Drop",
     title: ["Bold Moves,", "Bold Soles"],
     subtitle: "Limited Edition Collection",
     cta: "Explore Collection",
     accent: "#C9D8C5",
-    href: "/products",
   },
   {
-    id: 3,
-    image: "/images/hero-3.png",
     tag: "Bestseller",
     title: ["Crafted For", "Every Step"],
     subtitle: "Premium Comfort Series",
     cta: "Discover More",
     accent: "#C5C9D8",
-    href: "/products",
   },
   {
-    id: 4,
-    image: "/images/hero-4.png",
     tag: "Women's Edit",
     title: ["Walk With", "Confidence"],
     subtitle: "New Styles Just Landed",
     cta: "View All",
     accent: "#D8C5C9",
-    href: "/products",
   },
 ];
 
-const THUMB_IMAGES = [
-  "/images/sh-1.png",
-  "/images/sh-2.png",
-  "/images/sh-3.png",
+const FALLBACK_BANNERS = [
+  { id: 1, image_url: "/images/hero-1.png", link: "/products" },
+  { id: 2, image_url: "/images/hero-2.png", link: "/products" },
+  { id: 3, image_url: "/images/hero-3.png", link: "/products" },
+  { id: 4, image_url: "/images/hero-4.png", link: "/products" },
 ];
 
-export default function HeroSection2() {
+export default function HeroSection2({ banners }) {
+  const slides = useMemo(
+    () => (banners && banners.length > 0 ? banners : FALLBACK_BANNERS).map(
+      (banner, i) => ({
+        id: banner.id,
+        image: banner.image_url,
+        href: banner.link || "/products",
+        ...SLIDE_DEFAULTS[i % SLIDE_DEFAULTS.length],
+      })
+    ),
+    [banners]
+  );
+
   const [activeIndex, setActiveIndex] = useState(0);
-  const [progress, setProgress] = useState(0);
+  // progressKey is bumped on each slide change to restart the CSS animation
+  const [progressKey, setProgressKey] = useState(0);
   const swiperRef = useRef(null);
-  const intervalRef = useRef(null);
 
-  const currentSlide = SLIDES[activeIndex];
+  const currentSlide = slides[activeIndex];
 
-  useEffect(() => {
-    setProgress(0);
-    clearInterval(intervalRef.current);
-    const start = Date.now();
-    const duration = 5000;
-    intervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - start;
-      setProgress(Math.min((elapsed / duration) * 100, 100));
-    }, 30);
-    return () => clearInterval(intervalRef.current);
-  }, [activeIndex]);
+  const handleSlideChange = useCallback(
+    (swiper) => {
+      const next = swiper.realIndex % slides.length;
+      setActiveIndex(next);
+      setProgressKey((k) => k + 1);
+    },
+    [slides.length]
+  );
+
+  const handleSwiper = useCallback((swiper) => {
+    swiperRef.current = swiper;
+  }, []);
 
   return (
     <section className="relative w-full h-screen min-h-[600px] overflow-hidden bg-neutral-950 md:block hidden">
@@ -89,13 +91,11 @@ export default function HeroSection2() {
         autoplay={{ delay: 5000, disableOnInteraction: false }}
         loop
         speed={900}
-        onSwiper={(swiper) => (swiperRef.current = swiper)}
-        onSlideChange={(swiper) =>
-          setActiveIndex(swiper.realIndex % SLIDES.length)
-        }
+        onSwiper={handleSwiper}
+        onSlideChange={handleSlideChange}
         className="absolute inset-0 w-full h-full"
       >
-        {SLIDES.map((slide, i) => (
+        {slides.map((slide, i) => (
           <SwiperSlide key={slide.id}>
             <div className="relative w-full h-full">
               <Image
@@ -199,19 +199,19 @@ export default function HeroSection2() {
             {/* Slide counter + progress */}
             <div className="flex items-center gap-6">
               <span className="font-headline text-white/40 text-xs tracking-widest uppercase">
-                0{activeIndex + 1} / 0{SLIDES.length}
+                0{activeIndex + 1} / 0{slides.length}
               </span>
               <div className="w-32 h-px bg-white/20 relative overflow-hidden">
                 <div
-                  className="absolute inset-y-0 left-0 bg-white transition-none"
-                  style={{ width: `${progress}%` }}
+                  key={progressKey}
+                  className="absolute inset-y-0 left-0 bg-white hero-progress-bar"
                 />
               </div>
             </div>
 
             {/* Slide nav dots */}
             <div className="flex gap-2">
-              {SLIDES.map((_, i) => (
+              {slides.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => swiperRef.current?.slideTo(i)}
@@ -227,14 +227,14 @@ export default function HeroSection2() {
 
             {/* Thumbnail strip */}
             <div className="hidden lg:flex gap-3">
-              {THUMB_IMAGES.map((src, i) => (
+              {slides.slice(0, 3).map((slide, i) => (
                 <div
-                  key={i}
+                  key={slide.id}
                   className="relative w-16 h-20 overflow-hidden border border-white/10 hover:border-white/40 transition-colors cursor-pointer group"
                   onClick={() => swiperRef.current?.slideTo(i)}
                 >
                   <Image
-                    src={src}
+                    src={slide.image}
                     alt={`Slide ${i + 1}`}
                     fill
                     sizes="64px"
@@ -271,6 +271,13 @@ export default function HeroSection2() {
         @keyframes fadeSlideUp {
           from { opacity: 0; transform: translateY(24px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes heroProgress {
+          from { width: 0%; }
+          to   { width: 100%; }
+        }
+        .hero-progress-bar {
+          animation: heroProgress 5s linear forwards;
         }
       `}</style>
     </section>

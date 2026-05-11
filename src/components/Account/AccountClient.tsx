@@ -108,7 +108,7 @@ function SecuritySection() {
 
 /* ─── Personal form ──────────────────────────────────────────────────── */
 
-function PersonalPanel({ profile }: { profile: ProfileState | undefined }) {
+function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 'error'> | undefined }) {
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
 

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/navigation';
-import { useProfile, useUpdateProfile, type ProfileResponse } from '@/lib/hooks/useProfile';
+import { useProfile, useUpdateProfile } from '@/lib/hooks/useProfile';
+import { type ProfileState } from '@/lib/store/features/profileSlice';
 import { useChangePassword } from '@/lib/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApiError } from '@/lib/fetcher';
@@ -107,7 +108,7 @@ function SecuritySection() {
 
 /* ─── Personal form ──────────────────────────────────────────────────── */
 
-function PersonalPanel({ profile }: { profile: ProfileResponse['data'] | undefined }) {
+function PersonalPanel({ profile }: { profile: ProfileState | undefined }) {
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
 

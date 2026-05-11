@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { Address } from '@/lib/hooks/useProfile';
 
 export interface ProfileState {
     id: number | null;
@@ -11,6 +12,8 @@ export interface ProfileState {
     cart_quantity: number;
     orders_numbers: number;
     addresses_number: number;
+    main_address: Address | null;
+    all_addresses: Address[];
     isLoading: boolean;
     error: string | null;
 }
@@ -26,6 +29,8 @@ const initialState: ProfileState = {
     cart_quantity: 0,
     orders_numbers: 0,
     addresses_number: 0,
+    main_address: null,
+    all_addresses: [],
     isLoading: false,
     error: null,
 };

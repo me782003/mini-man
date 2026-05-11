@@ -6,7 +6,7 @@ import SwiperSection from "@/components/SwiperSection";
 import HomeProductsSection from "@/components/Home/HomeProductsSection";
 import ProductReviews from "@/components/Home/ProductReviews";
 import { useHomePage } from "@/lib/hooks/useHomePage";
-
+// this is comment
 export default function HomeClient() {
   const { data } = useHomePage();
   const pageData = data?.data;

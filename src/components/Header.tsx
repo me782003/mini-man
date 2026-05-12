@@ -279,6 +279,7 @@ export default function Header() {
             </div>
           </div>
         </div>
+        <TopCategories />
       </header>
 
 
@@ -393,38 +394,62 @@ export default function Header() {
               </Link>
             </nav>
 
-            <div className="mt-8 flex items-center gap-3 border-t border-neutral-300 pt-6">
-              <Link
-                href="/account"
-                onClick={closeMobileMenu}
-                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
-                aria-label="Account"
-              >
-                <UserIcon className="h-[24px] w-[24px]" />
-              </Link>
+            <div className="mt-8 border-t border-neutral-300 pt-6">
+              {isLoggedIn ? (
+                <>
+                  <div className="mb-4 flex items-center gap-3">
+                    {profile.profile_picture ? (
+                      <img
+                        src={profile.profile_picture}
+                        alt={profile.name}
+                        className="h-11 w-11 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-neutral-200 font-beatrice text-sm font-bold text-neutral-700">
+                        {profile.name?.[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="truncate font-beatrice text-[16px] font-bold text-neutral-900">{profile.name}</p>
+                      <p className="truncate font-cairo text-[13px] text-neutral-500">{profile.email}</p>
+                    </div>
+                  </div>
 
-              <Link
-                href="/favorites"
-                onClick={closeMobileMenu}
-                className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
-                aria-label="Favorites"
-              >
-                <HeartIcon className="h-[24px] w-[24px]" />
-              </Link>
-
-              <Link
-                href="/cart"
-                onClick={closeMobileMenu}
-                className="relative flex h-10 w-10 items-center justify-center rounded-full hover:bg-neutral-200"
-                aria-label="Cart"
-              >
-                <BagIcon className="h-[24px] w-[24px]" />
-                {cartCount > 0 && (
-                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-0.5 font-beatrice text-[10px] font-bold leading-none text-white">
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </span>
-                )}
-              </Link>
+                  <nav className="flex flex-col gap-1">
+                    {[
+                      { href: '/account', label: 'My Account' },
+                      { href: '/account/orders', label: 'Orders' },
+                      { href: '/account/addresses', label: 'Addresses' },
+                      { href: '/favorites', label: 'Wishlist' },
+                    ].map(({ href, label }) => (
+                      <Link
+                        key={href}
+                        href={href}
+                        onClick={closeMobileMenu}
+                        className="rounded-lg px-3 py-2.5 font-cairo text-[15px] text-neutral-700 hover:bg-neutral-200"
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => { closeMobileMenu(); logout(); }}
+                      className="mt-1 rounded-lg px-3 py-2.5 text-left font-cairo text-[15px] text-red-500 hover:bg-red-50"
+                    >
+                      Logout
+                    </button>
+                  </nav>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-2 font-beatrice text-[18px] uppercase text-neutral-900"
+                >
+                  <UserIcon className="h-[24px] w-[24px]" />
+                  Login
+                </Link>
+              )}
             </div>
 
           </div>

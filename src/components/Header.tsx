@@ -13,14 +13,15 @@ import SaleTicker from './SaleTicker';
 import { useAuthState } from '@/lib/hooks/useAuthState';
 import { useProfile, useProfileData } from '@/lib/hooks/useProfile';
 import { useCart } from '@/lib/hooks/useCart';
-
-type MobileMenuSection = 'men' | 'women' | 'kids' | 'accessories' | null;
+import { useCatalogCategories } from '@/lib/hooks/useCatalog';
 
 export default function Header() {
   const t = useTranslations('Header');
   const [isFixed, setIsFixed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [openSection, setOpenSection] = useState<MobileMenuSection>('men');
+  const [openSection, setOpenSection] = useState<number | null>(null);
+  const { data: categoriesData } = useCatalogCategories();
+  const categories = categoriesData?.data ?? [];
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -58,8 +59,8 @@ export default function Header() {
     };
   }, [isMobileMenuOpen]);
 
-  const toggleSection = (section: Exclude<MobileMenuSection, null>) => {
-    setOpenSection(prev => (prev === section ? null : section));
+  const toggleSection = (id: number) => {
+    setOpenSection(prev => (prev === id ? null : id));
   };
 
   const closeMobileMenu = () => {
@@ -278,7 +279,6 @@ export default function Header() {
             </div>
           </div>
         </div>
-        <TopCategories />
       </header>
 
 
@@ -314,173 +314,51 @@ export default function Header() {
 
             {/* Expandable category menu */}
             <nav className="flex flex-col">
-              <div className="pb-1">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('men')}
-                  className="flex w-full items-center justify-between py-3 text-left"
-                >
-                  <span className="font-beatrice text-[20px] font-bold text-black">
-                    Men
-                  </span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'men' ? 'rotate-180' : ''
-                      }`}
-                  />
-                </button>
+              {categories.map(category => (
+                <div key={category.id} className="pb-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(category.id)}
+                    className="flex w-full items-center justify-between py-3 text-left"
+                  >
+                    <span className="font-beatrice text-[20px] font-bold text-black">
+                      {category.name}
+                    </span>
+                    <ChevronDown
+                      className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === category.id ? 'rotate-180' : ''}`}
+                    />
+                  </button>
 
-                <div
-                  className={`grid transition-all duration-300 ${openSection === 'men'
-                    ? 'grid-rows-[1fr] opacity-100'
-                    : 'grid-rows-[0fr] opacity-0'
-                    }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
-                      <Link
-                        href="/men/items-by-miniman"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        Items By MiniMan
-                      </Link>
-                      <Link
-                        href="/men/mirror"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        Mirror
-                      </Link>
-                      <Link
-                        href="/men/classic"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        Classic
-                      </Link>
-                      <Link
-                        href="/men/big-size"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        Big Size
-                      </Link>
-                      <Link
-                        href="/men/slippers"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        Slippers
-                      </Link>
+                  <div
+                    className={`grid transition-all duration-300 ${openSection === category.id
+                      ? 'grid-rows-[1fr] opacity-100'
+                      : 'grid-rows-[0fr] opacity-0'
+                      }`}
+                  >
+                    <div className="overflow-hidden">
+                      <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
+                        <Link
+                          href={`/products?category_id=${category.id}`}
+                          onClick={closeMobileMenu}
+                          className="font-beatrice text-[16px] font-medium text-black"
+                        >
+                          View All {category.name}
+                        </Link>
+                        {category.subCategories.map(sub => (
+                          <Link
+                            key={sub.id}
+                            href={`/products?category_id=${category.id}&sub_category_id=${sub.id}`}
+                            onClick={closeMobileMenu}
+                            className="font-beatrice text-[16px] text-black"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="pb-1">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('women')}
-                  className="flex w-full items-center justify-between py-3 text-left"
-                >
-                  <span className="font-beatrice text-[20px] font-bold text-black">
-                    Women
-                  </span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'women' ? 'rotate-180' : ''
-                      }`}
-                  />
-                </button>
-
-                <div
-                  className={`grid transition-all duration-300 ${openSection === 'women'
-                    ? 'grid-rows-[1fr] opacity-100'
-                    : 'grid-rows-[0fr] opacity-0'
-                    }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
-                      <Link
-                        href="/women"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        View All Women
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pb-1">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('kids')}
-                  className="flex w-full items-center justify-between py-3 text-left"
-                >
-                  <span className="font-beatrice text-[20px] font-bold text-black">
-                    Kids
-                  </span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'kids' ? 'rotate-180' : ''
-                      }`}
-                  />
-                </button>
-
-                <div
-                  className={`grid transition-all duration-300 ${openSection === 'kids'
-                    ? 'grid-rows-[1fr] opacity-100'
-                    : 'grid-rows-[0fr] opacity-0'
-                    }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
-                      <Link
-                        href="/kids"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        View All Kids
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pb-1">
-                <button
-                  type="button"
-                  onClick={() => toggleSection('accessories')}
-                  className="flex w-full items-center justify-between py-3 text-left"
-                >
-                  <span className="font-beatrice text-[20px] font-bold text-black">
-                    Accessories
-                  </span>
-                  <ChevronDown
-                    className={`h-5 w-5 text-black transition-transform duration-200 ${openSection === 'accessories' ? 'rotate-180' : ''
-                      }`}
-                  />
-                </button>
-
-                <div
-                  className={`grid transition-all duration-300 ${openSection === 'accessories'
-                    ? 'grid-rows-[1fr] opacity-100'
-                    : 'grid-rows-[0fr] opacity-0'
-                    }`}
-                >
-                  <div className="overflow-hidden">
-                    <div className="flex flex-col gap-6 px-4 pb-4 pt-1">
-                      <Link
-                        href="/accessories"
-                        onClick={closeMobileMenu}
-                        className="font-beatrice text-[16px] text-black"
-                      >
-                        View All Accessories
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              ))}
             </nav>
 
             {/* Old navigations */}

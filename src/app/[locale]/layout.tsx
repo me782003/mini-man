@@ -3,6 +3,7 @@ import { getMessages } from 'next-intl/server';
 import Header from '../../components/Header';
 import Footer from '@/components/Footer';
 import Providers from '@/components/Providers';
+import WhatsAppButton from '@/components/WhatsAppButton';
 
 
 export default async function LocaleLayout({
@@ -20,6 +21,7 @@ export default async function LocaleLayout({
           {children}
         </div>
         <Footer />
+        <WhatsAppButton />
       </Providers>
     </NextIntlClientProvider>
   );

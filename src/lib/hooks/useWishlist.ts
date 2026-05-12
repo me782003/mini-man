@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { post, del, get } from '@/lib/fetcher';
+import { toast } from 'sonner';
 import { ProductDetailData } from '../types';
 
 interface FavouriteResponse {
@@ -41,8 +42,12 @@ export function useAddToWishlist() {
       await qc.cancelQueries({ queryKey: ['products', 'detail-v2'], exact: false });
       optimisticallySetFavourite(qc, productId, true);
     },
-    onError: (_err, productId) => {
+    onSuccess: () => {
+      toast.success('Added to favourites');
+    },
+    onError: (_err: Error, productId) => {
       optimisticallySetFavourite(qc, productId, false);
+      toast.error(_err.message || 'Failed to add to favourites');
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['profile'] });
@@ -61,8 +66,12 @@ export function useRemoveFromWishlist() {
       await qc.cancelQueries({ queryKey: ['products', 'detail-v2'], exact: false });
       optimisticallySetFavourite(qc, productId, false);
     },
-    onError: (_err, productId) => {
+    onSuccess: () => {
+      toast.success('Removed from favourites');
+    },
+    onError: (_err: Error, productId) => {
       optimisticallySetFavourite(qc, productId, true);
+      toast.error(_err.message || 'Failed to remove from favourites');
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['profile'] });

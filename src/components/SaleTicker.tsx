@@ -12,7 +12,11 @@ export default function SaleTicker() {
 
   const bg = tickers?.background;
   const items = tickers?.items?.length
-    ? [...tickers.items, ...tickers.items]
+    ? ((): typeof tickers.items => {
+        const src = tickers.items;
+        const base = Array.from({ length: Math.ceil(12 / src.length) }, () => src).flat();
+        return [...base, ...base];
+      })()
     : Array.from({ length: 24 }, (_, i) => ({
       id: i,
       primary_text: '50% off',
@@ -40,7 +44,7 @@ export default function SaleTicker() {
 
       <style jsx>{`
         .sale-ticker-track {
-          animation: saleTicker 100s linear infinite;
+          animation: saleTicker 40s linear infinite;
         }
         @keyframes saleTicker {
           from { transform: translateX(0); }

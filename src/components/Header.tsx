@@ -124,7 +124,7 @@ export default function Header() {
             <Link href="/" className="flex flex-1">
               <span className="relative h-[34px] w-[107px]">
                 <Image
-                  src={isHome && !isFixed ? '/images/logo-white.png' : '/images/logo.svg'}
+                  src='/images/logo.svg'
                   alt="Logo"
                   fill
                   className="h-full w-full object-contain"
@@ -133,7 +133,7 @@ export default function Header() {
               </span>
             </Link>
 
-            <div className={`flex items-center gap-[10px] ${isHome && !isFixed ? 'text-white' : 'text-neutral-900'}`}>
+            <div className="flex items-center gap-[10px] text-neutral-900">
               <Link
                 href="/favorites"
                 className="grid place-items-center rounded"
@@ -155,7 +155,7 @@ export default function Header() {
                 )}
               </Link>
 
-              <LanguageSwitch className={`  ${isHome && !isFixed ? "!text-white" : "!text-neutral-900"} !font-bold`} />
+              <LanguageSwitch className="!text-neutral-900 !font-bold" />
             </div>
           </div>
 

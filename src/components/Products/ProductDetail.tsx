@@ -6,6 +6,8 @@ import { HeartIcon } from '../icons';
 import { useProductDetail } from '@/lib/hooks/useProducts';
 import { useAddToWishlist, useRemoveFromWishlist } from '@/lib/hooks/useWishlist';
 import { useRemoveCartItem, useAddToCart, useUpdateCartItem } from '@/lib/hooks/useCart';
+import { useAuthState } from '@/lib/hooks/useAuthState';
+import { useAuthModal } from '@/lib/context/AuthModalContext';
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, FreeMode, Navigation, Thumbs } from 'swiper/modules';
@@ -87,6 +89,9 @@ export default function ProductDetail({ id }: { id: string }) {
     const [selectedColorId, setSelectedColorId] = useState<number | null>(null);
     const thumbsSwiperRef = React.useRef<SwiperType | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxIdx, setLightboxIdx] = useState(0);
+    const galleryLengthRef = React.useRef(0);
 
     useEffect(() => {
         const v = (data?.data?.variants ?? []) as ProductVariantLike[];
@@ -101,7 +106,21 @@ export default function ProductDetail({ id }: { id: string }) {
     const addToCart = useAddToCart();
     const removeFromCart = useRemoveCartItem();
     const updateCartItem = useUpdateCartItem();
+    const { isLoggedIn } = useAuthState();
+    const { openAuthModal } = useAuthModal();
     const mainSwiperRef = React.useRef<SwiperType | null>(null);
+
+    useEffect(() => {
+        if (!lightboxOpen) return;
+        const handler = (e: KeyboardEvent) => {
+            const len = galleryLengthRef.current;
+            if (e.key === 'Escape') setLightboxOpen(false);
+            if (e.key === 'ArrowRight') setLightboxIdx((i) => (i + 1) % len);
+            if (e.key === 'ArrowLeft') setLightboxIdx((i) => (i - 1 + len) % len);
+        };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [lightboxOpen]);
 
     if (isPending) {
         return (
@@ -178,6 +197,18 @@ export default function ProductDetail({ id }: { id: string }) {
                     ? [product.image_url]
                     : [];
 
+    // All images across every color/variant for the lightbox
+    const allImages: string[] = Array.from(new Set([
+        ...availableColors.flatMap((c) => normalizeImages((c.images ?? []) as ProductColorImage[])),
+        ...productImages
+            .slice()
+            .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+            .map((img) => img.image_path),
+        ...(product.image_url ? [product.image_url] : []),
+    ].filter(Boolean)));
+
+    galleryLengthRef.current = allImages.length;
+
     // Sizes from variants
     const sizes = variants.map((variant) => variant.name);
 
@@ -213,6 +244,21 @@ export default function ProductDetail({ id }: { id: string }) {
 
     const handleCartAction = () => {
         if (!activeColor?.variant_id || isUnavailable) return;
+
+        if (!isLoggedIn) {
+            openAuthModal(() => {
+                addToCart.mutate({
+                    variant_id: activeColor.variant_id!,
+                    product_id: product.id,
+                }, {
+                    onSuccess: () => {
+                        setShowSuccess(true);
+                        setTimeout(() => setShowSuccess(false), 2000);
+                    }
+                });
+            });
+            return;
+        }
 
         if (isInCart && cartItemId) {
             removeFromCart.mutate(cartItemId);
@@ -267,7 +313,21 @@ export default function ProductDetail({ id }: { id: string }) {
                 <div className="grid grid-cols-1 gap-10 md:flex">
                     {/* Gallery */}
                     <div className="flex md:w-[647px] h-[290px] flex-1 gap-[10px] md:h-[558px] md:gap-5">
-                        <div className="flex-1 overflow-hidden bg-[#e8e8e8]">
+                        <div className="relative flex-1 overflow-hidden bg-[#e8e8e8]">
+                            {/* Gallery opener */}
+                            <button
+                                type="button"
+                                onClick={() => { setLightboxIdx(0); setLightboxOpen(true); }}
+                                className="absolute start-2 top-2 z-10 flex items-center gap-1.5 bg-white/80 px-2 py-1.5 backdrop-blur-sm transition-colors hover:bg-white"
+                                aria-label="View all images"
+                            >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                                    <path d="M3 9h18M9 21V9" />
+                                </svg>
+                                <span className="font-beatrice text-[11px] font-medium text-black">{allImages.length}</span>
+                            </button>
+
                             <Swiper
                                 spaceBetween={10}
                                 thumbs={{
@@ -286,7 +346,10 @@ export default function ProductDetail({ id }: { id: string }) {
                             >
                                 {gallery.map((image, i) => (
                                     <SwiperSlide key={`${image}-${i}`}>
-                                        <div className="flex h-full w-full items-center justify-center">
+                                        <div
+                                            className="flex h-full w-full cursor-zoom-in items-center justify-center"
+                                            onClick={() => { setLightboxIdx(i); setLightboxOpen(true); }}
+                                        >
                                             <img
                                                 src={image}
                                                 alt={`${product.name} image ${i + 1}`}
@@ -408,6 +471,16 @@ export default function ProductDetail({ id }: { id: string }) {
                         <div className="flex gap-3">
                             <button
                                 onClick={() => {
+                                    if (!isLoggedIn) {
+                                        openAuthModal(() => {
+                                            if (product.is_in_favourite) {
+                                                removeFromWishlist.mutate(product.id);
+                                            } else {
+                                                addToWishlist.mutate(product.id);
+                                            }
+                                        });
+                                        return;
+                                    }
                                     if (product.is_in_favourite) {
                                         removeFromWishlist.mutate(product.id);
                                     } else {
@@ -510,9 +583,92 @@ export default function ProductDetail({ id }: { id: string }) {
                 primaryTitle="YOU MIGHT ALSO LIKE"
                 secondaryTitle=""
                 count={product.related_products?.length || 0}
-                seeAllHref="/products"
+                seeAllHref={`/products?${[
+                    product.category_collection?.collection?.id && `collection_id=${product.category_collection.collection.id}`,
+                    product.category_collection?.category?.id && `category_id=${product.category_collection.category.id}`
+                    // product.sub_category?.id && `sub_category_id=${product.sub_category.id}`,
+                ].filter(Boolean).join('&')}`}
                 items={product.related_products || []}
             />
+
+            {/* Lightbox */}
+            {lightboxOpen && (
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90"
+                    onClick={() => setLightboxOpen(false)}
+                >
+                    {/* Close */}
+                    <button
+                        type="button"
+                        onClick={() => setLightboxOpen(false)}
+                        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center text-white/70 transition-colors hover:text-white"
+                        aria-label="Close"
+                    >
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                    </button>
+
+                    {/* Counter */}
+                    <span className="absolute left-4 top-4 font-beatrice text-[13px] text-white/60">
+                        {lightboxIdx + 1} / {allImages.length}
+                    </span>
+
+                    {/* Prev */}
+                    {allImages.length > 1 && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setLightboxIdx((lightboxIdx - 1 + allImages.length) % allImages.length); }}
+                            className="absolute start-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center bg-white/10 text-white transition-colors hover:bg-white/25"
+                            aria-label="Previous"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M15 18l-6-6 6-6" />
+                            </svg>
+                        </button>
+                    )}
+
+                    {/* Image */}
+                    <div className="flex h-full w-full items-center justify-center p-16" onClick={(e) => e.stopPropagation()}>
+                        <img
+                            key={lightboxIdx}
+                            src={allImages[lightboxIdx]}
+                            alt={`${product.name} ${lightboxIdx + 1}`}
+                            className="max-h-full max-w-full object-contain"
+                            onError={e => { const img = e.currentTarget; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
+                        />
+                    </div>
+
+                    {/* Next */}
+                    {allImages.length > 1 && (
+                        <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setLightboxIdx((lightboxIdx + 1) % allImages.length); }}
+                            className="absolute end-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center bg-white/10 text-white transition-colors hover:bg-white/25"
+                            aria-label="Next"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 18l6-6-6-6" />
+                            </svg>
+                        </button>
+                    )}
+
+                    {/* Thumbnails strip */}
+                    <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2 overflow-x-auto px-4">
+                        {allImages.map((thumb, i) => (
+                            <button
+                                key={i}
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); setLightboxIdx(i); }}
+                                className={`h-14 w-14 shrink-0 overflow-hidden border-2 transition-colors ${i === lightboxIdx ? 'border-white' : 'border-transparent opacity-50 hover:opacity-80'}`}
+                                aria-label={`Go to image ${i + 1}`}
+                            >
+                                <img src={thumb} alt="" className="h-full w-full object-contain bg-white" />
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </>
 
     );

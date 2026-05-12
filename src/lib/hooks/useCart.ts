@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, put, del } from '@/lib/fetcher';
+import { toast } from 'sonner';
 
 export interface CartProduct {
   id: number;
@@ -63,6 +64,10 @@ export function useAddToCart() {
       qc.invalidateQueries({ queryKey: cartKeys.all() });
       qc.invalidateQueries({ queryKey: ['profile'] });
       qc.invalidateQueries({ queryKey: ['products', 'detail-v2'] });
+      toast.success('Added to cart');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to add to cart');
     },
   });
 }
@@ -107,6 +112,10 @@ export function useRemoveCartItem() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: cartKeys.all() });
       qc.invalidateQueries({ queryKey: ['products', 'detail-v2'] });
+      toast.success('Removed from cart');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || 'Failed to remove item');
     },
   });
 }

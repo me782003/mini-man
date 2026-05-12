@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLogin, useGoogleAuth } from '@/lib/hooks/useAuth';
@@ -26,6 +26,8 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function LoginClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/account';
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { mutate: login, isPending, isError, error } = useLogin();
@@ -59,7 +61,7 @@ export default function LoginClient() {
         localStorage.setItem('user', JSON.stringify(res.data.user));
         document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         dispatch(setProfile(res.data.user));
-        router.push('/account');
+        router.push(redirectTo);
       },
     });
   };
@@ -94,7 +96,7 @@ export default function LoginClient() {
                   document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
                   dispatch(setProfile(res.data.user));
                   queryClient.invalidateQueries({ queryKey: ['profile'] });
-                  router.push('/account');
+                  router.push(redirectTo);
                 },
               }
             );

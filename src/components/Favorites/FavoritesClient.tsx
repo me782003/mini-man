@@ -122,6 +122,7 @@ export default function FavoritesClient() {
                         {items.map(item => (
                             <div key={item.id} className="relative">
                                 <ProductCard
+                                    href={`/products/${item.slug || item.id}`}
                                     id={item.id}
                                     image={item.image_url}
                                     category={item.category_collection.category.name}

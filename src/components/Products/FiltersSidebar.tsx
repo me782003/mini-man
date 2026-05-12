@@ -3,8 +3,8 @@
 import React, { useCallback, useEffect, useId, useState } from 'react';
 import { X } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { useCatalogFilters } from '@/lib/hooks/useCatalog';
-import type { CatalogCategory } from '@/lib/hooks/useCatalog';
+import { useCatalogFilters, useCatalogCategories } from '@/lib/hooks/useCatalog';
+import type { ApiCategory } from '@/lib/hooks/useCatalog';
 import { Slider } from '@/components/ui/slider';
 
 interface AccordionSectionProps {
@@ -111,10 +111,10 @@ function SizesSection({ sizes, selected, loading, onToggle }: {
 const CATS_VISIBLE = 6;
 
 function CategoriesList({ categories, categoryIds, subCategoryIds, onCategoryChange, onSubCategoryChange }: {
-  categories: CatalogCategory[];
+  categories: ApiCategory[];
   categoryIds: number[];
   subCategoryIds: number[];
-  onCategoryChange: (cat: CatalogCategory) => void;
+  onCategoryChange: (cat: ApiCategory) => void;
   onSubCategoryChange: (catId: number, subId: number) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -133,9 +133,9 @@ function CategoriesList({ categories, categoryIds, subCategoryIds, onCategoryCha
             />
             <span className="font-beatrice text-[14px] font-medium text-black">{cat.name}</span>
           </label>
-          {(cat.subcategories?.length ?? 0) > 0 && (
+          {(cat.subCategories?.length ?? 0) > 0 && (
             <div className="ml-6 flex flex-col gap-0.5">
-              {cat.subcategories.map((sub) => (
+              {cat.subCategories.map((sub) => (
                 <label key={sub.id} className="flex cursor-pointer items-center gap-2.5 py-0.5">
                   <input
                     type="checkbox"
@@ -180,6 +180,7 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { data: filtersData, isPending: filtersLoading } = useCatalogFilters();
+  const { data: categoriesData, isPending: categoriesLoading } = useCatalogCategories();
 
   const filters = filtersData?.data;
   const priceMin = filters?.price_range.min ?? 0;
@@ -307,18 +308,18 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
 
         {/* Categories */}
         <AccordionSection title="Categories" defaultOpen>
-          {filtersLoading ? (
+          {categoriesLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-4 w-2/3 animate-pulse rounded bg-neutral-200" />)}
             </div>
           ) : (
             <CategoriesList
-              categories={filters?.categories ?? []}
+              categories={categoriesData?.data ?? []}
               categoryIds={local.categoryIds}
               subCategoryIds={local.subCategoryIds}
               onCategoryChange={(cat) => setLocal((p) => {
                 const removing = p.categoryIds.includes(cat.id);
-                const subIds = cat.subcategories?.map((s) => s.id) ?? [];
+                const subIds = cat.subCategories?.map((s) => s.id) ?? [];
                 return {
                   ...p,
                   categoryIds: removing

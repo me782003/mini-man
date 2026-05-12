@@ -121,6 +121,40 @@ export interface CatalogFiltersResponse {
   message: string;
 }
 
+export interface ApiSubCategory {
+  id: number;
+  name: string;
+  parent_id: number;
+  slug: string;
+}
+
+export interface ApiCategory {
+  id: number;
+  name: string;
+  parent_id: null;
+  slug: string;
+  subCategories: ApiSubCategory[];
+}
+
+export interface CatalogCategoriesResponse {
+  data: ApiCategory[];
+  message: string;
+  pagination: {
+    page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+  };
+}
+
+export function useCatalogCategories() {
+  return useQuery({
+    queryKey: ['catalog-categories'],
+    queryFn: () => get<CatalogCategoriesResponse>('/user/catalog/categories'),
+    staleTime: 10 * 60_000,
+  });
+}
+
 function buildUrl(query: CatalogQuery): string {
   const params = new URLSearchParams();
   if (query.page)               params.set('page', String(query.page));

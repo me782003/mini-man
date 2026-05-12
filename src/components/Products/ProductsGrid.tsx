@@ -13,6 +13,8 @@ function toProductCardProps(p: CatalogProduct) {
   return {
     id: p.id,
     title: p.name,
+    slug: p.slug,
+    href: `/products/${p.slug || p.id}`,
     category: p.category_collection.category.name,
     price: `${parseFloat(p.price).toLocaleString()} EGP`,
     colorVariants: p.colors.map((c) => ({

@@ -23,6 +23,7 @@ export default function Footer() {
   const socials = contacts?.socials ?? [];
   const emails = contacts?.emails ?? [];
   const phones = contacts?.phone ?? [];
+  const staticPages = settings?.static_pages ?? [];
 
   return (
     <footer className="w-full bg-1">
@@ -68,9 +69,10 @@ export default function Footer() {
             Help
           </p>
           <div className="flex flex-col gap-4 font-beatrice text-[14px] uppercase text-black">
-            <Link href="#">Shipping Policy</Link>
-            <Link href="#">Refund and Exchange Policy</Link>
             <Link href="/contact">Contact</Link>
+            {staticPages.map((page) => (
+              <Link key={page.id} href={`/pages/${page.slug}`}>{page.title}</Link>
+            ))}
           </div>
         </div>
 
@@ -101,15 +103,17 @@ export default function Footer() {
           <Link href="/" className="text-[18px] font-normal uppercase text-black">
             Home
           </Link>
-          <Link href="/order" className="text-[18px] font-normal uppercase text-black">
-            Order Now
-          </Link>
           <Link href="/branches" className="text-[18px] font-normal uppercase text-black">
             Our Branches
           </Link>
           <Link href="/contact" className="text-[18px] font-normal uppercase text-black">
             Contact Us
           </Link>
+          {staticPages.map((page) => (
+            <Link key={page.id} href={`/pages/${page.slug}`} className="text-[18px] font-normal uppercase text-black">
+              {page.title}
+            </Link>
+          ))}
         </div>
 
         <div className="flex items-center justify-center">

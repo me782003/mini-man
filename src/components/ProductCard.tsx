@@ -3,6 +3,8 @@
 import Link from "next/link";
 import React, { JSX, useEffect, useMemo, useRef, useState } from "react";
 import { useAddToCart, useCart, useRemoveCartItem } from "@/lib/hooks/useCart";
+import { useAuthState } from "@/lib/hooks/useAuthState";
+import { useAuthModal } from "@/lib/context/AuthModalContext";
 
 export interface ColorVariant {
     color: string;
@@ -339,8 +341,8 @@ export default function ProductCard({
         : fallbackDotColors;
 
     const productHref =
-        // href || (slug ? `/products/${slug}` : `/products/${id ?? displayTitle}`);
         href || (slug ? `/products/${slug}` : `/products/${id ?? displayTitle}`);
+    // href || (slug ? `/products/${slug}` : `/products/${id ?? displayTitle}`);
 
     const displayPrice = formatPrice(price);
     const displayOldPrice = formatPrice(oldPrice);
@@ -407,6 +409,8 @@ export default function ProductCard({
     const addToCart = useAddToCart();
     const { data: cartResponse } = useCart();
     const removeFromCart = useRemoveCartItem();
+    const { isLoggedIn } = useAuthState();
+    const { openAuthModal } = useAuthModal();
 
     const cartItems = cartResponse?.data?.items ?? [];
     const currentVariant = normalizedColorVariants[safeColorIdx];
@@ -418,6 +422,21 @@ export default function ProductCard({
         e.stopPropagation();
 
         if (!currentVariant?.variant_id || !id) return;
+
+        if (!isLoggedIn) {
+            openAuthModal(() => {
+                addToCart.mutate({
+                    variant_id: currentVariant.variant_id!,
+                    product_id: Number(id),
+                }, {
+                    onSuccess: () => {
+                        setShowSuccess(true);
+                        setTimeout(() => setShowSuccess(false), 2000);
+                    }
+                });
+            });
+            return;
+        }
 
         if (isInCart && cartItem) {
             removeFromCart.mutate(cartItem.cart_item_id);
@@ -567,7 +586,7 @@ export default function ProductCard({
                     {displayCategory}
                 </p>
 
-                <h3 className="mb-2 line-clamp-2 text-[16px] font-semibold leading-snug text-black font-beatrice sm:text-[18px] md:text-[20px]">
+                <h3 className="mb-2  line-clamp-2 text-[16px] font-semibold leading-snug text-black font-beatrice sm:text-[18px] md:text-[20px]">
                     {displayTitle}
                 </h3>
 

@@ -145,10 +145,10 @@ const normalizeProductForCard = (item: ProductItem) => {
     const categoryLabel = [
         item.category_collection?.collection?.name,
         item.category_collection?.category?.name,
-        item.sub_category?.name,
+        // item.sub_category?.name,
     ]
         .filter(Boolean)
-        .join(" · ");
+        .join(" - ");
 
     const image = getPrimaryImage(item);
 
@@ -159,7 +159,7 @@ const normalizeProductForCard = (item: ProductItem) => {
         title: item.name,
         name: item.name,
         slug: item.slug,
-        href: `/products/${item.id}`,
+        href: `/products/${item.slug}`,
 
         // Image fallbacks
         image,

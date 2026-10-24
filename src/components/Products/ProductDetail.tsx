@@ -24,7 +24,8 @@ import { intlLocale } from '@/lib/intl';
 import ColorSwatch from '@/components/ColorSwatch';
 import ProductBreadcrumbs from './ProductBreadcrumbs';
 import ProductDescription from './ProductDescription';
-import { Trash2 } from 'lucide-react';
+import { Share2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
 
 type ProductColorImage = { id: number; url: string };
@@ -466,9 +467,12 @@ export default function ProductDetail({ id }: { id: string }) {
                             {categoryLabel}
                         </p>
 
-                        <h1 className="mb-2 font-beatrice text-[18px] font-medium leading-snug text-black md:text-[22px]">
-                            {product.name}
-                        </h1>
+                        <div className="mb-2 flex items-start justify-between gap-3">
+                            <h1 className="font-beatrice text-[18px] font-medium leading-snug text-black md:text-[22px]">
+                                {product.name}
+                            </h1>
+                            <ShareButton title={product.name} />
+                        </div>
 
                         <div className="mb-5 flex flex-wrap items-center gap-3 md:mb-8">
                             <p className="font-beatrice text-[20px] font-extrabold text-black md:text-[22px]">
@@ -787,4 +791,62 @@ export default function ProductDetail({ id }: { id: string }) {
         </>
 
     );
+}
+
+/** Native share sheet where the browser has one (phones); otherwise copies the page link. */
+function ShareButton({ title }: { title: string }) {
+    const t = useTranslations('Products');
+
+    async function share() {
+        const url = window.location.href;
+        if (navigator.share) {
+            try {
+                await navigator.share({ title, url });
+                return;
+            } catch (err) {
+                // Closing the share sheet is not an error; any other failure falls back to copying.
+                if ((err as DOMException)?.name === 'AbortError') return;
+            }
+        }
+        if (await copyText(url)) toast.success(t('linkCopied'));
+        else toast.error(t('shareFailed'));
+    }
+
+    return (
+        <button
+            type="button"
+            onClick={share}
+            aria-label={t('share')}
+            title={t('share')}
+            className="-mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-700 transition-colors hover:bg-gray-100 hover:text-black active:bg-gray-200"
+        >
+            <Share2 size={18} strokeWidth={2} aria-hidden />
+        </button>
+    );
+}
+
+/** Clipboard API needs a secure context (https/localhost); fall back to execCommand elsewhere. */
+async function copyText(text: string): Promise<boolean> {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+    } catch {
+        // fall through to the legacy copy
+    }
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    try {
+        return document.execCommand('copy');
+    } catch {
+        return false;
+    } finally {
+        area.remove();
+    }
 }

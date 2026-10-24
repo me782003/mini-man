@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
-  title: 'Shoes Store',
-  description: 'Shoes store'
+  title: 'Mini Man',
+  description: ''
 };
 
 export default async function RootLayout({

@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useState, useMemo, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, EffectFade, Pagination } from "swiper/modules";
 import { ArrowRightIcon } from "@/components/icons";
@@ -11,36 +12,8 @@ import "swiper/css";
 import "swiper/css/effect-fade";
 import "swiper/css/pagination";
 
-const SLIDE_DEFAULTS = [
-  {
-    tag: "New Arrival",
-    title: ["Step Into", "The Future"],
-    subtitle: "Spring / Summer 2025",
-    cta: "Shop Now",
-    accent: "#E8D5B7",
-  },
-  {
-    tag: "Exclusive Drop",
-    title: ["Bold Moves,", "Bold Soles"],
-    subtitle: "Limited Edition Collection",
-    cta: "Explore Collection",
-    accent: "#C9D8C5",
-  },
-  {
-    tag: "Bestseller",
-    title: ["Crafted For", "Every Step"],
-    subtitle: "Premium Comfort Series",
-    cta: "Discover More",
-    accent: "#C5C9D8",
-  },
-  {
-    tag: "Women's Edit",
-    title: ["Walk With", "Confidence"],
-    subtitle: "New Styles Just Landed",
-    cta: "View All",
-    accent: "#D8C5C9",
-  },
-];
+// Slide copy lives in messages (Home.slides.<n>); only the accent colours are fixed here.
+const SLIDE_ACCENTS = ["#E8D5B7", "#C9D8C5", "#C5C9D8", "#D8C5C9"];
 
 const FALLBACK_BANNERS = [
   { id: 1, image_url: "/images/hero-1.png", link: "/products" },
@@ -50,16 +23,24 @@ const FALLBACK_BANNERS = [
 ];
 
 export default function HeroSection2({ banners }) {
+  const t = useTranslations("Home");
   const slides = useMemo(
     () => (banners && banners.length > 0 ? banners : FALLBACK_BANNERS).map(
-      (banner, i) => ({
-        id: banner.id,
-        image: banner.image_url,
-        href: banner.link || "/products",
-        ...SLIDE_DEFAULTS[i % SLIDE_DEFAULTS.length],
-      })
+      (banner, i) => {
+        const n = (i % SLIDE_ACCENTS.length) + 1;
+        return {
+          id: banner.id,
+          image: banner.image_url,
+          href: banner.link || "/products",
+          tag: t(`slides.${n}.tag`),
+          title: [t(`slides.${n}.title1`), t(`slides.${n}.title2`)],
+          subtitle: t(`slides.${n}.subtitle`),
+          cta: t(`slides.${n}.cta`),
+          accent: SLIDE_ACCENTS[n - 1],
+        };
+      }
     ),
-    [banners]
+    [banners, t]
   );
 
   const [activeIndex, setActiveIndex] = useState(0);
@@ -186,7 +167,7 @@ export default function HeroSection2({ banners }) {
                   className="group inline-flex items-center gap-4 bg-white text-neutral-900 px-7 py-4 font-headline text-sm font-semibold uppercase tracking-widest hover:bg-neutral-100 transition-colors"
                 >
                   <span>{currentSlide.cta}</span>
-                  <ArrowRightIcon className="transition-transform group-hover:translate-x-1" />
+                  <ArrowRightIcon className="transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1" />
                 </Link>
               </div>
             </div>
@@ -220,7 +201,7 @@ export default function HeroSection2({ banners }) {
                       ? "w-8 h-2 bg-white"
                       : "w-2 h-2 bg-white/30 hover:bg-white/60"
                   }`}
-                  aria-label={`Go to slide ${i + 1}`}
+                  aria-label={t("goToSlide", { n: i + 1 })}
                 />
               ))}
             </div>
@@ -235,7 +216,7 @@ export default function HeroSection2({ banners }) {
                 >
                   <Image
                     src={slide.image}
-                    alt={`Slide ${i + 1}`}
+                    alt={t("slideAlt", { n: i + 1 })}
                     fill
                     sizes="64px"
                     style={{ objectFit: "cover" }}
@@ -255,14 +236,14 @@ export default function HeroSection2({ banners }) {
       <button
         onClick={() => swiperRef.current?.slidePrev()}
         className="absolute left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/15 transition-colors flex items-center justify-center text-white"
-        aria-label="Previous slide"
+        aria-label={t("previousSlide")}
       >
         <ArrowRightIcon className="rotate-180" />
       </button>
       <button
         onClick={() => swiperRef.current?.slideNext()}
         className="absolute right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/15 transition-colors flex items-center justify-center text-white"
-        aria-label="Next slide"
+        aria-label={t("nextSlide")}
       >
         <ArrowRightIcon />
       </button>

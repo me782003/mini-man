@@ -1,11 +1,16 @@
 'use client';
 
 import { Heart } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import ProductCard from '@/components/ProductCard';
 import { useWishlist, useRemoveFromWishlist } from '@/lib/hooks/useWishlist';
+import { intlLocale } from '@/lib/intl';
 
 export default function FavoritesClient() {
+    const t = useTranslations('Account');
+    const tc = useTranslations('Common');
+    const locale = useLocale();
     const { data: response, isLoading } = useWishlist();
     const removeFromWishlist = useRemoveFromWishlist();
 
@@ -21,7 +26,7 @@ export default function FavoritesClient() {
         return (
             <div className="flex flex-col items-center justify-center py-28 text-center">
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-black" />
-                <p className="mt-4 font-beatrice text-[14px] text-gray-500">Loading your favorites...</p>
+                <p className="mt-4 font-beatrice text-[14px] text-gray-500">{t('loadingFavorites')}</p>
             </div>
         );
     }
@@ -30,17 +35,17 @@ export default function FavoritesClient() {
         <>
             {/* Breadcrumb */}
             <nav className="mb-2 flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
-                <Link href="/" className="transition-colors hover:text-black">Home</Link>
+                <Link href="/" className="transition-colors hover:text-black">{tc('home')}</Link>
                 <span>/</span>
-                <span className="text-black">Favorites</span>
+                <span className="text-black">{t('favorites')}</span>
             </nav>
 
             {/* Heading */}
             <div className="mb-5 flex items-baseline gap-3 md:mb-8">
-                <h1 className="font-beatrice text-[20px] font-bold uppercase text-black">Favorites</h1>
+                <h1 className="font-beatrice text-[20px] font-bold uppercase text-black">{t('favorites')}</h1>
                 {items.length > 0 && (
                     <span className="font-beatrice text-[14px] text-gray-400">
-                        ({items.length} {items.length === 1 ? 'item' : 'items'})
+                        ({t('itemsCount', { count: items.length })})
                     </span>
                 )}
             </div>
@@ -49,16 +54,16 @@ export default function FavoritesClient() {
                 <div className="flex flex-col items-center justify-center py-28 text-center">
                     <Heart size={52} className="mb-5 text-gray-200" strokeWidth={1.5} />
                     <p className="mb-2 font-beatrice text-[18px] font-semibold text-black">
-                        Your favorites list is empty
+                        {t('favoritesEmpty')}
                     </p>
                     <p className="mb-8 font-beatrice text-[14px] text-gray-400">
-                        Save items you love by tapping the heart icon.
+                        {t('favoritesEmptyHint')}
                     </p>
                     <Link
                         href="/products"
                         className="bg-black px-10 py-3.5 font-beatrice text-[13px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
                     >
-                        Explore Products
+                        {t('exploreProducts')}
                     </Link>
                 </div>
             ) : (
@@ -72,7 +77,7 @@ export default function FavoritesClient() {
                                     <img
                                         src={item.image_url}
                                         alt={item.name}
-                                        className="h-full w-full object-contain"
+                                        className="h-full w-full object-contain mix-blend-multiply"
                                         onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
                                     />
                                 </div>
@@ -96,7 +101,7 @@ export default function FavoritesClient() {
                                     </h3>
                                     <div className="mt-1 flex flex-col ">
                                         <span className="font-beatrice text-[15px] font-extrabold text-black">
-                                            {Number(item.price).toLocaleString()} EGP
+                                            {tc('currency', { amount: Number(item.price).toLocaleString(intlLocale(locale)) })}
                                         </span>
                                     </div>
                                 </div>
@@ -108,7 +113,7 @@ export default function FavoritesClient() {
                                         handleRemove(item.id)
                                     }}
                                     disabled={removeFromWishlist.isPending}
-                                    aria-label="Remove from favorites"
+                                    aria-label={t('removeFromFavorites')}
                                     className="shrink-0 p-1 text-[#e63946] transition-transform hover:scale-110 disabled:opacity-50"
                                 >
                                     <Heart size={22} fill="#e63946" strokeWidth={0} />
@@ -127,14 +132,14 @@ export default function FavoritesClient() {
                                     image={item.image_url}
                                     category={item.category_collection.category.name}
                                     title={item.name}
-                                    price={`${Number(item.price).toLocaleString()} EGP`}
+                                    price={tc('currency', { amount: Number(item.price).toLocaleString(intlLocale(locale)) })}
                                     colors={item.colors.map(c => c.hexa)}
                                 />
                                 <button
                                     onClick={() => handleRemove(item.id)}
                                     disabled={removeFromWishlist.isPending}
-                                    aria-label="Remove from favorites"
-                                    className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md transition-transform hover:scale-110 disabled:opacity-50"
+                                    aria-label={t('removeFromFavorites')}
+                                    className="absolute end-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md transition-transform hover:scale-110 disabled:opacity-50"
                                 >
                                     <Heart size={16} fill="#e63946" strokeWidth={0} />
                                 </button>

@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, put, del } from '@/lib/fetcher';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
+import { useHasAuthToken } from '@/lib/auth-token';
 
 export interface CartProduct {
   id: number;
@@ -15,13 +17,18 @@ export interface CartVariant {
   sku: string;
   size: string;
   color_hexa: string;
+  price_modifier?: string;
+  stock?: number;
+  is_active?: number;
+  is_available?: number;
+  images?: string[];
 }
 
 export interface CartItem {
   cart_item_id: number;
   quantity: number;
   product: CartProduct;
-  variant: CartVariant;
+  variant: CartVariant | null;
   total_item_price: number;
 }
 
@@ -49,25 +56,31 @@ const cartKeys = {
 };
 
 export function useCart() {
+  const loggedIn = useHasAuthToken();
   return useQuery({
     queryKey: cartKeys.all(),
     queryFn: () => get<CartResponse>('/user/cart'),
+    enabled: loggedIn,
   });
 }
 
 export function useAddToCart() {
   const qc = useQueryClient();
+  const t = useTranslations('Checkout');
   return useMutation({
-    mutationFn: (vars: { variant_id: number; product_id: number }) =>
-      post('/user/cart', vars),
+    mutationFn: ({ quantity = 1, ...vars }: { variant_id: number; product_id: number; quantity?: number }) => {
+      // The backend needs a real number ≥ 1 (a string breaks its stock check; it doesn't reject ≤ 0).
+      const qty = Math.max(1, Math.floor(Number(quantity) || 1));
+      return post('/user/cart', { ...vars, quantity: qty });
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: cartKeys.all() });
       qc.invalidateQueries({ queryKey: ['profile'] });
       qc.invalidateQueries({ queryKey: ['products', 'detail-v2'] });
-      toast.success('Added to cart');
+      toast.success(t('addedToCart'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Failed to add to cart');
+      toast.error(err.message || t('addToCartFailed'));
     },
   });
 }
@@ -107,15 +120,16 @@ export function useUpdateCartItem() {
 
 export function useRemoveCartItem() {
   const qc = useQueryClient();
+  const t = useTranslations('Checkout');
   return useMutation({
     mutationFn: (itemId: number) => del(`/user/cart/${itemId}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: cartKeys.all() });
       qc.invalidateQueries({ queryKey: ['products', 'detail-v2'] });
-      toast.success('Removed from cart');
+      toast.success(t('removedFromCart'));
     },
     onError: (err: Error) => {
-      toast.error(err.message || 'Failed to remove item');
+      toast.error(err.message || t('removeFailed'));
     },
   });
 }

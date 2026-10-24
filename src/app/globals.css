@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -177,6 +177,9 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  /* `clip` stops sideways scrolling like `hidden`, but without turning html/body into
+     scroll containers — `hidden` silently breaks every `position: sticky` on the site. */
+  overflow-x: clip;
 }
 
 body {
@@ -291,5 +294,15 @@ a {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Hides the scrollbar while keeping the area scrollable (wheel, touch, keyboard). */
+@layer utilities {
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }

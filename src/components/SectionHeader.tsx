@@ -1,4 +1,5 @@
 import React, { JSX } from "react";
+import { useTranslations } from "next-intl";
 
 interface SectionHeaderProps {
     primaryTitle?: string | React.ReactNode;
@@ -13,11 +14,13 @@ export default function SectionHeader({
     count = 50,
     seeAllHref = "#",
 }: SectionHeaderProps): JSX.Element {
+    const t = useTranslations("Site");
     return (
         <div className="w-full container px-4">
             <div className="flex items-end justify-between gap-4">
                 <div className="flex items-start">
-                    <h2 className="flex flex-col text-[34px] font-beatrice font-extrabold uppercase leading-[35px] md:leading-[50px] text-black sm:text-[48px]">
+                    {/* English stacks the two words; Arabic reads better on one line. */}
+                    <h2 className="flex flex-col rtl:flex-row rtl:flex-wrap rtl:gap-x-3 text-[34px] font-beatrice font-extrabold uppercase leading-[35px] md:leading-[50px] text-black sm:text-[48px]">
                         <span>{primaryTitle}</span>
                         <span>{secondaryTitle}</span>
                     </h2>
@@ -31,7 +34,7 @@ export default function SectionHeader({
                     href={seeAllHref}
                     className="mb-1 hidden shrink-0 items-center gap-2 text-[16px] font-medium text-[#6b6b6b] transition hover:text-[#4f4f4f] md:flex"
                 >
-                    <span className="font-beatrice">See All</span>
+                    <span className="font-beatrice">{t("seeAll")}</span>
                     <span className="text-[28px] leading-none sm:text-[34px] lg:text-[52px]">
                         <svg
                             width="37"
@@ -39,6 +42,7 @@ export default function SectionHeader({
                             viewBox="0 0 37 14"
                             fill="none"
                             xmlns="http://www.w3.org/2000/svg"
+                            className="rtl:rotate-180"
                         >
                             <path
                                 d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"

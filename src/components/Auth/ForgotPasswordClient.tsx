@@ -4,8 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForgotPassword } from '@/lib/hooks/useAuth';
+import { useTranslations } from 'next-intl';
 
 export default function ForgotPasswordClient() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { mutate: forgotPassword, isPending, isError, error, isSuccess } = useForgotPassword();
@@ -14,7 +16,7 @@ export default function ForgotPasswordClient() {
   const [phoneError, setPhoneError] = useState('');
 
   const validate = () => {
-    if (!phone.trim()) return 'Phone number is required';
+    if (!phone.trim()) return t('phoneRequired');
     return '';
   };
 
@@ -47,16 +49,16 @@ export default function ForgotPasswordClient() {
 
         <div className="mb-10 text-center">
           <h1 className="font-headline text-[32px] font-bold uppercase tracking-tight text-neutral-900">
-            Forgot Password
+            {t('forgotTitle')}
           </h1>
           <p className="mt-2 font-cairo text-sm text-neutral-500">
-            Enter your phone number and we'll send you a reset code
+            {t('forgotSubtitle')}
           </p>
         </div>
 
         {isSuccess ? (
           <div className="border border-green-200 bg-green-50 px-5 py-4 text-center font-cairo text-sm text-green-700">
-            ✓ Reset code sent successfully. Redirecting…
+            {t('resetCodeSent')}
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -68,7 +70,7 @@ export default function ForgotPasswordClient() {
 
             <div className="space-y-1.5">
               <label className="block font-beatrice text-[13px] font-medium uppercase tracking-wide text-neutral-700">
-                Phone Number
+                {t('phoneNumber')}
               </label>
               <input
                 type="tel"
@@ -76,7 +78,8 @@ export default function ForgotPasswordClient() {
                 onChange={(e) => { setPhone(e.target.value); setPhoneError(''); }}
                 placeholder="201234567890"
                 autoComplete="tel"
-                className={`h-[50px] w-full border px-4 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${
+                dir="ltr"
+                className={`rtl:text-right h-[50px] w-full border px-4 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${
                   phoneError ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'
                 }`}
               />
@@ -88,8 +91,8 @@ export default function ForgotPasswordClient() {
               disabled={isPending}
               className="flex w-full items-center justify-between bg-neutral-900 px-5 py-4 font-headline text-[16px] font-semibold uppercase text-white transition-colors hover:bg-neutral-700 disabled:opacity-60"
             >
-              <span>{isPending ? 'Sending…' : 'Send Reset Code'}</span>
-              <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+              <span>{isPending ? t('sending') : t('sendResetCode')}</span>
+              <svg width="30" height="12" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
                 <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -97,9 +100,9 @@ export default function ForgotPasswordClient() {
         )}
 
         <p className="mt-8 text-center font-cairo text-sm text-neutral-500">
-          Remembered it?{' '}
+          {t('rememberedIt')}{' '}
           <Link href="/login" className="font-semibold text-neutral-900 underline underline-offset-2 hover:opacity-70">
-            Back to Login
+            {t('backToLogin')}
           </Link>
         </p>
       </div>

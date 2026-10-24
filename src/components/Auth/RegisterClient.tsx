@@ -8,6 +8,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useRegister, useGoogleAuth } from '@/lib/hooks/useAuth';
 import { setProfile } from '@/lib/store/features/profileSlice';
 import { GoogleLogin } from '@react-oauth/google';
+import { useTranslations } from 'next-intl';
+import { notifyAuthChange } from '@/lib/auth-token';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -25,6 +27,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function RegisterClient() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
@@ -38,11 +41,11 @@ export default function RegisterClient() {
 
   const validate = () => {
     const errors: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.name.trim())                                      errors.name            = 'Name is required';
-    if (!/^01[0-9]{9}$/.test(form.phone))                      errors.phone           = 'Enter a valid Egyptian phone number';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))        errors.email           = 'Enter a valid email';
-    if (form.password.length < 8)                               errors.password        = 'Password must be at least 8 characters';
-    if (form.confirmPassword !== form.password)                 errors.confirmPassword = 'Passwords do not match';
+    if (!form.name.trim())                                      errors.name            = t('nameRequired');
+    if (!/^01[0-9]{9}$/.test(form.phone))                      errors.phone           = t('phoneInvalid');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))        errors.email           = t('emailInvalid');
+    if (form.password.length < 8)                               errors.password        = t('passwordMin');
+    if (form.confirmPassword !== form.password)                 errors.confirmPassword = t('passwordsMismatch');
     return errors;
   };
 
@@ -61,6 +64,7 @@ export default function RegisterClient() {
     register(payload, {
       onSuccess: (res) => {
         localStorage.setItem('token', res.data.token);
+        notifyAuthChange();
         localStorage.setItem('user', JSON.stringify(res.data.user));
         document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         dispatch(setProfile(res.data.user));
@@ -80,9 +84,9 @@ export default function RegisterClient() {
       <div className="w-full max-w-md">
         <div className="mb-10 text-center">
           <h1 className="font-headline text-[36px] font-bold uppercase tracking-tight text-neutral-900">
-            Create Account
+            {t('createAccount')}
           </h1>
-          <p className="mt-2 font-cairo text-sm text-neutral-500">Join us and start shopping</p>
+          <p className="mt-2 font-cairo text-sm text-neutral-500">{t('joinUs')}</p>
         </div>
 
         <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -92,62 +96,62 @@ export default function RegisterClient() {
             </div>
           )}
 
-          <Field label="Full Name" error={fieldErrors.name}>
+          <Field label={t('fullName')} error={fieldErrors.name}>
             <input
               type="text" name="name" value={form.name} onChange={handleChange}
-              placeholder="John Doe" autoComplete="name"
+              placeholder={t('fullNamePlaceholder')} autoComplete="name"
               className={inputCls(!!fieldErrors.name)}
             />
           </Field>
 
-          <Field label="Phone Number" error={fieldErrors.phone}>
+          <Field label={t('phoneNumber')} error={fieldErrors.phone}>
             <input
               type="tel" name="phone" value={form.phone} onChange={handleChange}
-              placeholder="01234567890" autoComplete="tel"
-              className={inputCls(!!fieldErrors.phone)}
+              placeholder="01234567890" autoComplete="tel" dir="ltr"
+              className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`}
             />
           </Field>
 
-          <Field label="Email Address" error={fieldErrors.email}>
+          <Field label={t('emailAddress')} error={fieldErrors.email}>
             <input
               type="email" name="email" value={form.email} onChange={handleChange}
-              placeholder="john@example.com" autoComplete="email"
-              className={inputCls(!!fieldErrors.email)}
+              placeholder="john@example.com" autoComplete="email" dir="ltr"
+              className={`${inputCls(!!fieldErrors.email)} rtl:text-right`}
             />
           </Field>
 
-          <Field label="Password" error={fieldErrors.password}>
+          <Field label={t('password')} error={fieldErrors.password}>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password" value={form.password} onChange={handleChange}
-                placeholder="Min. 8 characters" autoComplete="new-password"
-                className={`${inputCls(!!fieldErrors.password)} pr-12`}
+                placeholder={t('minChars')} autoComplete="new-password"
+                className={`${inputCls(!!fieldErrors.password)} pe-12`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 right-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 end-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors"
+                aria-label={showPassword ? t('hidePassword') : t('showPassword')}
               >
                 <EyeIcon open={showPassword} />
               </button>
             </div>
           </Field>
 
-          <Field label="Confirm Password" error={fieldErrors.confirmPassword}>
+          <Field label={t('confirmPassword')} error={fieldErrors.confirmPassword}>
             <div className="relative">
               <input
                 type={showConfirm ? 'text' : 'password'}
                 name="confirmPassword" value={form.confirmPassword} onChange={handleChange}
-                placeholder="Repeat your password" autoComplete="new-password"
-                className={`${inputCls(!!fieldErrors.confirmPassword)} pr-12`}
+                placeholder={t('repeatPassword')} autoComplete="new-password"
+                className={`${inputCls(!!fieldErrors.confirmPassword)} pe-12`}
               />
               <button
                 type="button"
                 onClick={() => setShowConfirm((v) => !v)}
-                className="absolute inset-y-0 right-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors"
-                aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 end-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors"
+                aria-label={showConfirm ? t('hidePassword') : t('showPassword')}
               >
                 <EyeIcon open={showConfirm} />
               </button>
@@ -158,8 +162,8 @@ export default function RegisterClient() {
             type="submit" disabled={isPending}
             className="flex w-full items-center justify-between bg-neutral-900 px-5 py-4 font-headline text-[16px] font-semibold uppercase text-white transition-colors hover:bg-neutral-700 disabled:opacity-60"
           >
-            <span>{isPending ? 'Creating account…' : 'Create Account'}</span>
-            <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+            <span>{isPending ? t('creatingAccount') : t('createAccount')}</span>
+            <svg width="30" height="12" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
               <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
@@ -176,6 +180,7 @@ export default function RegisterClient() {
                 {
                   onSuccess: (res) => {
                     localStorage.setItem('token', res.data.token);
+                    notifyAuthChange();
                     localStorage.setItem('user', JSON.stringify(res.data.user));
                     document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
                     dispatch(setProfile(res.data.user));
@@ -190,9 +195,9 @@ export default function RegisterClient() {
         </div>
 
         <p className="mt-8 text-center font-cairo text-sm text-neutral-500">
-          Already have an account?{' '}
+          {t('haveAccount')}{' '}
           <Link href="/login" className="font-semibold text-neutral-900 underline underline-offset-2 hover:opacity-70">
-            Sign in
+            {t('signInLink')}
           </Link>
         </p>
       </div>

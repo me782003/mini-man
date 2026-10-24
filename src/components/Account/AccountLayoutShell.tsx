@@ -2,9 +2,11 @@
 
 import React, { useState } from 'react';
 import { Menu } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import AccountSidebar from '@/components/Account/AccountSidebar';
 
 export default function AccountLayoutShell({ children }: { children: React.ReactNode }) {
+    const t = useTranslations('Account');
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     return (
@@ -13,8 +15,9 @@ export default function AccountLayoutShell({ children }: { children: React.React
             {!sidebarOpen && (
                 <button
                     onClick={() => setSidebarOpen(true)}
-                    className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg transition-all hover:scale-[1.03] hover:bg-neutral-800 lg:hidden"
-                    aria-label="Open account menu"
+                    // Takes the bottom spot on account pages; WhatsApp moves up above it (see WhatsAppButton).
+                    className="fixed bottom-6 end-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-black text-white shadow-lg transition-all hover:scale-[1.03] hover:bg-neutral-800 lg:hidden"
+                    aria-label={t('openMenu')}
                 >
                     <Menu size={22} />
                 </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 
 function LockIcon() {
     return (
@@ -12,6 +13,7 @@ function LockIcon() {
 }
 
 export function SecurePaymentBadge() {
+    const t = useTranslations('Checkout');
     return (
         <div className="flex items-start gap-3 border border-[#388E3C] bg-[#E8F5E9] p-5">
             <span className="mt-0.5 shrink-0 text-[#4caf7d]">
@@ -19,10 +21,10 @@ export function SecurePaymentBadge() {
             </span>
             <div>
                 <p className="font-beatrice text-[13px] font-bold text-[#388E3C]">
-                    Secure Payment
+                    {t('securePayment')}
                 </p>
                 <p className="font-beatrice text-[14px] text-[#388E3C]">
-                    Your payment information is encrypted and secure.
+                    {t('securePaymentDesc')}
                 </p>
             </div>
         </div>
@@ -30,6 +32,7 @@ export function SecurePaymentBadge() {
 }
 
 import type { CartSummary } from '@/lib/hooks/useCart';
+import { intlLocale } from '@/lib/intl';
 
 interface OrderSummaryProps {
     summary?: CartSummary;
@@ -41,6 +44,10 @@ interface OrderSummaryProps {
 }
 
 export default function OrderSummary({ summary, isLoading, couponCode, discountAmount, className, children }: OrderSummaryProps) {
+    const t = useTranslations('Checkout');
+    const c = useTranslations('Common');
+    const locale = useLocale();
+    const money = (n: number) => c('currency', { amount: n.toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) });
     const subtotal  = Number(summary?.subtotal ?? 0);
     const tax       = Number(summary?.tax ?? 0);
     const shipping  = Number(summary?.shipping ?? 0);
@@ -51,7 +58,7 @@ export default function OrderSummary({ summary, isLoading, couponCode, discountA
     return (
         <div className={className ?? ' w-full md:w-[507px] shrink-0 border border-gray-200 p-5 md:p-10'}>
             <h2 className="mb-5 md:mb-10 font-beatrice text-[20px] font-bold text-black">
-                Order Summary
+                {c('orderSummary')}
             </h2>
 
             {isLoading ? (
@@ -63,27 +70,27 @@ export default function OrderSummary({ summary, isLoading, couponCode, discountA
             ) : (
                 <div className="mb-4 space-y-[20px]">
                     <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
-                        <span className="text-gray-500">Subtotal</span>
-                        <span className="font-bold text-black">{subtotal.toLocaleString()} EGP</span>
+                        <span className="text-gray-500">{c('subtotal')}</span>
+                        <span className="font-bold text-black">{money(subtotal)}</span>
                     </div>
                     {discount > 0 && (
                         <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
-                            <span className="text-gray-500">
-                                Discount{coupon ? ` (${coupon})` : ''}
+                            <span className="text-green-700">
+                                {coupon ? t('discountWithCode', { code: coupon }) : c('discount')}
                             </span>
-                            <span className="font-bold text-[#FF383C]">-{discount.toLocaleString()} EGP</span>
+                            <span className="font-bold text-green-700">−{money(discount)}</span>
                         </div>
                     )}
                     <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
-                        <span className="text-gray-500">Shipping</span>
+                        <span className="text-gray-500">{c('shipping')}</span>
                         <span className="font-bold text-black">
-                            {shipping > 0 ? `${shipping.toLocaleString()} EGP` : 'Free'}
+                            {shipping > 0 ? money(shipping) : c('free')}
                         </span>
                     </div>
                     {tax > 0 && (
                         <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
-                            <span className="text-gray-500">Tax</span>
-                            <span className="font-bold text-black">{tax.toLocaleString()} EGP</span>
+                            <span className="text-gray-500">{c('tax')}</span>
+                            <span className="font-bold text-black">{money(tax)}</span>
                         </div>
                     )}
                 </div>
@@ -91,8 +98,8 @@ export default function OrderSummary({ summary, isLoading, couponCode, discountA
 
             <div className="mb-6 border-t border-gray-200 pt-4">
                 <div className="flex items-baseline justify-between font-beatrice">
-                    <span className="text-[20px] font-bold text-black">Total</span>
-                    <span className="text-[20px] font-extrabold text-black">{total.toLocaleString()} EGP</span>
+                    <span className="text-[20px] font-bold text-black">{c('total')}</span>
+                    <span className="text-[20px] font-extrabold text-black">{money(total)}</span>
                 </div>
             </div>
 

@@ -1,9 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { get, put } from '@/lib/fetcher';
+import { get, put, API_BASE_URL } from '@/lib/fetcher';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { setProfile, setLoading, setError, ProfileState } from '@/lib/store/features/profileSlice';
 import { RootState } from '@/lib/store/store';
+import { useHasAuthToken } from '@/lib/auth-token';
 
 export interface Address {
     id: number;
@@ -18,6 +19,10 @@ export interface Address {
     latitude?: number | null;
     longitude?: number | null;
     is_default: number;
+    bosta_city_id?: string | null;
+    bosta_city_name?: string | null;
+    bosta_district_id?: string | null;
+    bosta_district_name?: string | null;
 }
 
 export interface ProfileResponse {
@@ -42,9 +47,11 @@ export function useProfile() {
     const dispatch = useDispatch();
     const profile = useSelector((state: RootState) => state.profile);
 
+    const loggedIn = useHasAuthToken();
     const { data, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['profile'],
         queryFn: () => get<ProfileResponse>('/user/auth/profile'),
+        enabled: loggedIn,
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
@@ -80,7 +87,7 @@ export function useUpdateProfile() {
     return useMutation({
         mutationFn: async (formData: FormData) => {
             const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-            const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://mini-man.shaarapp.com';
+            const BASE_URL = API_BASE_URL;
             
             const res = await fetch(`${BASE_URL}/user/auth/profile`, {
                 method: 'PUT',

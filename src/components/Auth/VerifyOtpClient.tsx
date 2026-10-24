@@ -3,10 +3,13 @@
 import { useRef, useState, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useVerifyOtp, useResendOtp } from '@/lib/hooks/useAuth';
+import { useTranslations } from 'next-intl';
+import { notifyAuthChange } from '@/lib/auth-token';
 
 const OTP_LENGTH = 4;
 
 export default function VerifyOtpClient() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get('phone') ?? '';
@@ -21,8 +24,8 @@ export default function VerifyOtpClient() {
 
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
   }, [cooldown]);
 
   const handleResend = () => {
@@ -65,6 +68,7 @@ export default function VerifyOtpClient() {
     verify({ phone, otp }, {
       onSuccess: (res) => {
         localStorage.setItem('token', res.data.token);
+        notifyAuthChange();
         localStorage.setItem('user', JSON.stringify(res.data.user));
         document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         router.push('/account');
@@ -88,11 +92,11 @@ export default function VerifyOtpClient() {
         </div>
 
         <h1 className="font-headline text-[32px] font-bold uppercase tracking-tight text-neutral-900">
-          Verify Your Account
+          {t('verifyTitle')}
         </h1>
         <p className="mt-2 mb-10 font-cairo text-sm text-neutral-500">
-          Enter the {OTP_LENGTH}-digit code sent to{' '}
-          <span className="font-semibold text-neutral-700">{phone}</span>
+          {t('otpSentTo', { length: OTP_LENGTH })}{' '}
+          <span dir="ltr" className="font-semibold text-neutral-700">{phone}</span>
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -103,13 +107,14 @@ export default function VerifyOtpClient() {
           )}
 
           {/* OTP inputs */}
-          <div className="flex justify-center gap-3">
+          <div dir="ltr" className="flex justify-center gap-3">
             {digits.map((digit, idx) => (
               <input
                 key={idx}
                 ref={(el) => { inputRefs.current[idx] = el; }}
                 type="text"
                 inputMode="numeric"
+                aria-label={t('otpDigit', { n: idx + 1 })}
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(idx, e.target.value)}
@@ -129,8 +134,8 @@ export default function VerifyOtpClient() {
             disabled={isPending || !isFilled}
             className="flex w-full items-center justify-between bg-neutral-900 px-5 py-4 font-headline text-[16px] font-semibold uppercase text-white transition-colors hover:bg-neutral-700 disabled:opacity-50"
           >
-            <span>{isPending ? 'Verifying…' : 'Verify Account'}</span>
-            <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+            <span>{isPending ? t('verifying') : t('verifyAccount')}</span>
+            <svg width="30" height="12" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
               <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
@@ -138,16 +143,16 @@ export default function VerifyOtpClient() {
           {/* Resend */}
           <div className="text-center font-cairo text-sm text-neutral-500">
             {resendSuccess && cooldown > 0 && (
-              <p className="mb-1 text-green-600">Code sent! Check your phone.</p>
+              <p className="mb-1 text-green-600">{t('codeSent')}</p>
             )}
-            Didn&apos;t receive a code?{' '}
+            {t('noCode')}{' '}
             <button
               type="button"
               onClick={handleResend}
               disabled={cooldown > 0 || isResending}
               className="font-semibold text-neutral-900 underline underline-offset-2 hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {isResending ? 'Sending…' : cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+              {isResending ? t('sending') : cooldown > 0 ? t('resendIn', { seconds: cooldown }) : t('resendCode')}
             </button>
           </div>
         </form>

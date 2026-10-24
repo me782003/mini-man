@@ -9,6 +9,8 @@ import { useLogin, useRegister, useGoogleAuth } from '@/lib/hooks/useAuth';
 import { setProfile } from '@/lib/store/features/profileSlice';
 import { useAuthModal } from '@/lib/context/AuthModalContext';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
+import { notifyAuthChange } from '@/lib/auth-token';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -38,6 +40,7 @@ const inputCls = (hasError: boolean) =>
   `h-[46px] w-full border px-4 font-cairo text-[14px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${hasError ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'}`;
 
 function LoginForm({ onSuccess }: { onSuccess: () => void }) {
+  const t = useTranslations('Auth');
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { mutate: login, isPending, isError, error } = useLogin();
@@ -54,19 +57,20 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
   const saveAuth = (token: string, user: object) => {
     localStorage.setItem('token', token);
+    notifyAuthChange();
     localStorage.setItem('user', JSON.stringify(user));
     document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
     dispatch(setProfile(user as Parameters<typeof setProfile>[0]));
     queryClient.invalidateQueries({ queryKey: ['profile'] });
-    toast.success('Signed in successfully');
+    toast.success(t('signedIn'));
     onSuccess();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.phone.trim()) errors.phone = 'Required';
-    if (!form.password.trim()) errors.password = 'Required';
+    if (!form.phone.trim()) errors.phone = t('required');
+    if (!form.password.trim()) errors.password = t('required');
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
     login(form, { onSuccess: (res) => saveAuth(res.data.token, res.data.user) });
   };
@@ -91,7 +95,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 
       <div className="flex items-center gap-3">
         <div className="flex-1 border-b border-neutral-200" />
-        <span className="font-cairo text-xs text-neutral-400">OR</span>
+        <span className="font-cairo text-xs text-neutral-400">{t('or')}</span>
         <div className="flex-1 border-b border-neutral-200" />
       </div>
 
@@ -99,24 +103,25 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
         {errorMessage && (
           <p className="border border-red-200 bg-red-50 px-3 py-2 font-cairo text-xs text-red-600">{errorMessage}</p>
         )}
-        <Field label="Phone" error={fieldErrors.phone}>
+        <Field label={t('phone')} error={fieldErrors.phone}>
           <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-            placeholder="201234567890" autoComplete="tel" className={inputCls(!!fieldErrors.phone)} />
+            placeholder="201234567890" autoComplete="tel" dir="ltr" className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`} />
         </Field>
-        <Field label="Password" error={fieldErrors.password}>
+        <Field label={t('password')} error={fieldErrors.password}>
           <div className="relative">
             <input type={showPassword ? 'text' : 'password'} name="password" value={form.password}
-              onChange={handleChange} placeholder="Your password" autoComplete="current-password"
-              className={`${inputCls(!!fieldErrors.password)} pr-10`} />
+              onChange={handleChange} placeholder={t('yourPassword')} autoComplete="current-password"
+              className={`${inputCls(!!fieldErrors.password)} pe-10`} />
             <button type="button" onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-neutral-700">
+              aria-label={showPassword ? t('hidePassword') : t('showPassword')}
+              className="absolute inset-y-0 end-3 flex items-center text-neutral-400 hover:text-neutral-700">
               <EyeIcon open={showPassword} />
             </button>
           </div>
         </Field>
         <button type="submit" disabled={isPending}
           className="w-full bg-neutral-900 py-3 font-headline text-[14px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-neutral-700 disabled:opacity-60">
-          {isPending ? 'Signing in…' : 'Sign In'}
+          {isPending ? t('signingIn') : t('signIn')}
         </button>
       </form>
     </div>
@@ -124,6 +129,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
+  const t = useTranslations('Auth');
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { mutate: register, isPending, isError, error } = useRegister();
@@ -140,22 +146,23 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
 
   const saveAuth = (token: string, user: object) => {
     localStorage.setItem('token', token);
+    notifyAuthChange();
     localStorage.setItem('user', JSON.stringify(user));
     document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
     dispatch(setProfile(user as Parameters<typeof setProfile>[0]));
     queryClient.invalidateQueries({ queryKey: ['profile'] });
-    toast.success('Signed in successfully');
+    toast.success(t('signedIn'));
     onSuccess();
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const errors: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.name.trim()) errors.name = 'Required';
-    if (!/^01[0-9]{9}$/.test(form.phone)) errors.phone = 'Valid Egyptian phone required';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = 'Valid email required';
-    if (form.password.length < 8) errors.password = 'Min 8 characters';
-    if (form.confirmPassword !== form.password) errors.confirmPassword = 'Passwords do not match';
+    if (!form.name.trim()) errors.name = t('required');
+    if (!/^01[0-9]{9}$/.test(form.phone)) errors.phone = t('phoneInvalid');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = t('emailInvalid');
+    if (form.password.length < 8) errors.password = t('passwordMin');
+    if (form.confirmPassword !== form.password) errors.confirmPassword = t('passwordsMismatch');
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
     const { confirmPassword: _, ...payload } = form;
     register(payload, { onSuccess: (res) => saveAuth(res.data.token, res.data.user) });
@@ -181,7 +188,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
 
       <div className="flex items-center gap-3">
         <div className="flex-1 border-b border-neutral-200" />
-        <span className="font-cairo text-xs text-neutral-400">OR</span>
+        <span className="font-cairo text-xs text-neutral-400">{t('or')}</span>
         <div className="flex-1 border-b border-neutral-200" />
       </div>
 
@@ -189,37 +196,38 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
         {errorMessage && (
           <p className="border border-red-200 bg-red-50 px-3 py-2 font-cairo text-xs text-red-600">{errorMessage}</p>
         )}
-        <Field label="Full Name" error={fieldErrors.name}>
+        <Field label={t('fullName')} error={fieldErrors.name}>
           <input type="text" name="name" value={form.name} onChange={handleChange}
-            placeholder="John Doe" autoComplete="name" className={inputCls(!!fieldErrors.name)} />
+            placeholder={t('fullNamePlaceholder')} autoComplete="name" className={inputCls(!!fieldErrors.name)} />
         </Field>
-        <Field label="Phone" error={fieldErrors.phone}>
+        <Field label={t('phone')} error={fieldErrors.phone}>
           <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-            placeholder="01234567890" autoComplete="tel" className={inputCls(!!fieldErrors.phone)} />
+            placeholder="01234567890" autoComplete="tel" dir="ltr" className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`} />
         </Field>
-        <Field label="Email" error={fieldErrors.email}>
+        <Field label={t('email')} error={fieldErrors.email}>
           <input type="email" name="email" value={form.email} onChange={handleChange}
-            placeholder="you@example.com" autoComplete="email" className={inputCls(!!fieldErrors.email)} />
+            placeholder="you@example.com" autoComplete="email" dir="ltr" className={`${inputCls(!!fieldErrors.email)} rtl:text-right`} />
         </Field>
-        <Field label="Password" error={fieldErrors.password}>
+        <Field label={t('password')} error={fieldErrors.password}>
           <div className="relative">
             <input type={showPassword ? 'text' : 'password'} name="password" value={form.password}
-              onChange={handleChange} placeholder="Min 8 characters" autoComplete="new-password"
-              className={`${inputCls(!!fieldErrors.password)} pr-10`} />
+              onChange={handleChange} placeholder={t('minChars')} autoComplete="new-password"
+              className={`${inputCls(!!fieldErrors.password)} pe-10`} />
             <button type="button" onClick={() => setShowPassword((v) => !v)}
-              className="absolute inset-y-0 right-3 flex items-center text-neutral-400 hover:text-neutral-700">
+              aria-label={showPassword ? t('hidePassword') : t('showPassword')}
+              className="absolute inset-y-0 end-3 flex items-center text-neutral-400 hover:text-neutral-700">
               <EyeIcon open={showPassword} />
             </button>
           </div>
         </Field>
-        <Field label="Confirm Password" error={fieldErrors.confirmPassword}>
+        <Field label={t('confirmPassword')} error={fieldErrors.confirmPassword}>
           <input type="password" name="confirmPassword" value={form.confirmPassword}
-            onChange={handleChange} placeholder="Repeat password" autoComplete="new-password"
+            onChange={handleChange} placeholder={t('repeatPassword')} autoComplete="new-password"
             className={inputCls(!!fieldErrors.confirmPassword)} />
         </Field>
         <button type="submit" disabled={isPending}
           className="w-full bg-neutral-900 py-3 font-headline text-[14px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-neutral-700 disabled:opacity-60">
-          {isPending ? 'Creating account…' : 'Create Account'}
+          {isPending ? t('creatingAccount') : t('createAccount')}
         </button>
       </form>
     </div>
@@ -229,6 +237,8 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
 export default function AuthModal() {
   const { isOpen, closeAuthModal, consumePendingAction } = useAuthModal();
   const [tab, setTab] = useState<'login' | 'register'>('login');
+  const t = useTranslations('Auth');
+  const tc = useTranslations('Common');
 
   if (!isOpen) return null;
 
@@ -242,17 +252,17 @@ export default function AuthModal() {
         <button
           type="button"
           onClick={closeAuthModal}
-          className="absolute right-4 top-4 text-neutral-400 transition-colors hover:text-neutral-900"
-          aria-label="Close"
+          className="absolute end-4 top-4 text-neutral-400 transition-colors hover:text-neutral-900"
+          aria-label={tc('close')}
         >
           <X size={20} />
         </button>
 
         <h2 className="mb-1 font-headline text-[24px] font-bold uppercase tracking-tight text-neutral-900">
-          {tab === 'login' ? 'Sign In' : 'Create Account'}
+          {tab === 'login' ? t('signIn') : t('createAccount')}
         </h2>
         <p className="mb-5 font-cairo text-sm text-neutral-500">
-          {tab === 'login' ? 'Sign in to save items and manage your cart' : 'Join us to start shopping'}
+          {tab === 'login' ? t('modalLoginSubtitle') : t('joinUs')}
         </p>
 
         {/* Tabs */}
@@ -260,16 +270,16 @@ export default function AuthModal() {
           <button
             type="button"
             onClick={() => setTab('login')}
-            className={`pb-2 pr-5 font-beatrice text-[13px] font-semibold uppercase tracking-wide transition-colors ${tab === 'login' ? 'border-b-2 border-neutral-900 text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
+            className={`pb-2 pe-5 font-beatrice text-[13px] font-semibold uppercase tracking-wide transition-colors ${tab === 'login' ? 'border-b-2 border-neutral-900 text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
           >
-            Sign In
+            {t('signIn')}
           </button>
           <button
             type="button"
             onClick={() => setTab('register')}
-            className={`pb-2 pr-5 font-beatrice text-[13px] font-semibold uppercase tracking-wide transition-colors ${tab === 'register' ? 'border-b-2 border-neutral-900 text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
+            className={`pb-2 pe-5 font-beatrice text-[13px] font-semibold uppercase tracking-wide transition-colors ${tab === 'register' ? 'border-b-2 border-neutral-900 text-neutral-900' : 'text-neutral-400 hover:text-neutral-700'}`}
           >
-            Register
+            {t('register')}
           </button>
         </div>
 

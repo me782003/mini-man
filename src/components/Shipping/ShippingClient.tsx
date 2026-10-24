@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import CheckoutStepper from '@/components/CheckoutStepper';
 import OrderSummary, { SecurePaymentBadge } from '@/components/OrderSummary';
 import { useAuthState } from '@/lib/hooks/useAuthState';
 import { useCart } from '@/lib/hooks/useCart';
-import { useValidateCoupon } from '@/lib/hooks/useOrders';
+import { useAppliedCoupon } from '@/lib/hooks/useAppliedCoupon';
 import type { Address } from '@/lib/hooks/useProfile';
 import { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress, useSetDefaultAddress } from '@/lib/hooks/useAddresses';
-import AddressModal, { EMPTY_FORM, type AddressForm } from '@/components/Account/AddressModal';
+import CountryBadge from '@/components/Country/CountryBadge';
+import { useBranches } from '@/lib/hooks/useBranches';
+import AddressModal, { EMPTY_FORM, addressToForm, isAddressComplete, type AddressForm } from '@/components/Account/AddressModal';
 
 
 function AddressCard({
@@ -32,6 +35,9 @@ function AddressCard({
     deleting: boolean;
     settingDefault: boolean;
 }) {
+    const t = useTranslations('Orders');
+    const tc = useTranslations('Checkout');
+    const c = useTranslations('Common');
     return (
         <div
             onClick={onSelect}
@@ -44,7 +50,7 @@ function AddressCard({
                         {address.first_name} {address.last_name}
                     </span>
                     {address.is_default === 1 && (
-                        <span className="rounded bg-black px-2 py-0.5 font-beatrice text-[10px] text-white">Default</span>
+                        <span className="rounded bg-black px-2 py-0.5 font-beatrice text-[10px] text-white">{c('default')}</span>
                     )}
                 </div>
                 <div className="flex shrink-0 gap-3">
@@ -52,28 +58,33 @@ function AddressCard({
                         onClick={e => { e.stopPropagation(); onEdit(); }}
                         className="font-beatrice text-[12px] text-gray-500 underline underline-offset-2 hover:text-black"
                     >
-                        Edit
+                        {c('edit')}
                     </button>
                     <button
                         onClick={e => { e.stopPropagation(); onDelete(); }}
                         disabled={deleting}
                         className="font-beatrice text-[12px] text-red-500 underline underline-offset-2 hover:text-red-700 disabled:opacity-50"
                     >
-                        {deleting ? '…' : 'Delete'}
+                        {deleting ? '…' : c('delete')}
                     </button>
                 </div>
             </div>
-            <p className="pl-6 font-beatrice text-[13px] text-gray-600">
-                {address.street_address}{address.apartment ? `, ${address.apartment}` : ''}, {address.city}
-                {address.country_name ? `, ${address.country_name}` : ''}
+            <p className="ps-6 font-beatrice text-[13px] text-gray-600">
+                {[address.street_address, address.apartment, address.bosta_district_name, address.city].filter(Boolean).join(', ')}
             </p>
+            <CountryBadge countryId={address.country_id} name={address.country_name} className="ps-6 font-beatrice text-[12px] text-gray-500" />
+            {!isAddressComplete(address) && (
+                <p className="mt-2 ps-6 font-beatrice text-[12px] font-medium text-amber-700">
+                    {t('completeAddress')}
+                </p>
+            )}
             {address.is_default !== 1 && (
                 <button
                     onClick={e => { e.stopPropagation(); onSetDefault(); }}
                     disabled={settingDefault}
-                    className="mt-2 pl-6 font-beatrice text-[12px] text-gray-500 underline underline-offset-2 hover:text-black disabled:opacity-50"
+                    className="mt-2 ps-6 font-beatrice text-[12px] text-gray-500 underline underline-offset-2 hover:text-black disabled:opacity-50"
                 >
-                    {settingDefault ? 'Setting…' : 'Set as default'}
+                    {settingDefault ? tc('settingDefault') : c('setAsDefault')}
                 </button>
             )}
         </div>
@@ -81,32 +92,22 @@ function AddressCard({
 }
 
 export default function ShippingClient() {
+    const t = useTranslations('Orders');
+    const tc = useTranslations('Checkout');
+    const c = useTranslations('Common');
+    const ta = useTranslations('Account');
+    const router = useRouter();
     const searchParams = useSearchParams();
-    const appliedCoupon = searchParams.get('coupon') ?? '';
-    const paymentHref = appliedCoupon ? `/payment?coupon=${encodeURIComponent(appliedCoupon)}` : '/payment';
+    const paymentHref = (params: Record<string, string>) => `/payment?${new URLSearchParams(params).toString()}`;
+    const pickupHref = paymentHref({ method: 'branch_pickup' });
+    const { data: branchesResponse } = useBranches();
+    const hasBranches = (branchesResponse?.data?.length ?? 0) > 0;
 
     const { isLoggedIn } = useAuthState();
     const { data: cartData, isLoading: cartLoading } = useCart();
 
     const subtotal = Number(cartData?.data?.summary?.subtotal ?? 0);
-    const validateCoupon = useValidateCoupon();
-
-    React.useEffect(() => {
-        if (appliedCoupon && subtotal > 0) {
-            validateCoupon.mutate({ code: appliedCoupon, cart_amount: subtotal });
-        }
-    }, [appliedCoupon, subtotal]);
-
-    const discountAmount = validateCoupon.data
-        ? (() => {
-            const c = validateCoupon.data.data;
-            if (c.type === 'percentage') {
-                const d = (subtotal * parseFloat(c.value)) / 100;
-                return Math.min(d, parseFloat(c.max_discount));
-            }
-            return parseFloat(c.value);
-        })()
-        : 0;
+    const { coupon: appliedCoupon, discount: discountAmount } = useAppliedCoupon(subtotal);
 
     const { data: addresses, isLoading: profileLoading } = useAddresses();
 
@@ -116,7 +117,9 @@ export default function ShippingClient() {
     const setDefault = useSetDefaultAddress();
 
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
-    const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; editId?: number }>({ open: false, mode: 'add' });
+    const [modal, setModal] = useState<{ open: boolean; mode: 'add' | 'edit'; editId?: number; notice?: string }>({ open: false, mode: 'add' });
+    // Set when the modal was opened by "Continue" — after saving, carry on to payment.
+    const [continueAfterSave, setContinueAfterSave] = useState(false);
     const [formState, setFormState] = useState<AddressForm>(EMPTY_FORM);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [settingDefaultId, setSettingDefaultId] = useState<number | null>(null);
@@ -137,36 +140,55 @@ export default function ShippingClient() {
         ?? addressList[0]?.id
         ?? null;
 
-    const handleSave = () => {
+    const afterSave = (addressId: number) => {
+        setModal(m => ({ ...m, open: false }));
+        setSelectedAddressId(addressId);
+        if (continueAfterSave) router.push(paymentHref({ address_id: String(addressId) }));
+    };
+
+    const handleSave = (values: AddressForm) => {
         if (modal.mode === 'add') {
-            createAddress.mutate(formState, { onSuccess: () => setModal(m => ({ ...m, open: false })) });
+            createAddress.mutate(values, { onSuccess: res => afterSave(res.data.id) });
         } else if (modal.editId != null) {
-            updateAddress.mutate({ id: modal.editId, ...formState }, { onSuccess: () => setModal(m => ({ ...m, open: false })) });
+            const id = modal.editId;
+            updateAddress.mutate({ id, ...values }, { onSuccess: () => afterSave(id) });
         }
     };
 
-    const openAdd = () => {
+    const openAdd = (notice?: string) => {
+        createAddress.reset();
         setFormState(EMPTY_FORM);
-        setModal({ open: true, mode: 'add' });
+        setModal({ open: true, mode: 'add', notice });
     };
 
-    const openEdit = (address: Address) => {
-        setFormState({
-            first_name: address.first_name,
-            last_name: address.last_name,
-            phone: address.phone ?? '',
-            city: address.city,
-            street_address: address.street_address,
-            apartment: address.apartment ?? '',
-            country_id: address.country_id,
-            latitude: address.latitude ?? null,
-            longitude: address.longitude ?? null,
-            is_default: address.is_default === 1,
-        });
-        setModal({ open: true, mode: 'edit', editId: address.id });
+    const openEdit = (address: Address, notice?: string) => {
+        updateAddress.reset();
+        setFormState(addressToForm(address));
+        setModal({ open: true, mode: 'edit', editId: address.id, notice });
+    };
+
+    const handleContinue = () => {
+        const selected = addressList.find(a => a.id === effectiveSelectedId);
+        if (!selected) {
+            setContinueAfterSave(true);
+            openAdd(t('chooseAddress'));
+            return;
+        }
+        if (!isAddressComplete(selected)) {
+            setContinueAfterSave(true);
+            openEdit(selected, t('completeAddress'));
+            return;
+        }
+        router.push(paymentHref({ address_id: String(selected.id) }));
+    };
+
+    const closeModal = () => {
+        setContinueAfterSave(false);
+        setModal(m => ({ ...m, open: false }));
     };
 
     const handleDelete = (id: number) => {
+        if (!window.confirm(ta('confirmDeleteAddress'))) return;
         setDeletingId(id);
         deleteAddress.mutate(id, { onSettled: () => setDeletingId(null) });
     };
@@ -180,15 +202,15 @@ export default function ShippingClient() {
         <div className="container">
             {/* Breadcrumb */}
             <nav className="mb-[10px] flex items-center gap-1 font-beatrice text-[14px] text-gray-500">
-                <Link href="/" className="transition-colors hover:text-black">Home</Link>
+                <Link href="/" className="transition-colors hover:text-black">{c('home')}</Link>
                 <span>/</span>
-                <Link href="/cart" className="transition-colors hover:text-black">Shopping Cart</Link>
+                <Link href="/cart" className="transition-colors hover:text-black">{c('cart')}</Link>
                 <span>/</span>
-                <span className="font-semibold text-black">Shipping</span>
+                <span className="font-semibold text-black">{c('shipping')}</span>
             </nav>
 
             <h1 className="mb-5 font-beatrice text-[20px] font-bold uppercase text-black md:mb-10">
-                Shipping
+                {c('shipping')}
             </h1>
 
             <CheckoutStepper currentStep={0} />
@@ -200,13 +222,13 @@ export default function ShippingClient() {
                         <>
                             <div className="mb-5 flex items-center justify-between md:mb-8">
                                 <h2 className="font-beatrice text-[20px] font-bold text-black">
-                                    Saved Addresses
+                                    {tc('savedAddresses')}
                                 </h2>
                                 <button
-                                    onClick={openAdd}
+                                    onClick={() => openAdd()}
                                     className="font-beatrice text-[13px] font-semibold text-black underline underline-offset-2 hover:text-gray-600"
                                 >
-                                    + Add New
+                                    {tc('addNew')}
                                 </button>
                             </div>
 
@@ -232,7 +254,7 @@ export default function ShippingClient() {
 
                                     {addressList.length === 0 && (
                                         <p className="py-6 text-center font-beatrice text-[14px] text-gray-400">
-                                            No saved addresses. Add one to continue.
+                                            {tc('noSavedAddresses')}
                                         </p>
                                     )}
                                 </div>
@@ -241,65 +263,74 @@ export default function ShippingClient() {
                     ) : (
                         <>
                             <h2 className="mb-5 font-beatrice text-[20px] font-bold text-black md:mb-10">
-                                Delivery Information
+                                {tc('deliveryInformation')}
                             </h2>
                             <div className="flex flex-col gap-[10px] md:grid md:grid-cols-2 md:gap-4">
-                                <input type="text" name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange}
+                                <input type="text" name="firstName" placeholder={c('firstName')} value={form.firstName} onChange={handleChange}
                                     className="border w-full border-[#E0E0E0] px-4 py-3 font-beatrice text-[12px] placeholder:text-gray-400 focus:border-black focus:outline-none md:text-[14px]" />
-                                <input type="text" name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange}
+                                <input type="text" name="lastName" placeholder={c('lastName')} value={form.lastName} onChange={handleChange}
                                     className="border border-[#E0E0E0] px-4 py-3 font-beatrice text-[12px] placeholder:text-gray-400 focus:border-black focus:outline-none md:text-[14px]" />
-                                <input type="email" name="email" placeholder="Email" value={form.email} onChange={handleChange}
+                                <input type="email" name="email" placeholder={c('email')} value={form.email} onChange={handleChange}
                                     className="border border-[#E0E0E0] px-4 py-3 font-beatrice text-[12px] placeholder:text-gray-400 focus:border-black focus:outline-none md:text-[14px]" />
-                                <input type="tel" name="phone" placeholder="Phone Number" value={form.phone} onChange={handleChange}
+                                <input type="tel" name="phone" placeholder={c('phone')} value={form.phone} onChange={handleChange}
                                     className="border border-[#E0E0E0] px-4 py-3 font-beatrice text-[12px] placeholder:text-gray-400 focus:border-black focus:outline-none md:text-[14px]" />
-                                <input type="text" name="country" placeholder="Country" value={form.country} onChange={handleChange}
+                                <input type="text" name="country" placeholder={tc('country')} value={form.country} onChange={handleChange}
                                     className="border border-[#E0E0E0] px-4 py-3 font-beatrice text-[12px] placeholder:text-gray-400 focus:border-black focus:outline-none md:text-[14px]" />
-                                <input type="text" name="city" placeholder="City" value={form.city} onChange={handleChange}
+                                <input type="text" name="city" placeholder={tc('city')} value={form.city} onChange={handleChange}
                                     className="border border-[#E0E0E0] px-4 py-3 font-beatrice text-[12px] placeholder:text-gray-400 focus:border-black focus:outline-none md:text-[14px]" />
-                                <input type="text" name="address" placeholder="Address in Details" value={form.address} onChange={handleChange}
+                                <input type="text" name="address" placeholder={tc('addressDetails')} value={form.address} onChange={handleChange}
                                     className="col-span-2 border border-[#E0E0E0] px-4 py-3 font-beatrice text-[12px] placeholder:text-gray-400 focus:border-black focus:outline-none md:text-[14px]" />
                             </div>
                         </>
                     )}
 
-                    <Link
-                        href={paymentHref}
+                    {hasBranches && (
+                    <div className="mt-6 flex flex-wrap items-center justify-between gap-2 border border-dashed border-gray-300 px-4 py-3">
+                        <span className="font-beatrice text-[13px] text-gray-600">{t('pickupInstead')}</span>
+                        <Link href={pickupHref} className="font-beatrice text-[13px] font-semibold text-black underline underline-offset-2 hover:text-gray-600">
+                            {t('branch')}
+                        </Link>
+                    </div>
+                    )}
+
+                    <button
+                        onClick={handleContinue}
                         className="mt-6 hidden w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[20px] font-semibold text-white transition-colors hover:bg-neutral-800 md:flex"
                     >
-                        <span>Continue to delivery</span>
-                        <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+                        <span>{tc('continueToDelivery')}</span>
+                        <svg width="30" height="12" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
                             <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                    </Link>
+                    </button>
                 </div>
 
                 {/* Order Summary */}
                 <OrderSummary
                     summary={cartData?.data?.summary}
                     isLoading={cartLoading}
-                    couponCode={appliedCoupon || undefined}
+                    couponCode={appliedCoupon?.code}
                     discountAmount={discountAmount || undefined}
                     className="md:w-[507px] shrink-0 bg-[#E0E0E080] p-5 md:border md:border-gray-200 md:bg-transparent md:p-10"
                 >
                     {appliedCoupon && (
                         <div className="mb-5 flex items-center gap-2 border border-green-300 bg-green-50 px-4 py-3">
                             <span className="font-beatrice text-[13px] font-semibold text-green-700">
-                                Coupon applied: <span className="uppercase">{appliedCoupon}</span>
+                                {tc('couponApplied')} <span dir="ltr" className="uppercase">{appliedCoupon.code}</span>
                             </span>
                         </div>
                     )}
                     <SecurePaymentBadge />
                 </OrderSummary>
 
-                <Link
-                    href={paymentHref}
+                <button
+                    onClick={handleContinue}
                     className="flex w-full items-center justify-between bg-black px-5 py-3 font-beatrice text-[16px] font-semibold text-white transition-colors hover:bg-neutral-800 md:hidden"
                 >
-                    <span>Continue to delivery</span>
-                    <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+                    <span>{tc('continueToDelivery')}</span>
+                    <svg width="30" height="12" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
                         <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                </Link>
+                </button>
             </div>
 
             {modal.open && (
@@ -308,10 +339,14 @@ export default function ShippingClient() {
                     form={formState}
                     onChange={e => setFormState(prev => ({ ...prev, [e.target.name]: e.target.value }))}
                     onCountryChange={id => setFormState(prev => ({ ...prev, country_id: id }))}
+                    onFieldsChange={patch => setFormState(prev => ({ ...prev, ...patch }))}
                     onDefaultToggle={() => setFormState(prev => ({ ...prev, is_default: !prev.is_default }))}
                     onSave={handleSave}
-                    onClose={() => setModal(m => ({ ...m, open: false }))}
+                    onClose={closeModal}
                     saving={createAddress.isPending || updateAddress.isPending}
+                    notice={modal.notice}
+                    isFirstAddress={modal.mode === 'add' && addressList.length === 0}
+                    error={(modal.mode === 'add' ? createAddress.error : updateAddress.error)?.message ?? null}
                 />
             )}
         </div>

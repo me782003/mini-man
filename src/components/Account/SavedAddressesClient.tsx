@@ -1,18 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Link } from '@/i18n/navigation';
 import { Home } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress, useSetDefaultAddress } from '@/lib/hooks/useAddresses';
-import { useCountries } from '@/lib/hooks/useCountries';
 import type { Address } from '@/lib/hooks/useProfile';
 
-import AddressModal, { EMPTY_FORM, type AddressForm } from './AddressModal';
+import CountryBadge from '@/components/Country/CountryBadge';
+import AddressModal, { EMPTY_FORM, addressToForm, isAddressComplete, type AddressForm } from './AddressModal';
 
 /* ─── Main component ─────────────────────────────────────────────────── */
 
 export default function SavedAddressesClient() {
+    const t = useTranslations('Orders');
+    const ta = useTranslations('Account');
+    const tc = useTranslations('Common');
     const { data: addresses, isLoading } = useAddresses();
     const createAddress = useCreateAddress();
     const updateAddress = useUpdateAddress();
@@ -25,23 +28,14 @@ export default function SavedAddressesClient() {
     const addressList = addresses ?? [];
 
     function openAdd() {
+        createAddress.reset();
         setForm(EMPTY_FORM);
         setModal({ open: true, mode: 'add' });
     }
 
     function openEdit(address: Address) {
-        setForm({
-            first_name: address.first_name,
-            last_name: address.last_name,
-            phone: address.phone,
-            city: address.city,
-            street_address: address.street_address,
-            apartment: address.apartment ?? '',
-            country_id: address.country_id,
-            latitude: address.latitude ?? null,
-            longitude: address.longitude ?? null,
-            is_default: address.is_default === 1,
-        });
+        updateAddress.reset();
+        setForm(addressToForm(address));
         setModal({ open: true, mode: 'edit', editId: address.id });
     }
 
@@ -57,39 +51,43 @@ export default function SavedAddressesClient() {
         setForm(prev => ({ ...prev, is_default: !prev.is_default }));
     }
 
-    function handleSave() {
+    function handleSave(values: AddressForm) {
         if (modal.mode === 'add') {
-            createAddress.mutate(form, { onSuccess: closeModal });
+            createAddress.mutate(values, { onSuccess: closeModal });
         } else if (modal.editId != null) {
-            updateAddress.mutate({ id: modal.editId, ...form }, { onSuccess: closeModal });
+            updateAddress.mutate({ id: modal.editId, ...values }, { onSuccess: closeModal });
         }
     }
 
+    function handleDelete(id: number) {
+        if (window.confirm(ta('confirmDeleteAddress'))) deleteAddress.mutate(id);
+    }
+
     const saving = createAddress.isPending || updateAddress.isPending;
+    const saveError = (modal.mode === 'add' ? createAddress.error : updateAddress.error)?.message ?? null;
 
     return (
         <>
             <nav className="mb-[10px] flex flex-wrap items-center gap-1 font-beatrice text-[12px] text-gray-500">
-                <Link href="/" className="transition-colors hover:text-black">Home</Link>
+                <Link href="/" className="transition-colors hover:text-black">{tc('home')}</Link>
                 <span>/</span>
-                <span className="font-semibold text-black">Account</span>
+                <span className="font-semibold text-black">{tc('account')}</span>
             </nav>
 
-            <p className="font-beatrice text-[20px] font-bold uppercase text-black">Account</p>
+            <p className="font-beatrice text-[20px] font-bold uppercase text-black">{tc('account')}</p>
 
             <div className="mb-6 mt-8 flex flex-col gap-4 sm:mb-7 sm:mt-10 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-[760px]">
                     <h1 className="font-beatrice text-[30px] font-bold leading-tight text-black sm:text-[42px]">
-                        Saved Addresses
+                        {ta('savedAddresses')}
                     </h1>
                     <p className="mt-2 font-beatrice text-[13px] text-gray-500 sm:text-[14px]">
-                        Curate your delivery locations for a seamless checkout experience.
-                        Your primary address will be used as the default for all future shipments.
+                        {ta('savedAddressesHint')}
                     </p>
                 </div>
                 <button onClick={openAdd}
                     className="hidden w-auto shrink-0 border border-black px-6 py-2.5 font-beatrice text-[14px] font-medium text-black transition-colors hover:bg-black hover:text-white md:block">
-                    + Add Address
+                    + {ta('addAddress')}
                 </button>
             </div>
 
@@ -103,14 +101,14 @@ export default function SavedAddressesClient() {
                         <div key={address.id} className="border border-gray-200 p-5 sm:p-6">
                             <div className="mb-5 flex items-center justify-between">
                                 {address.is_default === 1 ? (
-                                    <span className="rounded-full bg-black px-4 py-1.5 font-beatrice text-[13px] font-medium text-white">Default</span>
+                                    <span className="rounded-full bg-black px-4 py-1.5 font-beatrice text-[13px] font-medium text-white">{tc('default')}</span>
                                 ) : (
                                     <button
                                         onClick={() => setDefaultMutation.mutate(address.id)}
                                         disabled={setDefaultMutation.isPending}
                                         className="font-beatrice text-[13px] text-gray-400 underline underline-offset-2 hover:text-black disabled:opacity-50"
                                     >
-                                        Set as default
+                                        {tc('setAsDefault')}
                                     </button>
                                 )}
                                 <Home size={18} strokeWidth={1.5} className="text-gray-400" />
@@ -119,41 +117,61 @@ export default function SavedAddressesClient() {
                             <p className="font-beatrice text-[20px] font-semibold text-black sm:text-[22px]">
                                 {address.first_name} {address.last_name}
                             </p>
-                            <p className="mt-2 font-beatrice text-[14px] text-gray-600">{address.street_address}</p>
-                            {address.apartment && (
-                                <p className="font-beatrice text-[14px] text-gray-600">{address.apartment}</p>
+                            {address.phone && (
+                                <p dir="ltr" className="mt-1 font-beatrice text-[14px] text-gray-600 rtl:text-right">{address.phone}</p>
                             )}
-                            <p className="font-beatrice text-[14px] text-gray-600">{address.city}</p>
-                            {address.country_name && (
-                                <p className="font-beatrice text-[14px] text-gray-600">{address.country_name}</p>
+                            <p className="mt-2 font-beatrice text-[14px] text-gray-600">
+                                {[address.street_address, address.apartment, address.bosta_district_name, address.city]
+                                    .filter(Boolean)
+                                    .join(', ')}
+                            </p>
+                            <CountryBadge
+                                countryId={address.country_id}
+                                name={address.country_name}
+                                className="mt-1 font-beatrice text-[14px] text-gray-600"
+                            />
+
+                            {!isAddressComplete(address) && (
+                                <button
+                                    onClick={() => openEdit(address)}
+                                    className="mt-4 block w-full border border-amber-300 bg-amber-50 px-3 py-2 text-start font-beatrice text-[12px] font-medium text-amber-800"
+                                >
+                                    {t('completeAddress')}
+                                </button>
                             )}
 
                             <div className="mt-6 flex items-center gap-4">
                                 <button onClick={() => openEdit(address)}
                                     className="font-beatrice text-[14px] font-medium text-black transition-colors hover:underline">
-                                    Edit
+                                    {tc('edit')}
                                 </button>
                                 <button
-                                    onClick={() => deleteAddress.mutate(address.id)}
+                                    onClick={() => handleDelete(address.id)}
                                     disabled={deleteAddress.isPending}
                                     className="font-beatrice text-[14px] font-medium text-red-500 transition-colors hover:text-red-600 disabled:opacity-50">
-                                    Delete
+                                    {tc('delete')}
                                 </button>
                             </div>
                         </div>
                     ))}
 
                     {addressList.length === 0 && (
-                        <p className="col-span-2 py-16 text-center font-beatrice text-[14px] text-gray-400">
-                            No saved addresses yet.
-                        </p>
+                        <div className="col-span-2 flex flex-col items-center py-16 text-center">
+                            <p className="font-beatrice text-[14px] text-gray-500">{ta('noAddresses')}</p>
+                            <button
+                                onClick={openAdd}
+                                className="mt-4 border border-black px-6 py-2.5 font-beatrice text-[14px] font-medium text-black transition-colors hover:bg-black hover:text-white"
+                            >
+                                + {ta('addAddress')}
+                            </button>
+                        </div>
                     )}
                 </div>
             )}
 
             <button onClick={openAdd}
                 className="mt-5 block w-full shrink-0 border border-black px-6 py-2.5 font-beatrice text-[14px] font-medium text-black transition-colors hover:bg-black hover:text-white md:hidden sm:w-auto">
-                + Add Address
+                + {ta('addAddress')}
             </button>
 
             {modal.open && (
@@ -162,10 +180,13 @@ export default function SavedAddressesClient() {
                     form={form}
                     onChange={handleFormChange}
                     onCountryChange={id => setForm(prev => ({ ...prev, country_id: id }))}
+                    onFieldsChange={patch => setForm(prev => ({ ...prev, ...patch }))}
                     onDefaultToggle={handleDefaultToggle}
                     onSave={handleSave}
                     onClose={closeModal}
                     saving={saving}
+                    error={saveError}
+                    isFirstAddress={modal.mode === 'add' && addressList.length === 0}
                 />
             )}
         </>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useResetPassword } from '@/lib/hooks/useAuth';
+import { useTranslations } from 'next-intl';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -21,6 +22,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function ResetPasswordClient() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get('phone') ?? '';
@@ -36,8 +38,8 @@ export default function ResetPasswordClient() {
 
   const validate = () => {
     const errors: typeof fieldErrors = {};
-    if (newPassword.length < 8)            errors.newPassword     = 'Password must be at least 8 characters';
-    if (confirmPassword !== newPassword)   errors.confirmPassword = 'Passwords do not match';
+    if (newPassword.length < 8)            errors.newPassword     = t('passwordMin');
+    if (confirmPassword !== newPassword)   errors.confirmPassword = t('passwordsMismatch');
     return errors;
   };
 
@@ -69,17 +71,17 @@ export default function ResetPasswordClient() {
 
         <div className="mb-10 text-center">
           <h1 className="font-headline text-[32px] font-bold uppercase tracking-tight text-neutral-900">
-            Reset Password
+            {t('resetTitle')}
           </h1>
           <p className="mt-2 font-cairo text-sm text-neutral-500">
-            Choose a strong new password for your account
+            {t('resetSubtitle')}
           </p>
         </div>
 
         {isSuccess ? (
           <div className="border border-green-200 bg-green-50 px-5 py-5 text-center font-cairo text-sm text-green-700">
-            <p className="text-base font-semibold">Password reset successfully!</p>
-            <p className="mt-1 text-neutral-500">Redirecting to login…</p>
+            <p className="text-base font-semibold">{t('resetSuccess')}</p>
+            <p className="mt-1 text-neutral-500">{t('redirectingToLogin')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
@@ -92,19 +94,20 @@ export default function ResetPasswordClient() {
             {/* New Password */}
             <div className="space-y-1.5">
               <label className="block font-beatrice text-[13px] font-medium uppercase tracking-wide text-neutral-700">
-                New Password
+                {t('newPassword')}
               </label>
               <div className="relative">
                 <input
                   type={showNew ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => { setNewPassword(e.target.value); setFieldErrors((f) => ({ ...f, newPassword: undefined })); }}
-                  placeholder="Min. 8 characters"
+                  placeholder={t('minChars')}
                   autoComplete="new-password"
-                  className={`h-[50px] w-full border px-4 pr-12 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${fieldErrors.newPassword ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'}`}
+                  className={`h-[50px] w-full border px-4 pe-12 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${fieldErrors.newPassword ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'}`}
                 />
                 <button type="button" onClick={() => setShowNew((v) => !v)}
-                  className="absolute inset-y-0 right-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors">
+                  aria-label={showNew ? t('hidePassword') : t('showPassword')}
+                  className="absolute inset-y-0 end-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors">
                   <EyeIcon open={showNew} />
                 </button>
               </div>
@@ -114,19 +117,20 @@ export default function ResetPasswordClient() {
             {/* Confirm Password */}
             <div className="space-y-1.5">
               <label className="block font-beatrice text-[13px] font-medium uppercase tracking-wide text-neutral-700">
-                Confirm Password
+                {t('confirmPassword')}
               </label>
               <div className="relative">
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => { setConfirmPassword(e.target.value); setFieldErrors((f) => ({ ...f, confirmPassword: undefined })); }}
-                  placeholder="Repeat your password"
+                  placeholder={t('repeatPassword')}
                   autoComplete="new-password"
-                  className={`h-[50px] w-full border px-4 pr-12 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${fieldErrors.confirmPassword ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'}`}
+                  className={`h-[50px] w-full border px-4 pe-12 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${fieldErrors.confirmPassword ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'}`}
                 />
                 <button type="button" onClick={() => setShowConfirm((v) => !v)}
-                  className="absolute inset-y-0 right-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors">
+                  aria-label={showConfirm ? t('hidePassword') : t('showPassword')}
+                  className="absolute inset-y-0 end-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors">
                   <EyeIcon open={showConfirm} />
                 </button>
               </div>
@@ -137,8 +141,8 @@ export default function ResetPasswordClient() {
               type="submit" disabled={isPending}
               className="flex w-full items-center justify-between bg-neutral-900 px-5 py-4 font-headline text-[16px] font-semibold uppercase text-white transition-colors hover:bg-neutral-700 disabled:opacity-60"
             >
-              <span>{isPending ? 'Resetting…' : 'Reset Password'}</span>
-              <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+              <span>{isPending ? t('resetting') : t('resetTitle')}</span>
+              <svg width="30" height="12" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
                 <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -147,7 +151,7 @@ export default function ResetPasswordClient() {
 
         <p className="mt-8 text-center font-cairo text-sm text-neutral-500">
           <Link href="/login" className="font-semibold text-neutral-900 underline underline-offset-2 hover:opacity-70">
-            Back to Login
+            {t('backToLogin')}
           </Link>
         </p>
       </div>

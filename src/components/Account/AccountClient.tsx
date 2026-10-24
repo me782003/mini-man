@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useProfile, useUpdateProfile } from '@/lib/hooks/useProfile';
 import { type ProfileState } from '@/lib/store/features/profileSlice';
@@ -22,6 +23,8 @@ function StatCard({ label, value }: { label: string; value: number }) {
 /* ─── Security section ───────────────────────────────────────────────── */
 
 function SecuritySection() {
+    const t = useTranslations('Account');
+    const tc = useTranslations('Common');
     const { mutate: changePassword, isPending, isSuccess, isError, error, reset } = useChangePassword();
 
     const [fields, setFields] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -35,9 +38,9 @@ function SecuritySection() {
 
     const validate = () => {
         const errors: Partial<typeof fields> = {};
-        if (!fields.currentPassword) errors.currentPassword = 'Required';
-        if (fields.newPassword.length < 8) errors.newPassword = 'Min. 8 characters';
-        if (fields.confirmPassword !== fields.newPassword) errors.confirmPassword = 'Passwords do not match';
+        if (!fields.currentPassword) errors.currentPassword = t('required');
+        if (fields.newPassword.length < 8) errors.newPassword = t('minChars');
+        if (fields.confirmPassword !== fields.newPassword) errors.confirmPassword = t('passwordsMismatch');
         return errors;
     };
 
@@ -56,12 +59,12 @@ function SecuritySection() {
     return (
         <form onSubmit={handleSubmit} noValidate>
             <h3 className="mb-6 font-beatrice text-[18px] font-bold text-black sm:text-[20px]">
-                Security &amp; Access
+                {t('securityTitle')}
             </h3>
 
             {isSuccess && (
                 <div className="mb-5 border border-green-200 bg-green-50 px-4 py-3 font-cairo text-sm text-green-700">
-                    ✓ Password changed successfully
+                    ✓ {t('passwordChanged')}
                 </div>
             )}
             {apiError && (
@@ -72,9 +75,9 @@ function SecuritySection() {
 
             <div className="mb-8 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-3">
                 {([
-                    { name: 'currentPassword', label: 'Current Password', placeholder: '••••••••' },
-                    { name: 'newPassword', label: 'New Password', placeholder: 'Min. 8 characters' },
-                    { name: 'confirmPassword', label: 'Confirm Password', placeholder: 'Repeat new password' },
+                    { name: 'currentPassword', label: t('currentPassword'), placeholder: '••••••••' },
+                    { name: 'newPassword', label: t('newPassword'), placeholder: t('minChars') },
+                    { name: 'confirmPassword', label: t('confirmPassword'), placeholder: t('repeatPassword') },
                 ] as const).map(({ name, label, placeholder }) => (
                     <div key={name}>
                         <label htmlFor={name} className="mb-2 block font-beatrice text-[13px] text-[#616161]">{label}</label>
@@ -96,8 +99,8 @@ function SecuritySection() {
                     type="submit" disabled={isPending}
                     className="flex items-center justify-between gap-6 bg-black px-5 py-3.5 font-beatrice text-[15px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 sm:px-7"
                 >
-                    <span>{isPending ? 'Saving…' : 'Change Password'}</span>
-                    <svg width="28" height="11" viewBox="0 0 37 14" fill="none">
+                    <span>{isPending ? tc('saving') : t('changePassword')}</span>
+                    <svg width="28" height="11" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
                         <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </button>
@@ -109,6 +112,8 @@ function SecuritySection() {
 /* ─── Personal form ──────────────────────────────────────────────────── */
 
 function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 'error'> | undefined }) {
+    const t = useTranslations('Account');
+    const tc = useTranslations('Common');
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -163,20 +168,20 @@ function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 
     return (
         <>
             <h1 className="mt-8 text-[30px] leading-tight font-bold text-black font-beatrice sm:mt-10 sm:text-[42px]">
-                Personal Information
+                {t('personalInfo')}
             </h1>
             <p className="mt-2 mb-6 text-[13px] text-gray-500 font-beatrice sm:mb-7 sm:text-[14px]">
-                Update your details to ensure a seamless experience.
+                {t('personalInfoHint')}
             </p>
 
 
             {/* Stats */}
             {profile && (
                 <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                    <StatCard label="Orders" value={profile.orders_numbers} />
-                    <StatCard label="Favourites" value={profile.favourite_quantity} />
-                    <StatCard label="Cart Items" value={profile.cart_quantity} />
-                    <StatCard label="Addresses" value={profile.addresses_number} />
+                    <StatCard label={t('statOrders')} value={profile.orders_numbers} />
+                    <StatCard label={t('statFavourites')} value={profile.favourite_quantity} />
+                    <StatCard label={t('statCartItems')} value={profile.cart_quantity} />
+                    <StatCard label={t('statAddresses')} value={profile.addresses_number} />
                 </div>
             )}
 
@@ -211,7 +216,7 @@ function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 
                             onClick={() => fileInputRef.current?.click()}
                             className="mt-3 font-beatrice text-[10px] font-bold uppercase tracking-widest text-[#FF383C] underline underline-offset-2 transition-colors hover:text-red-600"
                         >
-                            {avatarFile ? avatarFile.name : 'Change Photo'}
+                            {avatarFile ? avatarFile.name : t('changePhoto')}
                         </button>
                     </div>
                 </div>
@@ -219,10 +224,10 @@ function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 
                 {/* Personal fields */}
                 <div className="mb-8 grid grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2 md:gap-y-7">
                     {([
-                        { name: 'firstName', label: 'First Name', type: 'text', disabled: false },
-                        { name: 'lastName', label: 'Last Name', type: 'text', disabled: false },
-                        { name: 'email', label: 'Email Address', type: 'email', disabled: false },
-                        { name: 'phone', label: 'Phone Number', type: 'tel', disabled: true },
+                        { name: 'firstName', label: tc('firstName'), type: 'text', disabled: false },
+                        { name: 'lastName', label: tc('lastName'), type: 'text', disabled: false },
+                        { name: 'email', label: t('emailAddress'), type: 'email', disabled: false },
+                        { name: 'phone', label: tc('phone'), type: 'tel', disabled: true },
                     ] as const).map(({ name, label, type, disabled }) => (
                         <div key={name}>
                             <label htmlFor={name} className="mb-2 block font-beatrice text-[13px] text-[#616161]">
@@ -245,7 +250,7 @@ function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         {saved && (
-                            <p className="font-cairo text-sm text-green-600">✓ Profile updated successfully</p>
+                            <p className="font-cairo text-sm text-green-600">✓ {t('profileUpdated')}</p>
                         )}
                         {updateProfile.isError && (
                             <p className="font-cairo text-sm text-red-500">{updateProfile.error?.message}</p>
@@ -257,8 +262,8 @@ function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 
                             disabled={updateProfile.isPending}
                             className="flex items-center justify-between gap-6 bg-black px-5 py-3.5 font-beatrice text-[15px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 sm:px-7"
                         >
-                            <span>{updateProfile.isPending ? 'Saving…' : 'Save Profile'}</span>
-                            <svg width="28" height="11" viewBox="0 0 37 14" fill="none">
+                            <span>{updateProfile.isPending ? tc('saving') : t('saveProfile')}</span>
+                            <svg width="28" height="11" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
                                 <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                             </svg>
                         </button>
@@ -277,6 +282,8 @@ function PersonalPanel({ profile }: { profile: Omit<ProfileState, 'isLoading' | 
 /* ─── Main ───────────────────────────────────────────────────────────── */
 
 export default function AccountClient() {
+    const t = useTranslations('Account');
+    const tc = useTranslations('Common');
     const { error: isError, isLoading: isPending, ...profile } = useProfile();
 
     console.log("profile", profile);
@@ -285,12 +292,12 @@ export default function AccountClient() {
     return (
         <>
             <nav className="mb-[10px] flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
-                <Link href="/" className="transition-colors hover:text-black">Home</Link>
+                <Link href="/" className="transition-colors hover:text-black">{tc('home')}</Link>
                 <span>/</span>
-                <span className="font-semibold text-black">Account</span>
+                <span className="font-semibold text-black">{tc('account')}</span>
             </nav>
 
-            <p className="font-beatrice font-bold text-[20px] uppercase text-black">Account</p>
+            <p className="font-beatrice font-bold text-[20px] uppercase text-black">{tc('account')}</p>
 
             {isPending && (
                 <div className="mt-16 flex justify-center">
@@ -299,7 +306,7 @@ export default function AccountClient() {
             )}
 
             {isError && (
-                <p className="mt-10 font-cairo text-sm text-red-500">Failed to load profile. Please try again.</p>
+                <p className="mt-10 font-cairo text-sm text-red-500">{t('profileLoadFailed')}</p>
             )}
 
             {!isPending && <PersonalPanel profile={profile} />}

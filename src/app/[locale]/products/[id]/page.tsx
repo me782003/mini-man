@@ -17,7 +17,7 @@ export default async function ProductDetailPage({
     const { id } = await params;
 
     return (
-        <main className="my-10">
+        <main className="my-6">
             <ProductDetail id={id} />
 
         </main>

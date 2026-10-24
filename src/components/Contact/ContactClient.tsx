@@ -2,37 +2,31 @@
 
 import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { post } from '@/lib/fetcher';
 import { Link } from '@/i18n/navigation';
-import { FooterFacebookIcon, FooterInstagramIcon, FooterTikTokIcon, FooterThreadsIcon, FooterYouTubeIcon } from '../icons';
 import { useSettings } from '@/lib/hooks/useSettings';
-
-function XIcon({ className }: { className?: string }) {
-    return (
-        <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
-        </svg>
-    );
-}
-
-const PLATFORM_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
-    facebook: FooterFacebookIcon,
-    instagram: FooterInstagramIcon,
-    tiktok: FooterTikTokIcon,
-    threads: FooterThreadsIcon,
-    youtube: FooterYouTubeIcon,
-    x: XIcon,
-    twitter: XIcon,
-};
+import { normalizeEgyptianPhone, isEgyptianMobile } from '@/lib/countries';
+import SocialLinks from '@/components/Site/SocialLinks';
+import ContactList from '@/components/Site/ContactList';
+import { MapPin } from 'lucide-react';
 
 const EMPTY = { firstName: '', lastName: '', email: '', phone: '', message: '' };
+type Field = keyof typeof EMPTY;
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ContactClient() {
+    const t = useTranslations('Site');
+    const tc = useTranslations('Common');
     const [form, setForm] = useState(EMPTY);
     const [submitted, setSubmitted] = useState(false);
+    const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
 
     const { data: settingsData } = useSettings();
-    const socials = settingsData?.data?.contacts?.socials ?? [];
+    const contacts = settingsData?.data?.contacts;
+    const socials = contacts?.socials ?? [];
+    const branches = (settingsData?.data?.branches ?? []).filter(b => b.name);
 
     const { mutate, isPending, isError, error } = useMutation({
         mutationFn: (payload: typeof EMPTY) =>
@@ -43,11 +37,33 @@ export default function ContactClient() {
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        setErrors((prev) => ({ ...prev, [e.target.name]: undefined }));
+        setSubmitted(false);
+    };
+
+    // The API needs all five fields (camelCase) and answers 400 "All fields are required" otherwise.
+    const validate = () => {
+        const next: Partial<Record<Field, string>> = {};
+        (Object.keys(EMPTY) as Field[]).forEach((key) => {
+            if (!form[key].trim()) next[key] = t('fieldRequired');
+        });
+        if (form.email.trim() && !EMAIL.test(form.email.trim())) next.email = t('invalidEmail');
+        if (form.phone.trim() && !isEgyptianMobile(form.phone)) next.phone = t('invalidPhone');
+        setErrors(next);
+        return Object.keys(next).length === 0;
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        mutate(form, {
+        if (isPending || !validate()) return;
+        const payload = {
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
+            email: form.email.trim(),
+            phone: normalizeEgyptianPhone(form.phone),
+            message: form.message.trim(),
+        };
+        mutate(payload, {
             onSuccess: () => {
                 setSubmitted(true);
                 setForm(EMPTY);
@@ -62,39 +78,31 @@ export default function ContactClient() {
             {/* Breadcrumb */}
             <nav className="mb-2 flex flex-wrap items-center gap-1 font-beatrice text-[12px] text-gray-500">
                 <Link href="/" className="transition-colors hover:text-black">
-                    Home
+                    {tc('home')}
                 </Link>
                 <span>/</span>
-                <span className="text-black">Contact</span>
+                <span className="text-black">{t('contact')}</span>
             </nav>
 
             {/* Section label */}
             <h2 className="mb-4 font-beatrice text-[20px] font-bold uppercase text-black">
-                Contact
+                {t('contact')}
             </h2>
 
             <div className="relative">
                 {/* Social icons */}
-                {socials.length > 0 && (
-                    <div className="mb-6 flex items-center gap-4 md:absolute md:right-0 md:top-0 md:mb-0 md:flex-col md:gap-5">
-                        {socials.map((s) => {
-                            const Icon = PLATFORM_ICONS[s.platform.toLowerCase()];
-                            return Icon ? (
-                                <a key={s.platform} href={s.value} target="_blank" rel="noopener noreferrer" aria-label={s.platform}>
-                                    <Icon className="h-6 w-6 text-black" />
-                                </a>
-                            ) : null;
-                        })}
-                    </div>
-                )}
+                <SocialLinks
+                    socials={socials}
+                    className="mb-6 flex items-center gap-4 md:absolute md:end-0 md:top-0 md:mb-0 md:flex-col md:gap-5"
+                />
 
                 {/* Headline */}
                 <h1 className="mb-8 max-w-5xl font-beatrice text-[30px] font-extrabold leading-[1.1] text-black sm:text-[38px] lg:mb-10 lg:text-[48px]">
-                    Get in touch with us. Always here for your steps &amp; style.
+                    {t('contactHeadline')}
                 </h1>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-6 lg:gap-10">
+                <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 sm:gap-6 lg:gap-10">
                     {errorMessage && (
                         <div className="border border-red-200 bg-red-50 px-4 py-3 font-cairo text-sm text-red-600">
                             {errorMessage}
@@ -102,58 +110,78 @@ export default function ContactClient() {
                     )}
                     {submitted && (
                         <div className="border border-green-200 bg-green-50 px-4 py-3 font-cairo text-sm text-green-700">
-                            Your message has been sent. We'll get back to you soon!
+                            {t('contactSuccess')}
                         </div>
                     )}
                     {/* Row 1 */}
                     <div className="flex flex-col gap-4 sm:flex-row">
-                        <input
-                            type="text"
-                            name="firstName"
-                            placeholder="First Name"
-                            value={form.firstName}
-                            onChange={handleChange}
-                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
-                        />
-                        <input
-                            type="text"
-                            name="lastName"
-                            placeholder="Last Name"
-                            value={form.lastName}
-                            onChange={handleChange}
-                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
-                        />
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                name="firstName"
+                                placeholder={tc('firstName')}
+                                value={form.firstName}
+                                onChange={handleChange}
+                                aria-invalid={!!errors.firstName}
+                                className={`w-full border px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4 rtl:text-right ${errors.firstName ? 'border-red-400' : 'border-gray-300'}`}
+                            />
+                            {errors.firstName && <p className="mt-1 font-beatrice text-[12px] text-red-500">{errors.firstName}</p>}
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                name="lastName"
+                                placeholder={tc('lastName')}
+                                value={form.lastName}
+                                onChange={handleChange}
+                                aria-invalid={!!errors.lastName}
+                                className={`w-full border px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4 rtl:text-right ${errors.lastName ? 'border-red-400' : 'border-gray-300'}`}
+                            />
+                            {errors.lastName && <p className="mt-1 font-beatrice text-[12px] text-red-500">{errors.lastName}</p>}
+                        </div>
                     </div>
 
                     {/* Row 2 */}
                     <div className="flex flex-col gap-4 sm:flex-row">
-                        <input
-                            type="email"
-                            name="email"
-                            placeholder="Email"
-                            value={form.email}
-                            onChange={handleChange}
-                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
-                        />
-                        <input
-                            type="tel"
-                            name="phone"
-                            placeholder="Phone Number"
-                            value={form.phone}
-                            onChange={handleChange}
-                            className="w-full flex-1 border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
-                        />
+                        <div className="flex-1">
+                            <input
+                                type="email"
+                                name="email" dir="ltr"
+                                placeholder={tc('email')}
+                                value={form.email}
+                                onChange={handleChange}
+                                aria-invalid={!!errors.email}
+                                className={`w-full border px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4 rtl:text-right ${errors.email ? 'border-red-400' : 'border-gray-300'}`}
+                            />
+                            {errors.email && <p className="mt-1 font-beatrice text-[12px] text-red-500">{errors.email}</p>}
+                        </div>
+                        <div className="flex-1">
+                            <input
+                                type="tel"
+                                name="phone" dir="ltr"
+                                placeholder={tc('phone')}
+                                value={form.phone}
+                                onChange={handleChange}
+                                aria-invalid={!!errors.phone}
+                                className={`w-full border px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4 rtl:text-right ${errors.phone ? 'border-red-400' : 'border-gray-300'}`}
+                            />
+                            {errors.phone && <p className="mt-1 font-beatrice text-[12px] text-red-500">{errors.phone}</p>}
+                        </div>
                     </div>
 
                     {/* Message */}
-                    <textarea
-                        name="message"
-                        placeholder="Message"
-                        rows={6}
-                        value={form.message}
-                        onChange={handleChange}
-                        className="min-h-[180px] w-full resize-none border border-gray-300 px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4"
-                    />
+                    <div>
+                        <textarea
+                            name="message"
+                            placeholder={t('message')}
+                            rows={6}
+                            value={form.message}
+                            onChange={handleChange}
+                            aria-invalid={!!errors.message}
+                            className={`min-h-[180px] w-full resize-none border px-4 py-3 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none sm:py-4 ${errors.message ? 'border-red-400' : 'border-gray-300'}`}
+                        />
+                        {errors.message && <p className="mt-1 font-beatrice text-[12px] text-red-500">{errors.message}</p>}
+                    </div>
 
                     {/* Submit */}
                     <div>
@@ -162,14 +190,14 @@ export default function ContactClient() {
                             disabled={isPending}
                             className="flex w-full items-center justify-between gap-4 bg-black px-5 py-3 font-beatrice text-[16px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-60 sm:px-6 sm:text-[18px] md:w-auto md:min-w-[475px] md:py-2 md:text-[20px]"
                         >
-                            <span>{isPending ? 'Sending…' : 'Leave us a Message'}</span>
+                            <span>{isPending ? t('sending') : t('leaveMessage')}</span>
                             <svg
                                 width="37"
                                 height="14"
                                 viewBox="0 0 37 14"
                                 fill="none"
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="shrink-0"
+                                className="shrink-0 rtl:rotate-180"
                             >
                                 <path
                                     d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
@@ -182,6 +210,33 @@ export default function ContactClient() {
                         </button>
                     </div>
                 </form>
+
+                {(contacts || branches.length > 0) && (
+                    <div className="mt-12 grid grid-cols-1 gap-8 border-t border-gray-200 pt-10 md:grid-cols-2">
+                        {contacts && (
+                            <div>
+                                <h2 className="mb-4 font-beatrice text-[18px] font-bold text-black">{t('reachUs')}</h2>
+                                <ContactList contacts={contacts} className="flex flex-col gap-3 font-beatrice text-[15px] text-black" />
+                            </div>
+                        )}
+                        {branches.length > 0 && (
+                            <div>
+                                <h2 className="mb-4 font-beatrice text-[18px] font-bold text-black">{t('ourBranches')}</h2>
+                                <ul className="flex flex-col gap-3 font-beatrice text-[15px]">
+                                    {branches.map(branch => (
+                                        <li key={branch.id} className="flex items-start gap-2">
+                                            <MapPin size={16} className="mt-1 shrink-0" aria-hidden />
+                                            <div>
+                                                <Link href="/branches" className="font-semibold text-black hover:underline">{branch.name}</Link>
+                                                {branch.address && <p className="text-[13px] text-gray-500">{branch.address}</p>}
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

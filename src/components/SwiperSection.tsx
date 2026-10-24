@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, FreeMode, Autoplay } from "swiper/modules";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -213,6 +214,7 @@ const SwiperSection = ({
     seeAllHref,
     items,
 }: SwiperSectionProps) => {
+    const t = useTranslations("Site");
     const [isBeginning, setIsBeginning] = useState(true);
     const [isEnd, setIsEnd] = useState(false);
 
@@ -235,12 +237,18 @@ const SwiperSection = ({
             <div className="container mt-6 px-4 sm:mt-8 lg:mt-10">
                 <Swiper
                     modules={[Navigation, FreeMode, Autoplay]}
-                    freeMode={true}
+                    // Glide with momentum after a flick; don't snap back to a card edge.
+                    freeMode={{ enabled: true, momentum: true, momentumRatio: 0.8, momentumVelocityRatio: 0.8, sticky: false }}
                     autoplay={{
                         delay: 2500,
-                        disableOnInteraction: false,
+                        // Once the shopper swipes the row, stop auto-sliding so it stays where they left it.
+                        disableOnInteraction: true,
+                        pauseOnMouseEnter: true,
+                        // Without looping, stop at the last product instead of jumping back to the first.
+                        stopOnLastSlide: true,
                     }}
-                    loop={safeItems.length > 4}
+                    // No looping: the row stops at the first and last product.
+                    loop={false}
                     navigation={{
                         prevEl: ".swiper-button-prev-custom",
                         nextEl: ".swiper-button-next-custom",
@@ -298,10 +306,10 @@ const SwiperSection = ({
                                 ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                                 : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
                                 }`}
-                            aria-label="Previous slide"
+                            aria-label={t("previousSlide")}
                             disabled={isBeginning}
                         >
-                            <ChevronLeft size={18} />
+                            <ChevronLeft size={18} className="rtl:rotate-180" />
                         </button>
 
                         <button
@@ -309,10 +317,10 @@ const SwiperSection = ({
                                 ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                                 : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
                                 }`}
-                            aria-label="Next slide"
+                            aria-label={t("nextSlide")}
                             disabled={isEnd}
                         >
-                            <ChevronRight size={18} />
+                            <ChevronRight size={18} className="rtl:rotate-180" />
                         </button>
                     </div>
 
@@ -321,7 +329,7 @@ const SwiperSection = ({
                             href={seeAllHref}
                             className="mb-1 flex items-center gap-2 text-[14px] font-medium text-[#6b6b6b] transition hover:text-[#4f4f4f] md:flex"
                         >
-                            <span className="font-beatrice">See All</span>
+                            <span className="font-beatrice">{t("seeAll")}</span>
                             <span className="text-[28px] leading-none sm:text-[34px] lg:text-[52px]">
                                 <svg
                                     width="27"
@@ -329,6 +337,7 @@ const SwiperSection = ({
                                     viewBox="0 0 37 14"
                                     fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
+                                    className="rtl:rotate-180"
                                 >
                                     <path
                                         d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
@@ -350,10 +359,10 @@ const SwiperSection = ({
                             ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                             : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
                             }`}
-                        aria-label="Previous slide"
+                        aria-label={t("previousSlide")}
                         disabled={isBeginning}
                     >
-                        <ChevronLeft size={18} className="sm:h-5 sm:w-5" />
+                        <ChevronLeft size={18} className="sm:h-5 sm:w-5 rtl:rotate-180" />
                     </button>
 
                     <button
@@ -361,10 +370,10 @@ const SwiperSection = ({
                             ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
                             : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
                             }`}
-                        aria-label="Next slide"
+                        aria-label={t("nextSlide")}
                         disabled={isEnd}
                     >
-                        <ChevronRight size={18} className="sm:h-5 sm:w-5" />
+                        <ChevronRight size={18} className="sm:h-5 sm:w-5 rtl:rotate-180" />
                     </button>
                 </div>
             </div>

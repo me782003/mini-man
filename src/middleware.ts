@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const AUTH_ROUTES = ['/login', '/register', '/forgot-password', '/verify-otp', '/reset-password'];
 
-const PROTECTED_ROUTES = ['/cart', '/favorites', '/account', '/checkout', '/payment', '/shipping'];
+const PROTECTED_ROUTES = ['/cart', '/favorites', '/account', '/checkout', '/payment', '/shipping', '/order-success', '/orders'];
 
 const intlMiddleware = createMiddleware(routing);
 

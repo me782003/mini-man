@@ -1,22 +1,41 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import ProductCard from '../ProductCard';
 import { SearchIcon } from '../icons';
-import { ChevronDownIcon, ChevronRight } from 'lucide-react';
+import { ChevronDownIcon, SlidersHorizontal } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCatalogProductsInfinite, type CatalogProduct } from '@/lib/hooks/useCatalog';
+import ActiveFilters from './ActiveFilters';
+import { intlLocale } from '@/lib/intl';
 
 const PER_PAGE = 12;
 
-function toProductCardProps(p: CatalogProduct) {
+// Sorts the API supports (sort_by: price | created_at | stock | id; sort_order: ASC | DESC).
+const SORT_OPTIONS = [
+  { value: 'newest', labelKey: 'sortNewest', sort_by: 'created_at', sort_order: 'DESC' },
+  { value: 'oldest', labelKey: 'sortOldest', sort_by: 'created_at', sort_order: 'ASC' },
+  { value: 'price_asc', labelKey: 'sortPriceAsc', sort_by: 'price', sort_order: 'ASC' },
+  { value: 'price_desc', labelKey: 'sortPriceDesc', sort_by: 'price', sort_order: 'DESC' },
+] as const;
+
+type SortValue = (typeof SORT_OPTIONS)[number]['value'];
+
+function sortFromParams(params: URLSearchParams): SortValue {
+  const by = params.get('sort_by') ?? 'created_at';
+  const order = (params.get('sort_order') ?? 'DESC').toUpperCase();
+  return SORT_OPTIONS.find((o) => o.sort_by === by && o.sort_order === order)?.value ?? 'newest';
+}
+
+function toProductCardProps(p: CatalogProduct, formatPrice: (amount: number) => string) {
   return {
     id: p.id,
     title: p.name,
     slug: p.slug,
     href: `/products/${p.slug || p.id}`,
     category: p.category_collection.category.name,
-    price: `${parseFloat(p.price).toLocaleString()} EGP`,
+    price: formatPrice(parseFloat(p.price)),
     colorVariants: p.colors.map((c) => ({
       color: c.hexa,
       images: c.image ? [c.image] : p.images.map((img) => img.image_path),
@@ -38,6 +57,10 @@ function SkeletonCard() {
 }
 
 export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: boolean) => void }) {
+  const t = useTranslations('Products');
+  const tc = useTranslations('Common');
+  const locale = useLocale();
+  const formatPrice = (amount: number) => tc('currency', { amount: amount.toLocaleString(intlLocale(locale)) });
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -54,6 +77,29 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
       params.delete('page');
       router.push(`${pathname}?${params.toString()}`);
     }, 400);
+  }
+
+  const sort = sortFromParams(searchParams);
+  const listCount = (key: string) => (searchParams.get(key) ?? '').split(',').filter(Boolean).length;
+  const activeFilterCount =
+    listCount('collection_id') + listCount('category_id') + listCount('sub_category_id') + listCount('size_name') +
+    (searchParams.get('is_available') === '0' ? 1 : 0) +
+    (searchParams.get('min_price') || searchParams.get('max_price') ? 1 : 0);
+
+  function handleSortChange(value: SortValue) {
+    const option = SORT_OPTIONS.find((o) => o.value === value) ?? SORT_OPTIONS[0];
+    const params = new URLSearchParams(searchParams.toString());
+    // Newest is the API default — keep the URL clean for it.
+    if (option.value === 'newest') {
+      params.delete('sort_by');
+      params.delete('sort_order');
+    } else {
+      params.set('sort_by', option.sort_by);
+      params.set('sort_order', option.sort_order);
+    }
+    params.delete('page');
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   const query = {
@@ -86,39 +132,69 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
 
   return (
     <div className="flex-1 min-w-0">
-      {/* Search */}
-      <div className="relative mb-4 md:mb-8 max-w-[367px]">
-        <input
-          type="text"
-          placeholder="Search"
-          value={searchInput}
-          onChange={(e) => handleSearchChange(e.target.value)}
-          className="w-full border border-gray-300 py-3 pl-4 pr-12 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none"
-        />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
-          <SearchIcon />
-        </span>
+      {/* Search + (mobile) filters button */}
+      <div className="mb-4 flex items-stretch gap-2 md:mb-8">
+        <div className="relative w-full max-w-[367px]">
+          <input
+            type="text"
+            placeholder={t('searchPlaceholder')}
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full border border-gray-300 py-3 ps-4 pe-12 font-beatrice text-[15px] placeholder:text-gray-400 focus:border-black focus:outline-none"
+          />
+          <span className="absolute end-4 top-1/2 -translate-y-1/2 text-gray-500">
+            <SearchIcon />
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          aria-label={activeFilterCount > 0 ? `${t('filters')} (${activeFilterCount})` : t('filters')}
+          title={t('filters')}
+          className="relative flex w-[50px] shrink-0 items-center justify-center border border-gray-300 text-black transition-colors hover:border-black md:hidden"
+        >
+          <SlidersHorizontal size={20} aria-hidden />
+          {activeFilterCount > 0 && (
+            <span
+              aria-hidden
+              className="absolute -end-1.5 -top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black px-1 font-beatrice text-[11px] font-bold leading-none tabular-nums text-white ring-2 ring-white"
+            >
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Mobile filter toggle */}
-      <button
-        className="mb-5 flex items-center gap-2 font-beatrice text-[13px] font-semibold uppercase tracking-widest transition-colors hover:border-black md:hidden"
-        onClick={() => setFiltersOpen(true)}
-      >
-        Filters <ChevronRight size={20} />
-      </button>
+      <ActiveFilters />
 
-      {/* Count */}
-      {!isPending && total > 0 && (
-        <p className="mb-4 font-cairo text-sm text-neutral-500">
-          Showing {allProducts.length} of {total} product{total !== 1 ? 's' : ''}
+      {/* Count + sort */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="font-cairo text-sm text-neutral-500">
+          {!isPending && total > 0 ? t('showing', { shown: allProducts.length, total }) : null}
         </p>
-      )}
+
+        <label className="flex items-center gap-2 font-beatrice text-[13px] text-neutral-500">
+          <span className="whitespace-nowrap">{t('sortBy')}</span>
+          <span className="relative">
+            <select
+              value={sort}
+              onChange={(e) => handleSortChange(e.target.value as SortValue)}
+              className="cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-2 ps-3 pe-9 font-beatrice text-[13px] font-medium text-black transition-colors hover:border-black focus:border-black focus:outline-none"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
+              ))}
+            </select>
+            <ChevronDownIcon size={16} className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          </span>
+        </label>
+      </div>
 
       {/* Error */}
       {isError && (
         <p className="py-24 text-center font-beatrice text-[16px] text-red-400">
-          Failed to load products. Please try again.
+          {t('loadError')}
         </p>
       )}
 
@@ -134,7 +210,7 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
         <>
           <div className="grid grid-cols-2 gap-x-[10px] gap-y-5 md:gap-x-6 md:gap-y-10 xl:grid-cols-3">
             {allProducts.map((product) => (
-              <ProductCard key={product.id} {...toProductCardProps(product)} />
+              <ProductCard key={product.id} {...toProductCardProps(product, formatPrice)} />
             ))}
             {isFetchingNextPage &&
               Array.from({ length: PER_PAGE }).map((_, i) => <SkeletonCard key={`sk-${i}`} />)
@@ -150,7 +226,7 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
                   disabled={isFetchingNextPage}
                   className="flex flex-col items-center gap-1 px-12 py-3.5 font-beatrice text-[13px] font-semibold uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white disabled:opacity-50"
                 >
-                  {isFetchingNextPage ? 'Loading…' : 'See More'}
+                  {isFetchingNextPage ? tc('loading') : t('seeMore')}
                   {!isFetchingNextPage && <ChevronDownIcon size={16} />}
                 </button>
               </div>
@@ -161,7 +237,7 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
 
       {!isPending && !isError && allProducts.length === 0 && (
         <p className="py-24 text-center font-beatrice text-[16px] text-gray-400">
-          No products found.
+          {t('noProducts')}
         </p>
       )}
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, FreeMode, Autoplay } from 'swiper/modules';
 import 'swiper/css';
@@ -65,19 +66,20 @@ const ReviewCard = ({ review }: { review: HomeReview }) => (
 );
 
 const ProductReviews = ({ reviews }: ProductReviewsProps) => {
+  const t = useTranslations('Home');
   if (!reviews || reviews.length === 0) return null;
 
   return (
     <section className="py-5 md:py-20 bg-white">
       <div className="container">
         <h2 className="text-[32px] md:text-[48px] font-beatrice font-extrabold leading-tight md:leading-[50px] uppercase mb-7 md:mb-12">
-          PRODUCT <br />
-          REVIEWS
+          {t('reviewsTitleLine1')} <br />
+          {t('reviewsTitleLine2')}
         </h2>
 
         <Swiper
           modules={[Navigation, FreeMode, Autoplay]}
-          autoplay={{ delay: 3000, disableOnInteraction: false }}
+          autoplay={{ delay: 3000, disableOnInteraction: false, pauseOnMouseEnter: true }}
           spaceBetween={20}
           freeMode={true}
           breakpoints={{

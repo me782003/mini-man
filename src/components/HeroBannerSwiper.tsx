@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, EffectFade } from 'swiper/modules';
 import type { HomeBanner } from '@/lib/hooks/useHomePage';
@@ -14,6 +15,7 @@ interface HeroBannerSwiperProps {
 }
 
 export default function HeroBannerSwiper({ banners }: HeroBannerSwiperProps) {
+    const t = useTranslations('Home');
     if (!banners || banners.length === 0) return null;
 
     return (
@@ -25,7 +27,7 @@ export default function HeroBannerSwiper({ banners }: HeroBannerSwiperProps) {
                     loop
                     effect="fade"
                     speed={900}
-                    autoplay={{ delay: 3500, disableOnInteraction: false }}
+                    autoplay={{ delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true }}
                     pagination={{ clickable: true }}
                     className="hero-banner-swiper"
                 >
@@ -34,7 +36,7 @@ export default function HeroBannerSwiper({ banners }: HeroBannerSwiperProps) {
                             <div className="relative w-full overflow-hidden bg-black">
                                 <img
                                     src={banner.image_url}
-                                    alt={`Banner ${banner.id}`}
+                                    alt={t('bannerAlt', { id: banner.id })}
                                     className="w-full object-cover"
                                     onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                                 />

@@ -11,8 +11,8 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        beatrice: ["Beatrice", "ui-sans-serif", "system-ui", "sans-serif"],
-        headline: ["Beatrice Headline", "Beatrice", "ui-sans-serif", "system-ui", "sans-serif"],
+        beatrice: ["Beatrice", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
+        headline: ["Beatrice Headline", "Beatrice", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
         cairo: ["Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {

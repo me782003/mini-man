@@ -2,10 +2,12 @@
 
 import React, { useCallback, useEffect, useId, useState } from 'react';
 import { X } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCatalogFilters, useCatalogCategories } from '@/lib/hooks/useCatalog';
 import type { ApiCategory } from '@/lib/hooks/useCatalog';
 import { Slider } from '@/components/ui/slider';
+import { intlLocale } from '@/lib/intl';
 
 interface AccordionSectionProps {
   title: string;
@@ -42,7 +44,7 @@ function AccordionSection({ title, children, defaultOpen = false }: AccordionSec
   const handleToggle = useCallback(() => setIsOpen((p) => !p), []);
   return (
     <div className="border-t border-gray-200 py-4">
-      <button type="button" className="flex w-full items-center justify-between text-left" onClick={handleToggle} aria-expanded={isOpen} aria-controls={contentId}>
+      <button type="button" className="flex w-full items-center justify-between text-start" onClick={handleToggle} aria-expanded={isOpen} aria-controls={contentId}>
         <span className="font-beatrice text-[16px] font-medium text-black">{title}</span>
         <ChevronDownIcon className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -63,12 +65,13 @@ function SizesSection({ sizes, selected, loading, onToggle }: {
   loading: boolean;
   onToggle: (size: string) => void;
 }) {
+  const t = useTranslations('Products');
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? sizes : sizes.slice(0, SIZES_VISIBLE);
 
   return (
     <div className="border-t border-gray-200 py-6">
-      <p className="mb-5 font-beatrice text-[16px] font-bold text-black">Size</p>
+      <p className="mb-5 font-beatrice text-[16px] font-bold text-black">{t('size')}</p>
       {loading ? (
         <div className="flex flex-wrap gap-2">
           {Array.from({ length: SIZES_VISIBLE }).map((_, i) => (
@@ -99,7 +102,7 @@ function SizesSection({ sizes, selected, loading, onToggle }: {
               onClick={() => setExpanded((p) => !p)}
               className="mt-3 font-beatrice text-[13px] text-gray-500 underline underline-offset-2 hover:text-black"
             >
-              {expanded ? 'See less' : `See more (${sizes.length - SIZES_VISIBLE})`}
+              {expanded ? t('seeLess') : t('seeMoreCount', { count: sizes.length - SIZES_VISIBLE })}
             </button>
           )}
         </>
@@ -117,6 +120,7 @@ function CategoriesList({ categories, categoryIds, subCategoryIds, onCategoryCha
   onCategoryChange: (cat: ApiCategory) => void;
   onSubCategoryChange: (catId: number, subId: number) => void;
 }) {
+  const t = useTranslations('Products');
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? categories : categories.slice(0, CATS_VISIBLE);
 
@@ -134,7 +138,7 @@ function CategoriesList({ categories, categoryIds, subCategoryIds, onCategoryCha
             <span className="font-beatrice text-[14px] font-medium text-black">{cat.name}</span>
           </label>
           {(cat.subCategories?.length ?? 0) > 0 && (
-            <div className="ml-6 flex flex-col gap-0.5">
+            <div className="ms-6 flex flex-col gap-0.5">
               {cat.subCategories.map((sub) => (
                 <label key={sub.id} className="flex cursor-pointer items-center gap-2.5 py-0.5">
                   <input
@@ -154,9 +158,9 @@ function CategoriesList({ categories, categoryIds, subCategoryIds, onCategoryCha
         <button
           type="button"
           onClick={() => setExpanded((p) => !p)}
-          className="mt-1 text-left font-beatrice text-[13px] text-gray-500 underline underline-offset-2 hover:text-black"
+          className="mt-1 text-start font-beatrice text-[13px] text-gray-500 underline underline-offset-2 hover:text-black"
         >
-          {expanded ? 'See less' : `See more (${categories.length - CATS_VISIBLE})`}
+          {expanded ? t('seeLess') : t('seeMoreCount', { count: categories.length - CATS_VISIBLE })}
         </button>
       )}
     </div>
@@ -175,7 +179,44 @@ function readFiltersFromParams(searchParams: ReturnType<typeof useSearchParams>,
   };
 }
 
+// Typed price: edits locally, filters on blur / Enter, clamped to [min, max].
+function PriceInput({ label, value, min, max, onCommit }: {
+  label: string; value: number; min: number; max: number; onCommit: (value: number) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => { setDraft(String(value)); }, [value]);
+
+  const commit = () => {
+    const n = Number(draft);
+    if (!Number.isFinite(n) || draft.trim() === '') { setDraft(String(value)); return; }
+    const clamped = Math.min(max, Math.max(min, Math.round(n)));
+    setDraft(String(clamped));
+    if (clamped !== value) onCommit(clamped);
+  };
+
+  return (
+    <input
+      type="number"
+      inputMode="numeric"
+      aria-label={label}
+      value={draft}
+      min={min}
+      max={max}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+      className="w-full min-w-0 rounded-lg border border-gray-300 px-2 py-1.5 text-center tabular-nums focus:border-black focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    />
+  );
+}
+
+// URL params owned by other controls (search box, sort dropdown) that filtering keeps.
+const PRESERVED_PARAMS = ['search', 'sort_by', 'sort_order'] as const;
+
 export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSidebarProps) {
+  const t = useTranslations('Products');
+  const tc = useTranslations('Common');
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -201,22 +242,31 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
     setLocal(readFiltersFromParams(searchParams, priceMin, priceMax));
   }, [searchParams, priceMin, priceMax]);
 
+  // Every selection filters immediately — update local state and the URL together.
+  function update(change: (prev: LocalFilters) => LocalFilters) {
+    const next = change(local);
+    setLocal(next);
+    pushFilters(next);
+  }
+
   function toggleSize(size: string) {
-    setLocal((prev) => ({
+    update((prev) => ({
       ...prev,
       sizes: prev.sizes.includes(size) ? prev.sizes.filter((s) => s !== size) : [...prev.sizes, size],
     }));
   }
 
   function toggleAvailability(val: string) {
-    setLocal((prev) => ({ ...prev, isAvailable: prev.isAvailable === val ? null : val }));
+    update((prev) => ({ ...prev, isAvailable: prev.isAvailable === val ? null : val }));
   }
 
-  function applyFilters() {
+  function pushFilters(local: LocalFilters) {
     const params = new URLSearchParams();
-    // Preserve search if present
-    const search = searchParams.get('search');
-    if (search) params.set('search', search);
+    // Preserve search and sort — they aren't filters.
+    for (const key of PRESERVED_PARAMS) {
+      const value = searchParams.get(key);
+      if (value) params.set(key, value);
+    }
 
     if (local.sizes.length > 0) params.set('size_name', local.sizes.join(','));
     if (local.collectionIds.length > 0) params.set('collection_id', local.collectionIds.join(','));
@@ -226,8 +276,9 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
     if (local.minPrice != null && local.minPrice > priceMin) params.set('min_price', String(local.minPrice));
     if (local.maxPrice != null && local.maxPrice < priceMax) params.set('max_price', String(local.maxPrice));
 
-    router.push(`${pathname}?${params.toString()}`);
-    onClose?.();
+    const query = params.toString();
+    // replace (not push) so each click doesn't add a history entry; keep the scroll position.
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
 
   function clearAll() {
@@ -241,9 +292,13 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
       maxPrice: priceMax,
     };
     setLocal(fresh);
-    const search = searchParams.get('search');
-    router.push(search ? `${pathname}?search=${encodeURIComponent(search)}` : pathname);
-    onClose?.();
+    const params = new URLSearchParams();
+    for (const key of PRESERVED_PARAMS) {
+      const value = searchParams.get(key);
+      if (value) params.set(key, value);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
 
   return (
@@ -258,12 +313,12 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
         fixed top-0 z-50 h-full w-[300px] shrink-0 overflow-y-auto bg-white p-6
         ltr:left-0 rtl:right-0
         transition-transform duration-300
-        md:static md:z-auto md:h-auto md:w-[265px] md:overflow-visible md:p-0 md:translate-x-0
+        md:sticky md:top-[calc(var(--header-h,7rem)+1.5rem)] md:z-auto md:h-auto md:max-h-[calc(100vh-var(--header-h,7rem)-3rem)] md:w-[265px] md:overflow-y-auto md:overscroll-contain md:p-0 no-scrollbar md:translate-x-0
         ${isOpen ? 'translate-x-0' : 'ltr:-translate-x-full rtl:translate-x-full md:!translate-x-0'}
       `}>
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-beatrice text-[22px] font-bold uppercase tracking-widest text-black">Filters</h2>
-          <button type="button" className="p-1 text-gray-500 transition-colors hover:text-black md:hidden" onClick={onClose} aria-label="Close filters">
+          <h2 className="font-beatrice text-[22px] font-bold uppercase tracking-widest text-black">{t('filters')}</h2>
+          <button type="button" className="p-1 text-gray-500 transition-colors hover:text-black md:hidden" onClick={onClose} aria-label={t('closeFilters')}>
             <X size={20} />
           </button>
         </div>
@@ -278,7 +333,7 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
 
         {/* Collections */}
         {(filtersLoading || (filters?.collections?.length ?? 0) > 0) && (
-          <AccordionSection title="Collections" defaultOpen>
+          <AccordionSection title={t('collections')} defaultOpen>
             {filtersLoading ? (
               <div className="space-y-2">
                 {Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-4 w-2/3 animate-pulse rounded bg-neutral-200" />)}
@@ -290,7 +345,7 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
                     <input
                       type="checkbox"
                       checked={local.collectionIds.includes(col.id)}
-                      onChange={() => setLocal((p) => ({
+                      onChange={() => update((p) => ({
                         ...p,
                         collectionIds: p.collectionIds.includes(col.id)
                           ? p.collectionIds.filter((id) => id !== col.id)
@@ -307,7 +362,7 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
         )}
 
         {/* Categories */}
-        <AccordionSection title="Categories" defaultOpen>
+        <AccordionSection title={t('categories')} defaultOpen>
           {categoriesLoading ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-4 w-2/3 animate-pulse rounded bg-neutral-200" />)}
@@ -317,7 +372,7 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
               categories={categoriesData?.data ?? []}
               categoryIds={local.categoryIds}
               subCategoryIds={local.subCategoryIds}
-              onCategoryChange={(cat) => setLocal((p) => {
+              onCategoryChange={(cat) => update((p) => {
                 const removing = p.categoryIds.includes(cat.id);
                 const subIds = cat.subCategories?.map((s) => s.id) ?? [];
                 return {
@@ -330,7 +385,7 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
                     : [...p.subCategoryIds.filter((id) => !subIds.includes(id)), ...subIds],
                 };
               })}
-              onSubCategoryChange={(catId, subId) => setLocal((p) => ({
+              onSubCategoryChange={(catId, subId) => update((p) => ({
                 ...p,
                 subCategoryIds: p.subCategoryIds.includes(subId)
                   ? p.subCategoryIds.filter((id) => id !== subId)
@@ -341,20 +396,8 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
         </AccordionSection>
 
         {/* Availability */}
-        <AccordionSection title="Availability" defaultOpen>
-          <label className="mb-2.5 flex cursor-pointer items-center gap-2.5">
-            <input
-              type="checkbox"
-              checked={local.isAvailable === '1'}
-              onChange={() => toggleAvailability('1')}
-              className="h-4 w-4 cursor-pointer accent-black"
-            />
-            <span className="font-beatrice text-[14px] text-black">
-              In Stock{' '}
-              {filters && <span className="font-semibold text-red-500">({filters.availability.in_stock})</span>}
-            </span>
-          </label>
-
+        <AccordionSection title={t('availability')} defaultOpen>
+          {/* The API returns in-stock products by default and can't mix both — so it's a single toggle. */}
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
               type="checkbox"
@@ -363,14 +406,14 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
               className="h-4 w-4 cursor-pointer accent-black"
             />
             <span className="font-beatrice text-[14px] text-black">
-              Out of Stock{' '}
+              {t('outOfStockOnly')}{' '}
               {filters && <span className="font-semibold text-red-500">({filters.availability.out_of_stock})</span>}
             </span>
           </label>
         </AccordionSection>
 
         {/* Price Range */}
-        <AccordionSection title="Shop by Price">
+        <AccordionSection title={t('shopByPrice')}>
           <div className="space-y-4">
             <Slider
               min={priceMin}
@@ -381,12 +424,28 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
                 const [min, max] = val as number[];
                 setLocal((p) => ({ ...p, minPrice: min, maxPrice: max }));
               }}
+              onValueCommitted={(val) => {
+                const [min, max] = val as number[];
+                update((p) => ({ ...p, minPrice: min, maxPrice: max }));
+              }}
               className="mt-2"
             />
-            <div className="flex items-center justify-between font-beatrice text-[13px] text-gray-700">
-              <span className="rounded border border-gray-200 px-2 py-1">{(local.minPrice ?? priceMin).toLocaleString()} EGP</span>
+            <div className="flex items-center gap-2 font-beatrice text-[13px] text-gray-700">
+              <PriceInput
+                label={t('minPrice')}
+                value={local.minPrice ?? priceMin}
+                min={priceMin}
+                max={local.maxPrice ?? priceMax}
+                onCommit={(min) => update((p) => ({ ...p, minPrice: min }))}
+              />
               <span className="text-gray-400">—</span>
-              <span className="rounded border border-gray-200 px-2 py-1">{(local.maxPrice ?? priceMax).toLocaleString()} EGP</span>
+              <PriceInput
+                label={t('maxPrice')}
+                value={local.maxPrice ?? priceMax}
+                min={local.minPrice ?? priceMin}
+                max={priceMax}
+                onCommit={(max) => update((p) => ({ ...p, maxPrice: max }))}
+              />
             </div>
           </div>
         </AccordionSection>
@@ -394,17 +453,17 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
         <div className="mt-5 flex flex-col gap-2">
           <button
             type="button"
-            onClick={applyFilters}
-            className="w-full bg-black py-3.5 font-beatrice text-[13px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
+            onClick={onClose}
+            className="w-full bg-black py-3.5 md:hidden font-beatrice text-[13px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-neutral-800"
           >
-            View Results
+            {t('viewResults')}
           </button>
           <button
             type="button"
             onClick={clearAll}
             className="w-full border border-gray-300 py-3 font-beatrice text-[12px] font-semibold uppercase tracking-widest text-gray-500 transition-colors hover:border-black hover:text-black"
           >
-            Clear All
+            {t('clearAll')}
           </button>
         </div>
       </aside>

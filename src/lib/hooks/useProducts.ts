@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { get, post, del } from '@/lib/fetcher';
+import { get, post, del, ApiError } from '@/lib/fetcher';
 import type { Product, ProductDetailResponse } from '@/lib/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────
@@ -72,6 +72,9 @@ export function useProductDetail(id: string) {
     queryKey: ['products', 'detail-v2', id],
     queryFn: () => fetchProductDetail(id),
     enabled: !!id,
+    // 400 / 404 mean the product doesn't exist or is hidden — retrying won't help.
+    retry: (failureCount, error) =>
+      !(error instanceof ApiError && (error.status === 400 || error.status === 404)) && failureCount < 1,
     staleTime: 2 * 60 * 1000,
   });
 }

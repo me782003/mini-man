@@ -158,7 +158,7 @@ export function useCatalogCategories() {
 function buildUrl(query: CatalogQuery): string {
   const params = new URLSearchParams();
   if (query.page)               params.set('page', String(query.page));
-  if (query.per_page)           params.set('per_page', String(query.per_page));
+  if (query.per_page)           params.set('limit', String(query.per_page)); // the API's page-size param is `limit`
   if (query.search)             params.set('search', query.search);
   if (query.size_name)          params.set('size_name', query.size_name);
   if (query.min_price != null)  params.set('min_price', String(query.min_price));

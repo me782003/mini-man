@@ -1,7 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { post, del, get } from '@/lib/fetcher';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { ProductDetailData } from '../types';
+import { useHasAuthToken } from '@/lib/auth-token';
 
 interface FavouriteResponse {
   data: ProductDetailData[];
@@ -17,9 +19,11 @@ interface FavouriteResponse {
 }
 
 export function useWishlist() {
+  const loggedIn = useHasAuthToken();
   return useQuery({
     queryKey: ['wishlist'],
     queryFn: () => get<FavouriteResponse>('/user/favorites'),
+    enabled: loggedIn,
   });
 }
 
@@ -35,6 +39,7 @@ function optimisticallySetFavourite(qc: ReturnType<typeof useQueryClient>, produ
 
 export function useAddToWishlist() {
   const qc = useQueryClient();
+  const t = useTranslations('Products');
   return useMutation({
     mutationFn: (productId: number) =>
       post<FavouriteResponse>('/user/favorites', { product_id: productId }),
@@ -43,11 +48,11 @@ export function useAddToWishlist() {
       optimisticallySetFavourite(qc, productId, true);
     },
     onSuccess: () => {
-      toast.success('Added to favourites');
+      toast.success(t('addedToFavourites'));
     },
     onError: (_err: Error, productId) => {
       optimisticallySetFavourite(qc, productId, false);
-      toast.error(_err.message || 'Failed to add to favourites');
+      toast.error(_err.message || t('addToFavouritesFailed'));
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['profile'] });
@@ -59,6 +64,7 @@ export function useAddToWishlist() {
 
 export function useRemoveFromWishlist() {
   const qc = useQueryClient();
+  const t = useTranslations('Products');
   return useMutation({
     mutationFn: (productId: number) =>
       del<FavouriteResponse>(`/user/favorites/${productId}`),
@@ -67,11 +73,11 @@ export function useRemoveFromWishlist() {
       optimisticallySetFavourite(qc, productId, false);
     },
     onSuccess: () => {
-      toast.success('Removed from favourites');
+      toast.success(t('removedFromFavourites'));
     },
     onError: (_err: Error, productId) => {
       optimisticallySetFavourite(qc, productId, true);
-      toast.error(_err.message || 'Failed to remove from favourites');
+      toast.error(_err.message || t('removeFromFavouritesFailed'));
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['profile'] });

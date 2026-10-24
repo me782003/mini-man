@@ -1,20 +1,25 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
 import { useSettings } from '@/lib/hooks/useSettings';
+import { usePathname } from 'next/navigation';
 
 export default function WhatsAppButton() {
+  const t = useTranslations('Site');
   const { data } = useSettings();
   const whatsapp = data?.data?.contacts?.whatsapp?.value;
+  // Account pages show a floating menu button in this corner below desktop width — sit above it.
+  const onAccountPage = /^\/(en|ar)\/account(\/|$)/.test(usePathname() ?? '');
 
   if (!whatsapp) return null;
 
   return (
     <a
-      href={`https://wa.me/${whatsapp.replace(/\D/g, '')}`}
+      href={`https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(t('whatsappGreeting'))}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-6 end-6 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-[#25D366] shadow-lg hover:bg-[#1ebe5d] transition-colors"
-      aria-label="Chat on WhatsApp"
+      className={`fixed bottom-6 end-6 z-50 flex items-center justify-center w-14 h-14 ${onAccountPage ? 'max-lg:bottom-[92px]' : ''} rounded-full bg-[#25D366] shadow-lg hover:bg-[#1ebe5d] transition-colors`}
+      aria-label={t('chatOnWhatsApp')}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import ProductCard from '../ProductCard';
 import type { HomeCollection } from '@/lib/hooks/useHomePage';
 
@@ -12,6 +13,7 @@ interface HomeProductsSectionProps {
 }
 
 function CollectionSection({ collection }: { collection: HomeCollection }) {
+  const t = useTranslations('Home');
   const [activeCatIdx, setActiveCatIdx] = useState(0);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
 
@@ -56,7 +58,7 @@ function CollectionSection({ collection }: { collection: HomeCollection }) {
           </div>
         ) : (
           <div className="py-16 text-center">
-            <p className="font-beatrice text-[18px] text-gray-500">No products found.</p>
+            <p className="font-beatrice text-[18px] text-gray-500">{t('noProducts')}</p>
           </div>
         )}
 
@@ -67,7 +69,7 @@ function CollectionSection({ collection }: { collection: HomeCollection }) {
             className="group mx-auto mt-16 flex flex-col items-center"
           >
             <span className="mb-2 font-beatrice text-sm uppercase text-gray-400 transition-colors group-hover:text-black">
-              {hasMore ? 'More' : 'Less'}
+              {hasMore ? t('more') : t('less')}
             </span>
             <div className={`text-gray-400 transition-all group-hover:text-black ${hasMore ? 'group-hover:translate-y-1' : 'rotate-180 group-hover:-translate-y-1'}`}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

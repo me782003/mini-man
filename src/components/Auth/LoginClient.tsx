@@ -8,6 +8,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useLogin, useGoogleAuth } from '@/lib/hooks/useAuth';
 import { setProfile } from '@/lib/store/features/profileSlice';
 import { GoogleLogin } from '@react-oauth/google';
+import { useTranslations } from 'next-intl';
+import { notifyAuthChange } from '@/lib/auth-token';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -25,6 +27,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 export default function LoginClient() {
+  const t = useTranslations('Auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/account';
@@ -39,8 +42,8 @@ export default function LoginClient() {
 
   const validate = () => {
     const errors: Partial<Record<keyof typeof form, string>> = {};
-    if (!form.phone.trim()) errors.phone = 'Phone number is required';
-    if (!form.password.trim()) errors.password = 'Password is required';
+    if (!form.phone.trim()) errors.phone = t('phoneRequired');
+    if (!form.password.trim()) errors.password = t('passwordRequired');
     return errors;
   };
 
@@ -58,6 +61,7 @@ export default function LoginClient() {
     login(form, {
       onSuccess: (res) => {
         localStorage.setItem('token', res.data.token);
+        notifyAuthChange();
         localStorage.setItem('user', JSON.stringify(res.data.user));
         document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
         dispatch(setProfile(res.data.user));
@@ -74,9 +78,9 @@ export default function LoginClient() {
         {/* Header */}
         <div className="mb-10 text-center">
           <h1 className="font-headline text-[36px] font-bold uppercase tracking-tight text-neutral-900">
-            Welcome Back
+            {t('welcomeBack')}
           </h1>
-          <p className="mt-2 font-cairo text-sm text-neutral-500">Sign in to your account</p>
+          <p className="mt-2 font-cairo text-sm text-neutral-500">{t('signInSubtitle')}</p>
         </div>
 
 
@@ -92,6 +96,7 @@ export default function LoginClient() {
               {
                 onSuccess: (res) => {
                   localStorage.setItem('token', res.data.token);
+                  notifyAuthChange();
                   localStorage.setItem('user', JSON.stringify(res.data.user));
                   document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
                   dispatch(setProfile(res.data.user));
@@ -107,7 +112,7 @@ export default function LoginClient() {
         {/* or deisgn */}
         <div className="flex items-center my-7">
           <div className="flex-1 border-b border-neutral-200"></div>
-          <div className="px-4 font-cairo text-sm text-neutral-500">OR</div>
+          <div className="px-4 font-cairo text-sm text-neutral-500">{t('or')}</div>
           <div className="flex-1 border-b border-neutral-200"></div>
         </div>
 
@@ -119,28 +124,28 @@ export default function LoginClient() {
           )}
 
           {/* Phone */}
-          <Field label="Phone Number" error={fieldErrors.phone}>
+          <Field label={t('phoneNumber')} error={fieldErrors.phone}>
             <input
               type="tel" name="phone" value={form.phone} onChange={handleChange}
-              placeholder="201234567890" autoComplete="tel"
-              className={inputCls(!!fieldErrors.phone)}
+              placeholder="201234567890" autoComplete="tel" dir="ltr"
+              className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`}
             />
           </Field>
 
           {/* Password */}
-          <Field label="Password" error={fieldErrors.password}>
+          <Field label={t('password')} error={fieldErrors.password}>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password" value={form.password} onChange={handleChange}
-                placeholder="Your password" autoComplete="current-password"
-                className={`${inputCls(!!fieldErrors.password)} pr-12`}
+                placeholder={t('yourPassword')} autoComplete="current-password"
+                className={`${inputCls(!!fieldErrors.password)} pe-12`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 right-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors"
-                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                className="absolute inset-y-0 end-4 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors"
+                aria-label={showPassword ? t('hidePassword') : t('showPassword')}
               >
                 <EyeIcon open={showPassword} />
               </button>
@@ -149,7 +154,7 @@ export default function LoginClient() {
 
           <div className="flex justify-end">
             <Link href={`/forgot-password${form.phone ? `?phone=${encodeURIComponent(form.phone)}` : ''}`} className="font-cairo text-xs text-neutral-500 underline underline-offset-2 hover:text-neutral-800">
-              Forgot password?
+              {t('forgotPasswordLink')}
             </Link>
           </div>
 
@@ -157,8 +162,8 @@ export default function LoginClient() {
             type="submit" disabled={isPending}
             className="flex w-full items-center justify-between bg-neutral-900 px-5 py-4 font-headline text-[16px] font-semibold uppercase text-white transition-colors hover:bg-neutral-700 disabled:opacity-60"
           >
-            <span>{isPending ? 'Signing in…' : 'Sign In'}</span>
-            <svg width="30" height="12" viewBox="0 0 37 14" fill="none">
+            <span>{isPending ? t('signingIn') : t('signIn')}</span>
+            <svg width="30" height="12" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
               <path d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
@@ -167,9 +172,9 @@ export default function LoginClient() {
 
 
         <p className="mt-8 text-center font-cairo text-sm text-neutral-500">
-          Don&apos;t have an account?{' '}
+          {t('noAccount')}{' '}
           <Link href="/register" className="font-semibold text-neutral-900 underline underline-offset-2 hover:opacity-70">
-            Create one
+            {t('createOne')}
           </Link>
         </p>
       </div>

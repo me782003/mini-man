@@ -3,6 +3,7 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { clearProfile } from '@/lib/store/features/profileSlice';
 import { RootState } from '@/lib/store/store';
+import { notifyAuthChange } from '@/lib/auth-token';
 
 export function useAuthState() {
   const dispatch = useDispatch();
@@ -10,6 +11,7 @@ export function useAuthState() {
 
   const logout = () => {
     localStorage.removeItem('token');
+    notifyAuthChange();
     localStorage.removeItem('user');
     document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax';
     dispatch(clearProfile());

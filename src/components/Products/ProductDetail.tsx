@@ -110,9 +110,14 @@ export default function ProductDetail({ id }: { id: string }) {
     const galleryLengthRef = React.useRef(0);
     const touchStartX = React.useRef<number | null>(null);
 
+    // Pick the default size/colour once per product. Adding to cart or favourites refetches the
+    // product (to refresh cart state), and that must not reset the shopper's selection.
+    const initialisedFor = React.useRef<number | null>(null);
     useEffect(() => {
-        const v = (data?.data?.variants ?? []) as ProductVariantLike[];
-        if (v.length === 0) return;
+        const product = data?.data;
+        const v = (product?.variants ?? []) as ProductVariantLike[];
+        if (!product || v.length === 0 || initialisedFor.current === product.id) return;
+        initialisedFor.current = product.id;
         const [resolvedIdx, resolvedColorId] = resolveInitialSelection(v, 0);
         setSelectedVariantIdx(resolvedIdx);
         setSelectedColorId(resolvedColorId);

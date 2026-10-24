@@ -17,6 +17,7 @@ import BranchCard from '@/components/Orders/BranchCard';
 import { OrderStatusBadge, PaymentStatusBadge } from '@/components/Orders/StatusBadge';
 import { TrackingSkeleton } from './OrderTrackingClient';
 import { Truck } from 'lucide-react';
+import ProductThumb from '@/components/ProductThumb';
 
 const PAYMENT_METHOD_KEYS: Record<string, 'cod' | 'online' | 'branch'> = {
     cash_on_delivery: 'cod',
@@ -46,7 +47,7 @@ export default function OrderDetailClient({ orderId }: Props) {
         tc('currency', { amount: Number(val).toLocaleString(intlLocale(locale), { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
 
     // Both load in parallel; both 404 for a missing / someone else's order.
-    const { data, isLoading, error } = useOrderDetail(orderId);
+    const { data, isPending: isLoading, error } = useOrderDetail(orderId);
     const reorder = useReorder();
     const payOrder = usePayOrder();
     const order = data?.data;
@@ -163,14 +164,7 @@ export default function OrderDetailClient({ orderId }: Props) {
                                 const unit = parseFloat(item.price_at_purchase);
                                 return (
                                     <Link key={item.id} href={`/products/${snap.slug || item.product_id}`} className="flex gap-4 p-4 transition-colors hover:bg-gray-50 sm:gap-5 sm:p-5">
-                                        <div className="h-[90px] w-[90px] shrink-0 overflow-hidden rounded-lg bg-[#e8e8e8] sm:h-[110px] sm:w-[110px]">
-                                            <img
-                                                src={snap.image_url}
-                                                alt={snap.name}
-                                                className="h-full w-full object-contain p-2 mix-blend-multiply"
-                                                onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
-                                            />
-                                        </div>
+                                        <ProductThumb src={snap.image_url} alt={snap.name} className="h-[90px] w-[90px] rounded-lg sm:h-[110px] sm:w-[110px]" />
                                         <div className="min-w-0 flex-1 pt-1 font-beatrice">
                                             <p className="text-[15px] font-semibold text-black sm:text-[16px]">{snap.name}</p>
                                             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-gray-500">

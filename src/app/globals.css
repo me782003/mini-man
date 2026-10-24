@@ -195,6 +195,13 @@ body {
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  /* No grey/blue box flashed over buttons and links when tapped on phones. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hide the focus ring left after a tap or click; keyboard users (focus-visible) still get it. */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 a {

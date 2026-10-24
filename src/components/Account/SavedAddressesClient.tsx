@@ -16,7 +16,7 @@ export default function SavedAddressesClient() {
     const t = useTranslations('Orders');
     const ta = useTranslations('Account');
     const tc = useTranslations('Common');
-    const { data: addresses, isLoading } = useAddresses();
+    const { data: addresses, isPending: isLoading } = useAddresses();
     const createAddress = useCreateAddress();
     const updateAddress = useUpdateAddress();
     const deleteAddress = useDeleteAddress();

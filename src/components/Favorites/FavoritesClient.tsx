@@ -6,12 +6,13 @@ import { Link } from '@/i18n/navigation';
 import ProductCard from '@/components/ProductCard';
 import { useWishlist, useRemoveFromWishlist } from '@/lib/hooks/useWishlist';
 import { intlLocale } from '@/lib/intl';
+import ProductThumb from '@/components/ProductThumb';
 
 export default function FavoritesClient() {
     const t = useTranslations('Account');
     const tc = useTranslations('Common');
     const locale = useLocale();
-    const { data: response, isLoading } = useWishlist();
+    const { data: response, isPending: isLoading } = useWishlist();
     const removeFromWishlist = useRemoveFromWishlist();
 
     const items = response?.data || [];
@@ -73,14 +74,7 @@ export default function FavoritesClient() {
                         {items.map(item => (
                             <Link href={`/products/${item.id}`} key={item.id} className="flex items-start gap-4 ">
                                 {/* Image */}
-                                <div className="h-[120px] w-[120px] shrink-0 bg-[#e8e8e8] flex items-center justify-center">
-                                    <img
-                                        src={item.image_url}
-                                        alt={item.name}
-                                        className="h-full w-full object-contain mix-blend-multiply"
-                                        onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
-                                    />
-                                </div>
+                                <ProductThumb src={item.image_url} alt={item.name} className="h-[120px] w-[120px]" />
 
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
@@ -133,7 +127,8 @@ export default function FavoritesClient() {
                                     category={item.category_collection.category.name}
                                     title={item.name}
                                     price={tc('currency', { amount: Number(item.price).toLocaleString(intlLocale(locale)) })}
-                                    colors={item.colors.map(c => c.hexa)}
+                                    // Pass each colour's own photos so picking a swatch switches the card's images.
+                                    colors={item.colors.map(c => ({ hexa: c.hexa, images: (c as { images?: string[] }).images ?? [] }))}
                                 />
                                 <button
                                     onClick={() => handleRemove(item.id)}

@@ -17,16 +17,15 @@ function ProductsContent() {
 
       <div className="flex-1 min-w-0">
         {/* Breadcrumb */}
-        <nav className="mb-4 flex items-center gap-1.5 font-beatrice text-[14px] text-gray-500">
+        <nav className="mb-2 flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
           <Link href="/" className="hover:text-black transition-colors">{tc('home')}</Link>
           <span>/</span>
-          <span className="text-black">{t('title')}</span>
+          <span aria-current="page" className="font-semibold text-black">{t('title')}</span>
         </nav>
 
         {/* Heading */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="font-beatrice text-[32px] font-bold uppercase tracking-widest text-black">{t('title')}</h1>
-        </div>
+        {/* Same title style as the other pages (cart, checkout, account…). */}
+        <h1 className="mb-6 font-beatrice text-[20px] font-bold uppercase text-black md:mb-8">{t('title')}</h1>
 
         <ProductsGrid setFiltersOpen={setFiltersOpen} />
       </div>

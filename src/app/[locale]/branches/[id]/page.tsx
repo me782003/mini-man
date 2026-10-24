@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getSettings } from '@/lib/api/settings';
+import { localizedAlternates } from '@/lib/seo';
 import BranchDetailClient from '@/components/Branches/BranchDetailClient';
+import { pageOpenGraph } from '@/lib/seo-server';
 
 type Params = Promise<{ locale: string; id: string }>;
 
@@ -14,7 +16,20 @@ async function findBranch(locale: string, id: string) {
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
     const { locale, id } = await params;
     const branch = await findBranch(locale, id);
-    return branch?.name ? { title: branch.name } : {};
+    if (!branch) return {};
+    const title = branch.name || `#${branch.id}`;
+    const description = [branch.address, branch.phone].filter(Boolean).join(' · ') || undefined;
+    return {
+        title,
+        description,
+        alternates: localizedAlternates(locale, `/branches/${id}`),
+        openGraph: await pageOpenGraph(locale, {
+            title,
+            description,
+            url: `/${locale}/branches/${id}`,
+            ...(branch.main_image ? { images: [{ url: branch.main_image, alt: title }] } : {}),
+        }),
+    };
 }
 
 export default async function BranchPage({ params }: { params: Params }) {

@@ -8,13 +8,17 @@ import { Link } from '@/i18n/navigation';
 import { TrashIcon } from '../icons';
 import { useCart, useRemoveCartItem, useUpdateCartItem } from '@/lib/hooks/useCart';
 import { intlLocale } from '@/lib/intl';
+import { ArrowRight, Heart, ShoppingCart } from 'lucide-react';
+import ProductThumb from '@/components/ProductThumb';
 
 export default function CartClient() {
     const t = useTranslations('Checkout');
     const c = useTranslations('Common');
     const locale = useLocale();
     const money = (n: number) => c('currency', { amount: n.toLocaleString(intlLocale(locale)) });
-    const { data: response, isLoading } = useCart();
+    // isPending (not isLoading): stays true while the login check runs and the cart hasn't been
+    // fetched yet — otherwise the page briefly shows "Your cart is empty".
+    const { data: response, isPending: isLoading } = useCart();
     const removeItem = useRemoveCartItem();
     const updateItem = useUpdateCartItem();
 
@@ -45,6 +49,7 @@ export default function CartClient() {
             <nav className="mb-2 flex items-center gap-1 font-beatrice text-[12px] text-gray-500">
                 <Link href="/" className="transition-colors hover:text-black">{c('home')}</Link>
                 <span>/</span>
+                <span aria-current="page" className="font-semibold text-black">{c('cart')}</span>
             </nav>
 
             {/* Heading */}
@@ -52,14 +57,13 @@ export default function CartClient() {
                 {c('cart')}
             </h1>
 
+            {/* Empty: a proper empty state instead of an empty box + zero-total summary. */}
+            {items.length === 0 ? (
+                <EmptyCart />
+            ) : (
             <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
                 {/* Cart items */}
                 <div className="flex-1 border border-gray-200">
-                    {items.length === 0 ? (
-                        <p className="py-20 text-center font-beatrice text-[15px] text-gray-400">
-                            {t('emptyCart')}
-                        </p>
-                    ) : (
                         <div className="divide-y divide-gray-200">
                             {items.map(item => {
                                 const variant = item.variant;
@@ -76,21 +80,14 @@ export default function CartClient() {
                                 >
                                     <div className="flex gap-4 sm:gap-5 lg:contents">
                                         {/* Image */}
-                                        <div className="flex h-[110px] w-[110px] shrink-0 items-center justify-center bg-[#e8e8e8] sm:h-[130px] sm:w-[130px]">
-                                            <img
-                                                src={item.product.image_url}
-                                                alt={item.product.name}
-                                                className="h-full w-full object-contain mix-blend-multiply"
-                                                onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
-                                            />
-                                        </div>
+                                        <ProductThumb src={item.product.image_url} alt={item.product.name} className="h-[96px] w-[96px] sm:h-[130px] sm:w-[130px]" />
 
                                         {/* Details */}
                                         <div className="min-w-0 flex-1 lg:pe-8">
-                                            <h3 className="mb-0.5 pe-8 font-beatrice text-[17px] font-medium text-black sm:text-[20px]">
+                                            <h3 className="mb-1 line-clamp-2 pe-8 font-beatrice text-[14px] font-medium leading-snug text-black sm:line-clamp-none sm:text-[20px]">
                                                 {item.product.name}
                                             </h3>
-                                            <p className="mb-3 font-beatrice text-[18px] font-extrabold text-black sm:mb-4 sm:text-[20px]">
+                                            <p className="mb-2 font-beatrice text-[15px] font-extrabold text-black sm:mb-4 sm:text-[20px]">
                                                 {money(item.total_item_price)}
                                             </p>
 
@@ -159,7 +156,6 @@ export default function CartClient() {
                                 );
                             })}
                         </div>
-                    )}
                 </div>
 
                 {/* Order summary */}
@@ -246,6 +242,39 @@ export default function CartClient() {
                         </button>
                     </Link>
                 </div>
+            </div>
+            )}
+        </div>
+    );
+}
+
+function EmptyCart() {
+    const t = useTranslations('Checkout');
+    return (
+        <div className="flex flex-col items-center px-4 py-14 text-center md:py-20">
+            <div className="relative mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-gray-100">
+                <ShoppingCart size={40} strokeWidth={1.5} className="text-gray-400" aria-hidden />
+                <span aria-hidden className="absolute -end-1 -top-1 flex h-8 w-8 items-center justify-center rounded-full bg-white font-beatrice text-[14px] font-bold text-gray-400 shadow ring-1 ring-gray-200">
+                    0
+                </span>
+            </div>
+            <h2 className="font-beatrice text-[20px] font-bold text-black md:text-[24px]">{t('emptyCartTitle')}</h2>
+            <p className="mt-2 max-w-[360px] font-beatrice text-[14px] leading-relaxed text-gray-500">{t('emptyCartHint')}</p>
+            <div className="mt-7 flex w-full max-w-[360px] flex-col gap-3 sm:w-auto sm:max-w-none sm:flex-row">
+                <Link
+                    href="/products"
+                    className="inline-flex items-center justify-center gap-2 bg-black px-8 py-3 font-beatrice text-[14px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-neutral-800"
+                >
+                    {t('startShopping')}
+                    <ArrowRight size={16} className="rtl:rotate-180" aria-hidden />
+                </Link>
+                <Link
+                    href="/favorites"
+                    className="inline-flex items-center justify-center gap-2 bg-gray-100 px-8 py-3 font-beatrice text-[14px] font-semibold uppercase tracking-wide text-gray-700 transition-colors hover:bg-black hover:text-white"
+                >
+                    <Heart size={16} aria-hidden />
+                    {t('yourFavorites')}
+                </Link>
             </div>
         </div>
     );

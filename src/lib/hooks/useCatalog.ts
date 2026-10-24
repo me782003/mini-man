@@ -7,6 +7,13 @@ export interface CatalogColor {
   image: string | null;
 }
 
+/** A product-level colour in the listing: carries that colour's own photos. */
+export interface CatalogProductColor {
+  id: number;
+  hexa: string;
+  images: string[];
+}
+
 export interface CatalogVariantColor extends CatalogColor {
   variant_id: number;
   sku: string;
@@ -51,7 +58,7 @@ export interface CatalogProduct {
   };
   sub_category: { id: number; name: string };
   images: CatalogImage[];
-  colors: CatalogColor[];
+  colors: CatalogProductColor[];
   variants: CatalogVariant[];
 }
 

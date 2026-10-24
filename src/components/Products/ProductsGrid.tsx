@@ -4,7 +4,7 @@ import React, { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import ProductCard from '../ProductCard';
 import { SearchIcon } from '../icons';
-import { ChevronDownIcon, SlidersHorizontal } from 'lucide-react';
+import { ArrowUpDown, ChevronDownIcon, SlidersHorizontal } from 'lucide-react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useCatalogProductsInfinite, type CatalogProduct } from '@/lib/hooks/useCatalog';
 import ActiveFilters from './ActiveFilters';
@@ -38,7 +38,8 @@ function toProductCardProps(p: CatalogProduct, formatPrice: (amount: number) => 
     price: formatPrice(parseFloat(p.price)),
     colorVariants: p.colors.map((c) => ({
       color: c.hexa,
-      images: c.image ? [c.image] : p.images.map((img) => img.image_path),
+      // Each colour's own photos; fall back to the whole gallery only when it has none.
+      images: c.images?.length ? c.images : p.images.map((img) => img.image_path),
     })),
   };
 }
@@ -60,6 +61,7 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
   const t = useTranslations('Products');
   const tc = useTranslations('Common');
   const locale = useLocale();
+  const n = (v: number) => v.toLocaleString(intlLocale(locale));
   const formatPrice = (amount: number) => tc('currency', { amount: amount.toLocaleString(intlLocale(locale)) });
   const router = useRouter();
   const pathname = usePathname();
@@ -169,24 +171,32 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
       <ActiveFilters />
 
       {/* Count + sort */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="font-cairo text-sm text-neutral-500">
-          {!isPending && total > 0 ? t('showing', { shown: allProducts.length, total }) : null}
+      {/* One line on phones too: short count at the start, compact sort at the end. */}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="min-w-0 truncate font-cairo text-[12px] text-neutral-400 md:text-sm md:text-neutral-500">
+          {!isPending && total > 0 ? (
+            <>
+              <span className="md:hidden">{t('showingShort', { shown: n(allProducts.length), total: n(total) })}</span>
+              <span className="hidden md:inline">{t('showing', { shown: allProducts.length, total })}</span>
+            </>
+          ) : null}
         </p>
 
-        <label className="flex items-center gap-2 font-beatrice text-[13px] text-neutral-500">
-          <span className="whitespace-nowrap">{t('sortBy')}</span>
+        <label className="flex shrink-0 items-center gap-2 font-beatrice text-[13px] text-neutral-500">
+          {/* Label read by screen readers everywhere; shown from tablet up. */}
+          <span className="sr-only whitespace-nowrap md:not-sr-only">{t('sortBy')}</span>
           <span className="relative">
+            <ArrowUpDown size={14} aria-hidden className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-gray-500 md:hidden" />
             <select
               value={sort}
               onChange={(e) => handleSortChange(e.target.value as SortValue)}
-              className="cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-2 ps-3 pe-9 font-beatrice text-[13px] font-medium text-black transition-colors hover:border-black focus:border-black focus:outline-none"
+              className="cursor-pointer appearance-none rounded-lg border border-gray-300 bg-white py-2 pe-8 ps-7 font-beatrice text-[13px] font-medium text-black transition-colors hover:border-black focus:border-black focus:outline-none md:pe-9 md:ps-3"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{t(o.labelKey)}</option>
               ))}
             </select>
-            <ChevronDownIcon size={16} className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <ChevronDownIcon size={16} className="pointer-events-none absolute end-2.5 top-1/2 -translate-y-1/2 text-gray-500 md:end-3" />
           </span>
         </label>
       </div>
@@ -219,15 +229,26 @@ export default function ProductsGrid({ setFiltersOpen }: { setFiltersOpen: (v: b
 
           {hasNextPage && (
             <>
-              <div className="mt-10 h-px w-full bg-neutral-200" />
-              <div className="mt-8 flex justify-center">
+              {/* Same style as the home sections' "Show more": grey, borderless, black when active. */}
+              <div className="mt-8 flex justify-center md:mt-12">
                 <button
+                  type="button"
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
-                  className="flex flex-col items-center gap-1 px-12 py-3.5 font-beatrice text-[13px] font-semibold uppercase tracking-widest text-black transition-colors hover:bg-black hover:text-white disabled:opacity-50"
+                  aria-busy={isFetchingNextPage}
+                  className="group inline-flex items-center gap-2 bg-gray-100 px-7 py-3 font-beatrice text-[14px] font-semibold uppercase tracking-wide text-gray-700 transition-colors hover:bg-black hover:text-white active:bg-black active:text-white disabled:pointer-events-none disabled:opacity-60"
                 >
-                  {isFetchingNextPage ? tc('loading') : t('seeMore')}
-                  {!isFetchingNextPage && <ChevronDownIcon size={16} />}
+                  {isFetchingNextPage ? (
+                    <>
+                      <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+                      {tc('loading')}
+                    </>
+                  ) : (
+                    <>
+                      {t('seeMore')}
+                      <ChevronDownIcon size={16} strokeWidth={2.5} aria-hidden className="transition-transform duration-200 group-hover:translate-y-0.5" />
+                    </>
+                  )}
                 </button>
               </div>
             </>

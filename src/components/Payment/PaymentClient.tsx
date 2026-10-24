@@ -34,7 +34,8 @@ export default function PaymentClient() {
     const paymentMethod: PaymentMethod = requested === 'paymob' && paymobDown ? 'cash_on_delivery' : requested;
     const branchParam = searchParams.get('branch_id');
 
-    const { data: cartResponse, isLoading: cartLoading } = useCart();
+    // isPending: no cart data yet — never treat that as an empty cart (it would bounce to /cart).
+    const { data: cartResponse, isPending: cartLoading } = useCart();
     const items = cartResponse?.data.items ?? [];
     const summary = cartResponse?.data.summary;
     const subtotal = Number(summary?.subtotal ?? 0);

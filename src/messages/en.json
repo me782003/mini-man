@@ -300,7 +300,11 @@
     "removedFromCart": "Removed from cart",
     "removeFailed": "Failed to remove item",
     "noLongerAvailable": "No longer available",
-    "onlyNLeft": "Only {n} left"
+    "onlyNLeft": "Only {n} left",
+    "emptyCartTitle": "Your cart is empty",
+    "emptyCartHint": "Looks like you haven't added anything yet. Explore our latest sneakers and outfits and find something you love.",
+    "startShopping": "Start shopping",
+    "yourFavorites": "Your favorites"
   },
   "Home": {
     "noProducts": "No products found.",
@@ -344,7 +348,10 @@
         "subtitle": "New Styles Just Landed",
         "cta": "View All"
       }
-    }
+    },
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "showingCount": "Showing {shown} of {total}"
   },
   "Products": {
     "title": "Products",
@@ -403,7 +410,8 @@
     "maxPrice": "Maximum price",
     "removeFilter": "Remove filter: {name}",
     "showMore": "Show more",
-    "showLess": "Show less"
+    "showLess": "Show less",
+    "showingShort": "{shown} of {total}"
   },
   "Site": {
     "seeAll": "See All",
@@ -566,5 +574,29 @@
     "collected": "Collected",
     "pickup": "Pickup",
     "delivery": "Delivery"
+  },
+  "Seo": {
+    "productsTitle": "Shop all products",
+    "productsDescription": "Browse sneakers, shoes and men's fashion. Filter by size, category and price, with delivery across Egypt or pickup from our branches.",
+    "branchesTitle": "Our branches",
+    "branchesDescription": "Find our store branches: addresses, phone numbers and directions. Order online and pick up from the branch nearest you.",
+    "contactTitle": "Contact us",
+    "contactDescription": "Questions about an order, sizes or delivery? Contact our team by phone, WhatsApp, email or the contact form.",
+    "cart": "Shopping cart",
+    "checkout": "Checkout",
+    "shipping": "Delivery details",
+    "payment": "Payment",
+    "orderSuccess": "Order placed",
+    "favorites": "My favorites",
+    "login": "Log in",
+    "register": "Create account",
+    "forgotPassword": "Forgot password",
+    "resetPassword": "Reset password",
+    "verifyOtp": "Verify your account",
+    "account": "My account",
+    "orders": "My orders",
+    "addresses": "My addresses",
+    "orderDetails": "Order #{id}",
+    "trackOrder": "Track order #{id}"
   }
 }

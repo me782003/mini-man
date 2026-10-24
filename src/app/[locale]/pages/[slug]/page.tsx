@@ -4,7 +4,9 @@ import { getTranslations } from 'next-intl/server';
 import sanitizeHtml from 'sanitize-html';
 import { getSettings } from '@/lib/api/settings';
 import { Link } from '@/i18n/navigation';
+import { localizedAlternates, toDescription } from '@/lib/seo';
 import ScrollFadeRow from '@/components/ScrollFadeRow';
+import { pageOpenGraph } from '@/lib/seo-server';
 
 type Params = Promise<{ locale: string; slug: string }>;
 
@@ -17,7 +19,15 @@ async function loadPages(locale: string) {
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
     const { locale, slug } = await params;
     const page = (await loadPages(locale)).find((p) => p.slug === slug);
-    return page?.title ? { title: page.title.trim() } : {};
+    if (!page) return {};
+    const title = page.title?.trim() || slug;
+    const description = toDescription(page.content);
+    return {
+        title,
+        description,
+        alternates: localizedAlternates(locale, `/pages/${slug}`),
+        openGraph: await pageOpenGraph(locale, { title, description, url: `/${locale}/pages/${slug}`, type: 'article' }),
+    };
 }
 
 // Content is written in the dashboard and may contain HTML — allow formatting, strip scripts/handlers.

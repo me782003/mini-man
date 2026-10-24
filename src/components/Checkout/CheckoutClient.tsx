@@ -33,6 +33,7 @@ import { useAppliedCoupon } from '@/lib/hooks/useAppliedCoupon';
 import { parseMinimumAmount } from '@/lib/coupon';
 import { ApiError } from '@/lib/fetcher';
 import { intlLocale } from '@/lib/intl';
+import ProductThumb from '@/components/ProductThumb';
 
 const METHOD_LABEL: Record<PaymentMethod, 'cod' | 'online' | 'branch'> = {
     cash_on_delivery: 'cod',
@@ -94,12 +95,13 @@ export default function CheckoutClient() {
     const [checkoutError, setCheckoutError] = useState<CheckoutError | null>(null);
     const [notes, setNotes] = useState('');
     const [verifyingCart, setVerifyingCart] = useState(false);
-    const { data: cartResponse, isLoading: cartLoading, refetch: refetchCart } = useCart();
+    // isPending: no cart data yet (still loading or waiting for the login check) — never treat that as empty.
+    const { data: cartResponse, isPending: cartLoading, refetch: refetchCart } = useCart();
     const items = cartResponse?.data.items ?? [];
     const summary = cartResponse?.data.summary;
     const subtotal = Number(summary?.subtotal ?? 0);
 
-    const { data: addresses, isLoading: addressesLoading } = useAddresses();
+    const { data: addresses, isPending: addressesLoading } = useAddresses();
     const address = isPickup
         ? null
         : (addressIdParam
@@ -476,14 +478,7 @@ export default function CheckoutClient() {
                                 {items.map(item => (
                                     <div key={item.cart_item_id} className="flex gap-5">
                                         {/* Image */}
-                                        <div className="h-[126px] w-[126px] md:h-[159px] md:w-[159px] shrink-0 bg-[#e8e8e8] flex items-center justify-center">
-                                            <img
-                                                src={item.product.image_url}
-                                                alt={item.product.name}
-                                                className="h-full w-full object-contain mix-blend-multiply border-[#D7D7D7]"
-                                                onError={e => { const img = e.currentTarget as HTMLImageElement; img.src = '/images/logo.png'; img.classList.add('opacity-20'); }}
-                                            />
-                                        </div>
+                                        <ProductThumb src={item.product.image_url} alt={item.product.name} className="h-[126px] w-[126px] md:h-[159px] md:w-[159px]" />
 
                                         {/* Details */}
                                         <div className="flex-1">

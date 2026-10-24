@@ -327,10 +327,10 @@ const SwiperSection = ({
                     {seeAllHref ? (
                         <Link
                             href={seeAllHref}
-                            className="mb-1 flex items-center gap-2 text-[14px] font-medium text-[#6b6b6b] transition hover:text-[#4f4f4f] md:flex"
+                            className="mb-1 flex items-center gap-2 bg-gray-100 px-4 py-2.5 text-[14px] font-semibold text-gray-700 transition-colors hover:bg-black hover:text-white active:bg-black active:text-white"
                         >
                             <span className="font-beatrice">{t("seeAll")}</span>
-                            <span className="text-[28px] leading-none sm:text-[34px] lg:text-[52px]">
+                            <span className="flex leading-none">
                                 <svg
                                     width="27"
                                     height="14"
@@ -341,7 +341,7 @@ const SwiperSection = ({
                                 >
                                     <path
                                         d="M1 7H35.5M35.5 7L29.5 1M35.5 7L29.5 13"
-                                        stroke="#5E5E5E"
+                                        stroke="currentColor"
                                         strokeWidth="2"
                                         strokeLinecap="round"
                                         strokeLinejoin="round"

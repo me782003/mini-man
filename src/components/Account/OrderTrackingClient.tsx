@@ -17,7 +17,7 @@ export default function OrderTrackingClient({ orderId, standalone = false }: Pro
     const tt = useTranslations('Tracking');
     const ta = useTranslations('Account');
     const tc = useTranslations('Common');
-    const { data: tracking, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useOrderTracking(orderId);
+    const { data: tracking, isPending: isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useOrderTracking(orderId);
     const notFound = error instanceof ApiError && error.status === 404;
 
     return (

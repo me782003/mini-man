@@ -151,7 +151,7 @@ export default function OrderHistoryClient() {
             {tab === 'awaiting' ? (
                 <AwaitingPaymentList
                     orders={abandoned.data?.data ?? []}
-                    isLoading={abandoned.isLoading}
+                    isLoading={abandoned.isPending}
                     page={awaitingPage}
                     totalPages={abandoned.data?.pagination?.total_pages ?? 1}
                     onPageChange={setAwaitingPage}
@@ -240,7 +240,7 @@ export default function OrderHistoryClient() {
                         <p className="-mt-3 mb-4 font-beatrice text-[12px] text-gray-500">{tt('bothDatesNeeded')}</p>
                     ) : null}
 
-                    {ordersQuery.isLoading ? (
+                    {ordersQuery.isPending ? (
                         <OrdersSkeleton />
                     ) : ordersQuery.isError ? (
                         <div className="rounded-lg border border-red-200 bg-red-50 p-5 font-beatrice text-[14px] text-red-600">

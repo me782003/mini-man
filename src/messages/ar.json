@@ -300,7 +300,11 @@
     "removedFromCart": "تم الحذف من السلة",
     "removeFailed": "تعذر حذف المنتج",
     "noLongerAvailable": "لم يعد متاحًا",
-    "onlyNLeft": "متبقي {n} فقط"
+    "onlyNLeft": "متبقي {n} فقط",
+    "emptyCartTitle": "سلتك فارغة",
+    "emptyCartHint": "يبدو أنك لم تضف أي منتج بعد. تصفح أحدث الأحذية والملابس واختر ما يعجبك.",
+    "startShopping": "ابدأ التسوق",
+    "yourFavorites": "المفضلة"
   },
   "Home": {
     "noProducts": "لا توجد منتجات.",
@@ -344,7 +348,10 @@
         "subtitle": "تصميمات جديدة وصلت للتو",
         "cta": "عرض الكل"
       }
-    }
+    },
+    "showMore": "عرض المزيد",
+    "showLess": "عرض أقل",
+    "showingCount": "يتم عرض {shown} من {total}"
   },
   "Products": {
     "title": "المنتجات",
@@ -403,7 +410,8 @@
     "maxPrice": "أعلى سعر",
     "removeFilter": "إزالة الفلتر: {name}",
     "showMore": "عرض المزيد",
-    "showLess": "عرض أقل"
+    "showLess": "عرض أقل",
+    "showingShort": "{shown} من {total}"
   },
   "Site": {
     "seeAll": "عرض الكل",
@@ -566,5 +574,29 @@
     "collected": "تم الاستلام",
     "pickup": "استلام من الفرع",
     "delivery": "توصيل"
+  },
+  "Seo": {
+    "productsTitle": "تسوق جميع المنتجات",
+    "productsDescription": "تصفح الأحذية والسنيكرز والملابس الرجالي. صفّي حسب المقاس والقسم والسعر، مع التوصيل لجميع أنحاء مصر أو الاستلام من فروعنا.",
+    "branchesTitle": "فروعنا",
+    "branchesDescription": "اعثر على فروع متجرنا: العناوين وأرقام الهواتف والاتجاهات. اطلب أونلاين واستلم من أقرب فرع لك.",
+    "contactTitle": "تواصل معنا",
+    "contactDescription": "لديك سؤال عن طلب أو مقاس أو توصيل؟ تواصل مع فريقنا عبر الهاتف أو واتساب أو البريد الإلكتروني أو نموذج التواصل.",
+    "cart": "سلة التسوق",
+    "checkout": "إتمام الطلب",
+    "shipping": "بيانات التوصيل",
+    "payment": "الدفع",
+    "orderSuccess": "تم تسجيل الطلب",
+    "favorites": "المفضلة",
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "forgotPassword": "نسيت كلمة المرور",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "verifyOtp": "تأكيد الحساب",
+    "account": "حسابي",
+    "orders": "طلباتي",
+    "addresses": "عناويني",
+    "orderDetails": "الطلب رقم {id}",
+    "trackOrder": "تتبع الطلب رقم {id}"
   }
 }

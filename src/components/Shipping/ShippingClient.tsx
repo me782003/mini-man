@@ -104,12 +104,13 @@ export default function ShippingClient() {
     const hasBranches = (branchesResponse?.data?.length ?? 0) > 0;
 
     const { isLoggedIn } = useAuthState();
-    const { data: cartData, isLoading: cartLoading } = useCart();
+    // isPending: no cart data yet — show the summary skeleton instead of zeros.
+    const { data: cartData, isPending: cartLoading } = useCart();
 
     const subtotal = Number(cartData?.data?.summary?.subtotal ?? 0);
     const { coupon: appliedCoupon, discount: discountAmount } = useAppliedCoupon(subtotal);
 
-    const { data: addresses, isLoading: profileLoading } = useAddresses();
+    const { data: addresses, isPending: profileLoading } = useAddresses();
 
     const createAddress = useCreateAddress();
     const updateAddress = useUpdateAddress();

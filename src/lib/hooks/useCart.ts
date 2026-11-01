@@ -3,6 +3,7 @@ import { get, post, put, del } from '@/lib/fetcher';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { useHasAuthToken } from '@/lib/auth-token';
+import type { ShippingFees } from '@/lib/shipping-fee';
 
 export interface CartProduct {
   id: number;
@@ -35,7 +36,12 @@ export interface CartItem {
 export interface CartSummary {
   subtotal: string;
   tax: string;
+  /** Fee for the payment_method sent (cash on delivery when none was sent). */
   shipping: string;
+  /** Fee per payment method; null while the customer has no address. */
+  shipping_fees?: ShippingFees | null;
+  free_shipping?: boolean;
+  shipping_address_id?: number | null;
   discount: string;
   coupon_code: string | null;
   total: string;
@@ -55,11 +61,17 @@ const cartKeys = {
   all: () => ['cart'] as const,
 };
 
-export function useCart() {
+/**
+ * `addressId` prices shipping for that address (default: the customer's default address).
+ * payment_method isn't sent: the summary's shipping_fees covers every method, so switching
+ * methods needs no new request.
+ */
+export function useCart({ addressId }: { addressId?: number | null } = {}) {
   const loggedIn = useHasAuthToken();
   return useQuery({
-    queryKey: cartKeys.all(),
-    queryFn: () => get<CartResponse>('/user/cart'),
+    // The plain ['cart'] key stays the cart page's (optimistic quantity updates write to it).
+    queryKey: addressId ? [...cartKeys.all(), { address_id: addressId }] : cartKeys.all(),
+    queryFn: () => get<CartResponse>(addressId ? `/user/cart?address_id=${addressId}` : '/user/cart'),
     enabled: loggedIn,
   });
 }

@@ -269,6 +269,11 @@
     "resendCode": "إعادة إرسال الرمز"
   },
   "Checkout": {
+    "freeShipping": "شحن مجاني",
+    "shippingAfterAddress": "يُحسب بعد إضافة العنوان",
+    "payOnlineSave": "ادفع أونلاين ووفّر {amount} على الشحن",
+    "addressShippingFees": "الشحن: {cod} عند الاستلام · {online} أونلاين",
+    "addressShippingFee": "الشحن: {amount}",
     "payment": "الدفع",
     "checkout": "إتمام الشراء",
     "savedAddresses": "العناوين المحفوظة",

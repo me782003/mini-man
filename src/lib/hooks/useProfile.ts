@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { setProfile, setLoading, setError, ProfileState } from '@/lib/store/features/profileSlice';
 import { RootState } from '@/lib/store/store';
 import { useHasAuthToken } from '@/lib/auth-token';
+import type { ShippingFees } from '@/lib/shipping-fee';
 
 export interface Address {
     id: number;
@@ -23,6 +24,10 @@ export interface Address {
     bosta_city_name?: string | null;
     bosta_district_id?: string | null;
     bosta_district_name?: string | null;
+    /** Shipping for this address (GET /user/addresses only). */
+    shipping_amount?: number;
+    shipping_fees?: ShippingFees | null;
+    free_shipping?: boolean;
 }
 
 export interface ProfileResponse {

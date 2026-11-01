@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, put, patch, del } from '@/lib/fetcher';
 import type { Address } from './useProfile';
 import { useHasAuthToken } from '@/lib/auth-token';
@@ -36,12 +36,19 @@ const addressKeys = {
   all: () => ['addresses'] as const,
 };
 
-export function useAddresses() {
+/**
+ * `cartAmount`: send it when a coupon is applied (subtotal − discount), so each address's
+ * shipping fee and free shipping follow the discounted amount. Otherwise the server uses the cart total.
+ */
+export function useAddresses({ cartAmount }: { cartAmount?: number } = {}) {
   const loggedIn = useHasAuthToken();
+  const amount = cartAmount != null ? Math.round(cartAmount * 100) / 100 : null;
   return useQuery({
-    queryKey: addressKeys.all(),
-    queryFn: () => get<AddressListResponse>('/user/addresses').then(r => r.data),
+    queryKey: amount != null ? [...addressKeys.all(), { cart_amount: amount }] : addressKeys.all(),
+    queryFn: () =>
+      get<AddressListResponse>(amount != null ? `/user/addresses?cart_amount=${amount}` : '/user/addresses').then(r => r.data),
     enabled: loggedIn,
+    placeholderData: keepPreviousData,
   });
 }
 

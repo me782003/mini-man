@@ -33,24 +33,28 @@ export function SecurePaymentBadge() {
 
 import type { CartSummary } from '@/lib/hooks/useCart';
 import { intlLocale } from '@/lib/intl';
+import { quoteShipping, shippingAmount, type ShippingQuote } from '@/lib/shipping-fee';
 
 interface OrderSummaryProps {
     summary?: CartSummary;
     isLoading?: boolean;
     couponCode?: string;
     discountAmount?: number;
+    /** Shipping for the selected method and address. Default: the cart's cash-on-delivery fee. */
+    shipping?: ShippingQuote;
     className?: string;
     children?: React.ReactNode;
 }
 
-export default function OrderSummary({ summary, isLoading, couponCode, discountAmount, className, children }: OrderSummaryProps) {
+export default function OrderSummary({ summary, isLoading, couponCode, discountAmount, shipping: shippingQuote, className, children }: OrderSummaryProps) {
     const t = useTranslations('Checkout');
     const c = useTranslations('Common');
     const locale = useLocale();
     const money = (n: number) => c('currency', { amount: n.toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) });
     const subtotal  = Number(summary?.subtotal ?? 0);
     const tax       = Number(summary?.tax ?? 0);
-    const shipping  = Number(summary?.shipping ?? 0);
+    const quote     = shippingQuote ?? quoteShipping('cash_on_delivery', summary);
+    const shipping  = shippingAmount(quote);
     const discount  = discountAmount ?? Number(summary?.discount ?? 0);
     const coupon    = couponCode ?? summary?.coupon_code ?? null;
     const total     = subtotal - discount + shipping + tax;
@@ -81,11 +85,15 @@ export default function OrderSummary({ summary, isLoading, couponCode, discountA
                             <span className="font-bold text-green-700">−{money(discount)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">
+                    <div className="flex items-baseline justify-between gap-4 font-beatrice text-[14px] md:text-[16px]">
                         <span className="text-gray-500">{c('shipping')}</span>
-                        <span className="font-bold text-black">
-                            {shipping > 0 ? money(shipping) : c('free')}
-                        </span>
+                        {quote.kind === 'pending' ? (
+                            <span className="text-end text-[13px] font-medium text-gray-500">{t('shippingAfterAddress')}</span>
+                        ) : (
+                            <span className={`font-bold ${quote.kind === 'fee' ? 'text-black' : 'text-green-700'}`}>
+                                {quote.kind === 'fee' ? money(shipping) : quote.kind === 'free' ? t('freeShipping') : c('free')}
+                            </span>
+                        )}
                     </div>
                     {tax > 0 && (
                         <div className="flex justify-between font-beatrice text-[14px] md:text-[16px]">

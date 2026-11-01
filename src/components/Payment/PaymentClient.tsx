@@ -2,7 +2,7 @@
 
 import React, { useEffect, useSyncExternalStore } from 'react';
 import { Banknote, CreditCard, Store } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
@@ -13,6 +13,9 @@ import { useCart } from '@/lib/hooks/useCart';
 import { useBranches } from '@/lib/hooks/useBranches';
 import { isPaymentMethod, isPaymobUnavailable, type PaymentMethod } from '@/lib/hooks/useOrders';
 import { useAppliedCoupon } from '@/lib/hooks/useAppliedCoupon';
+import { useAddresses } from '@/lib/hooks/useAddresses';
+import { intlLocale } from '@/lib/intl';
+import { onlineSaving, pickFeeSource, quoteShipping, type ShippingQuote } from '@/lib/shipping-fee';
 
 const METHOD_OPTIONS: { value: PaymentMethod; label: 'cod' | 'online' | 'branch'; hint: 'codHint' | 'onlineHint' | 'branchHint'; icon: React.ElementType }[] = [
     { value: 'cash_on_delivery', label: 'cod', hint: 'codHint', icon: Banknote },
@@ -24,6 +27,8 @@ export default function PaymentClient() {
     const t = useTranslations('Orders');
     const tc = useTranslations('Checkout');
     const c = useTranslations('Common');
+    const locale = useLocale();
+    const money = (n: number) => c('currency', { amount: n.toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) });
     const router = useRouter();
     const searchParams = useSearchParams();
     const addressId = searchParams.get('address_id');
@@ -35,7 +40,7 @@ export default function PaymentClient() {
     const branchParam = searchParams.get('branch_id');
 
     // isPending: no cart data yet — never treat that as an empty cart (it would bounce to /cart).
-    const { data: cartResponse, isPending: cartLoading } = useCart();
+    const { data: cartResponse, isPending: cartLoading } = useCart({ addressId: addressId ? Number(addressId) || null : null });
     const items = cartResponse?.data.items ?? [];
     const summary = cartResponse?.data.summary;
     const subtotal = Number(summary?.subtotal ?? 0);
@@ -46,6 +51,19 @@ export default function PaymentClient() {
     const branchId = branchParam ? Number(branchParam) : branches[0]?.id ?? null;
 
     const { coupon, discount: discountAmount } = useAppliedCoupon(subtotal);
+
+    // Fees for the chosen address (re-priced for the discounted amount when a coupon is applied).
+    const { data: addresses } = useAddresses({
+        cartAmount: coupon && summary ? subtotal - discountAmount : undefined,
+    });
+    const address = addresses?.find(a => a.id === Number(addressId)) ?? null;
+    const feeSource = pickFeeSource(address, summary);
+    const quoteFor = (method: PaymentMethod) => quoteShipping(method, feeSource);
+    const saving = onlineSaving(feeSource);
+    const feeLabel = (quote: ShippingQuote) =>
+        quote.kind === 'fee' ? tc('addressShippingFee', { amount: money(quote.amount) })
+            : quote.kind === 'free' ? tc('freeShipping')
+                : null;
 
     useEffect(() => {
         if (!cartLoading && items.length === 0) {
@@ -135,7 +153,7 @@ export default function PaymentClient() {
                                         onChange={() => selectMethod(value)}
                                         className="sr-only"
                                     />
-                                    <span className="flex items-center gap-3">
+                                    <span className="flex flex-1 items-center gap-3">
                                         <Icon size={22} strokeWidth={1.8} className="shrink-0" />
                                         <span>
                                             <span className="block font-beatrice text-[12px] md:text-[13px] font-bold text-black">{t(label)}</span>
@@ -144,10 +162,22 @@ export default function PaymentClient() {
                                             </span>
                                         </span>
                                     </span>
+                                    {/* This method's shipping fee for the chosen address. */}
+                                    {value !== 'branch_pickup' && !unavailable && feeLabel(quoteFor(value)) && (
+                                        <span className="shrink-0 text-end font-beatrice text-[12px] font-semibold text-black md:text-[13px]">
+                                            {feeLabel(quoteFor(value))}
+                                        </span>
+                                    )}
                                 </label>
                             );
                         })}
                     </div>
+
+                    {saving > 0 && !paymobDown && (
+                        <p className="-mt-5 mb-8 font-beatrice text-[13px] font-semibold text-[#388E3C]">
+                            {tc('payOnlineSave', { amount: money(saving) })}
+                        </p>
+                    )}
 
                     {/* Branch selector (pickup only — no address needed) */}
                     {isPickup && (
@@ -190,6 +220,7 @@ export default function PaymentClient() {
                     isLoading={cartLoading}
                     couponCode={coupon?.code}
                     discountAmount={discountAmount || undefined}
+                    shipping={quoteFor(paymentMethod)}
                 >
                     <SecurePaymentBadge />
                 </OrderSummary>

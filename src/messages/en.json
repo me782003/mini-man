@@ -269,6 +269,11 @@
     "resendCode": "Resend code"
   },
   "Checkout": {
+    "freeShipping": "Free shipping",
+    "shippingAfterAddress": "Calculated after adding an address",
+    "payOnlineSave": "Pay online and save {amount} on shipping",
+    "addressShippingFees": "Shipping: {cod} cash on delivery · {online} online",
+    "addressShippingFee": "Shipping: {amount}",
     "payment": "Payment",
     "checkout": "Checkout",
     "savedAddresses": "Saved Addresses",

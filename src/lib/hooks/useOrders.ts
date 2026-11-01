@@ -228,6 +228,8 @@ export interface CheckoutPayload {
 
 export interface CheckoutResult {
     order_id: number;
+    /** Final amounts from the server: what Paymob charges / Bosta collects. */
+    shipping_amount?: number | string;
     total_amount: number;
     payment_method: PaymentMethod;
     pickup_branch?: PickupBranch | null;

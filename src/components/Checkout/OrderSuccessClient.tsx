@@ -36,6 +36,7 @@ const noopSubscribe = () => () => {};
 
 export default function OrderSuccessClient() {
     const t = useTranslations('Orders');
+    const tc = useTranslations('Checkout');
     const locale = useLocale();
     const orderId = useSearchParams().get('id') ?? '';
     // Read once on the client; on the server (and without storage) fall back to the id alone.
@@ -61,6 +62,13 @@ export default function OrderSuccessClient() {
                         {t('total')}: {t('amount', { amount: Number(result.total_amount).toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) })}
                         {' · '}
                         {t(METHOD_LABEL[result.payment_method] ?? 'cod')}
+                    </p>
+                )}
+                {result?.shipping_amount != null && result.payment_method !== 'branch_pickup' && (
+                    <p className="mt-1 font-beatrice text-[13px] text-gray-500">
+                        {Number(result.shipping_amount) > 0
+                            ? tc('addressShippingFee', { amount: t('amount', { amount: Number(result.shipping_amount).toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) }) })
+                            : tc('freeShipping')}
                     </p>
                 )}
                 {order?.message && <p className="mt-3 font-beatrice text-[14px] text-gray-500">{order.message}</p>}

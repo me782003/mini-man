@@ -10,6 +10,7 @@ import { useCart, useRemoveCartItem, useUpdateCartItem } from '@/lib/hooks/useCa
 import { intlLocale } from '@/lib/intl';
 import { ArrowRight, Heart, ShoppingCart } from 'lucide-react';
 import ProductThumb from '@/components/ProductThumb';
+import { onlineSaving, quoteShipping, shippingAmount } from '@/lib/shipping-fee';
 
 export default function CartClient() {
     const t = useTranslations('Checkout');
@@ -32,7 +33,10 @@ export default function CartClient() {
     const tax = summary ? parseFloat(summary.tax) : 0;
 
     const { coupon: appliedCoupon, discount: discountAmount } = useAppliedCoupon(subtotal);
-    const total = subtotal + tax - discountAmount;
+    // No method chosen yet: the backend prices the default address for cash on delivery.
+    const shippingQuote = quoteShipping('cash_on_delivery', summary);
+    const saving = onlineSaving(summary);
+    const total = subtotal + tax - discountAmount + shippingAmount(shippingQuote);
     const shippingHref = '/shipping';
 
     if (isLoading) {
@@ -177,9 +181,22 @@ export default function CartClient() {
                             </span>
                         </div> */}
 
-                        <div className="flex justify-between gap-4 font-beatrice text-[15px] sm:text-[16px]">
-                            <span className="text-gray-500">{c('shipping')}</span>
-                            <span className="text-end font-bold text-black">{money(0)}</span>
+                        <div>
+                            <div className="flex items-baseline justify-between gap-4 font-beatrice text-[15px] sm:text-[16px]">
+                                <span className="text-gray-500">{c('shipping')}</span>
+                                {shippingQuote.kind === 'pending' ? (
+                                    <span className="text-end text-[13px] font-medium text-gray-500">{t('shippingAfterAddress')}</span>
+                                ) : shippingQuote.kind === 'free' ? (
+                                    <span className="text-end font-bold text-green-700">{t('freeShipping')}</span>
+                                ) : (
+                                    <span className="text-end font-bold text-black">{money(shippingAmount(shippingQuote))}</span>
+                                )}
+                            </div>
+                            {saving > 0 && (
+                                <p className="mt-1.5 font-beatrice text-[12px] font-semibold text-[#388E3C]">
+                                    {t('payOnlineSave', { amount: money(saving) })}
+                                </p>
+                            )}
                         </div>
 
                         {discountAmount > 0 && (

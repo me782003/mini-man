@@ -34,6 +34,7 @@ import { parseMinimumAmount } from '@/lib/coupon';
 import { ApiError } from '@/lib/fetcher';
 import { intlLocale } from '@/lib/intl';
 import ProductThumb from '@/components/ProductThumb';
+import { onlineSaving, pickFeeSource, quoteShipping, shippingAmount } from '@/lib/shipping-fee';
 
 const METHOD_LABEL: Record<PaymentMethod, 'cod' | 'online' | 'branch'> = {
     cash_on_delivery: 'cod',
@@ -96,12 +97,21 @@ export default function CheckoutClient() {
     const [notes, setNotes] = useState('');
     const [verifyingCart, setVerifyingCart] = useState(false);
     // isPending: no cart data yet (still loading or waiting for the login check) — never treat that as empty.
-    const { data: cartResponse, isPending: cartLoading, refetch: refetchCart } = useCart();
+    // Priced for the chosen address (the URL's address_id; the server's default address otherwise).
+    const addressIdNum = !isPickup && addressIdParam ? Number(addressIdParam) || null : null;
+    const { data: cartResponse, isPending: cartLoading, refetch: refetchCart } = useCart({ addressId: addressIdNum });
     const items = cartResponse?.data.items ?? [];
     const summary = cartResponse?.data.summary;
     const subtotal = Number(summary?.subtotal ?? 0);
 
-    const { data: addresses, isPending: addressesLoading } = useAddresses();
+    const tCoupon = useTranslations('Coupon');
+    const validateCoupon = useValidateCoupon();
+    const { coupon, discount: discountAmount, clearCoupon } = useAppliedCoupon(subtotal);
+
+    // With a coupon, address fees are re-priced for the discounted amount (free shipping can turn on or off).
+    const { data: addresses, isPending: addressesLoading } = useAddresses({
+        cartAmount: coupon && summary ? subtotal - discountAmount : undefined,
+    });
     const address = isPickup
         ? null
         : (addressIdParam
@@ -114,11 +124,13 @@ export default function CheckoutClient() {
         ? branches.find(b => b.id === Number(branchIdParam)) ?? (branches.length === 1 ? branches[0] : null)
         : null;
 
-    const tCoupon = useTranslations('Coupon');
-    const validateCoupon = useValidateCoupon();
-    const { coupon, discount: discountAmount, clearCoupon } = useAppliedCoupon(subtotal);
+    // Shipping follows the selected method: switching methods needs no new request.
+    const feeSource = pickFeeSource(address, summary);
+    const shippingQuote = quoteShipping(paymentMethod, feeSource);
+    const saving = paymentMethod === 'cash_on_delivery' ? onlineSaving(feeSource) : 0;
+    const tax = Number(summary?.tax ?? 0);
     // The total the customer saw — compared with the server's total after placing the order.
-    const shownTotal = subtotal - discountAmount + Number(summary?.shipping ?? 0) + Number(summary?.tax ?? 0);
+    const shownTotal = subtotal - discountAmount + shippingAmount(shippingQuote) + tax;
     const money = (n: number) =>
         c('currency', { amount: n.toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) });
 
@@ -202,7 +214,11 @@ export default function CheckoutClient() {
                 // The order exists now — the coupon is used up either way.
                 clearCoupon();
                 // An invalid coupon doesn't error at checkout; the order is just placed without it.
-                const couponNotice = couponCode && Number(data.total_amount) > shownTotal + 0.01
+                // Compare without shipping when the server sends it, so a different fee isn't mistaken for a dropped coupon.
+                const serverShipping = data.shipping_amount != null ? Number(data.shipping_amount) : null;
+                const couponNotice = couponCode && (serverShipping != null
+                    ? Number(data.total_amount) - serverShipping > subtotal - discountAmount + tax + 0.01
+                    : Number(data.total_amount) > shownTotal + 0.01)
                     ? tCoupon('notApplied', { amount: money(Number(data.total_amount)) })
                     : undefined;
                 if (data.payment_method === 'paymob') {
@@ -459,6 +475,14 @@ export default function CheckoutClient() {
                         {paymentMethod === 'paymob' && (
                             <p className="mt-1 font-beatrice text-[13px] text-gray-600">{t('onlineHint')}</p>
                         )}
+                        {saving > 0 && (
+                            <Link
+                                href={`${stepHref('/payment').replace(/method=[^&]*/, 'method=paymob')}`}
+                                className="mt-2 inline-block font-beatrice text-[13px] font-semibold text-[#388E3C] underline underline-offset-2"
+                            >
+                                {tc('payOnlineSave', { amount: money(saving) })}
+                            </Link>
+                        )}
                     </div>
 
                     {/* Products box */}
@@ -537,6 +561,7 @@ export default function CheckoutClient() {
                     isLoading={cartLoading}
                     couponCode={coupon?.code}
                     discountAmount={discountAmount || undefined}
+                    shipping={shippingQuote}
                     className="w-full shrink-0 border border-gray-200 p-5 md:sticky md:top-[calc(var(--header-h,7rem)+1.5rem)] md:w-[507px] md:p-10"
                 >
                     <CouponField subtotal={subtotal} />

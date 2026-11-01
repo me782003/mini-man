@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import CheckoutStepper from '@/components/CheckoutStepper';
 import OrderSummary, { SecurePaymentBadge } from '@/components/OrderSummary';
 import { useAuthState } from '@/lib/hooks/useAuthState';
@@ -14,6 +14,8 @@ import { useAddresses, useCreateAddress, useUpdateAddress, useDeleteAddress, use
 import CountryBadge from '@/components/Country/CountryBadge';
 import { useBranches } from '@/lib/hooks/useBranches';
 import AddressModal, { EMPTY_FORM, addressToForm, isAddressComplete, type AddressForm } from '@/components/Account/AddressModal';
+import { intlLocale } from '@/lib/intl';
+import { onlineSaving, pickFeeSource, quoteShipping } from '@/lib/shipping-fee';
 
 
 function AddressCard({
@@ -25,8 +27,11 @@ function AddressCard({
     selected,
     deleting,
     settingDefault,
+    feeText,
 }: {
     address: Address;
+    /** This address's shipping fee, e.g. "Shipping: 206 EGP cash on delivery · 121 EGP online". */
+    feeText?: string | null;
     onSelect: () => void;
     onEdit: () => void;
     onDelete: () => void;
@@ -73,6 +78,11 @@ function AddressCard({
                 {[address.street_address, address.apartment, address.bosta_district_name, address.city].filter(Boolean).join(', ')}
             </p>
             <CountryBadge countryId={address.country_id} name={address.country_name} className="ps-6 font-beatrice text-[12px] text-gray-500" />
+            {feeText && (
+                <p className={`mt-1 ps-6 font-beatrice text-[12px] font-semibold ${address.free_shipping ? 'text-green-700' : 'text-black'}`}>
+                    {feeText}
+                </p>
+            )}
             {!isAddressComplete(address) && (
                 <p className="mt-2 ps-6 font-beatrice text-[12px] font-medium text-amber-700">
                     {t('completeAddress')}
@@ -96,6 +106,8 @@ export default function ShippingClient() {
     const tc = useTranslations('Checkout');
     const c = useTranslations('Common');
     const ta = useTranslations('Account');
+    const locale = useLocale();
+    const money = (n: number) => c('currency', { amount: n.toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) });
     const router = useRouter();
     const searchParams = useSearchParams();
     const paymentHref = (params: Record<string, string>) => `/payment?${new URLSearchParams(params).toString()}`;
@@ -110,7 +122,10 @@ export default function ShippingClient() {
     const subtotal = Number(cartData?.data?.summary?.subtotal ?? 0);
     const { coupon: appliedCoupon, discount: discountAmount } = useAppliedCoupon(subtotal);
 
-    const { data: addresses, isPending: profileLoading } = useAddresses();
+    // With a coupon, each address is priced for the discounted amount (free shipping can turn on or off).
+    const { data: addresses, isPending: profileLoading } = useAddresses({
+        cartAmount: appliedCoupon && cartData ? subtotal - discountAmount : undefined,
+    });
 
     const createAddress = useCreateAddress();
     const updateAddress = useUpdateAddress();
@@ -140,6 +155,19 @@ export default function ShippingClient() {
         ?? addressList.find(a => a.is_default === 1)?.id
         ?? addressList[0]?.id
         ?? null;
+
+    // The method is chosen on the next step: show cash on delivery (the backend's default) plus the online saving.
+    const selectedAddress = addressList.find(a => a.id === effectiveSelectedId) ?? null;
+    const feeSource = pickFeeSource(selectedAddress, cartData?.data?.summary);
+    const saving = onlineSaving(feeSource);
+    const feeText = (address: Address) => {
+        if (address.free_shipping) return tc('freeShipping');
+        const fees = address.shipping_fees;
+        if (!fees) return null;
+        return fees.cash_on_delivery === fees.paymob
+            ? tc('addressShippingFee', { amount: money(fees.cash_on_delivery) })
+            : tc('addressShippingFees', { cod: money(fees.cash_on_delivery), online: money(fees.paymob) });
+    };
 
     const afterSave = (addressId: number) => {
         setModal(m => ({ ...m, open: false }));
@@ -250,6 +278,7 @@ export default function ShippingClient() {
                                             onSetDefault={() => handleSetDefault(address.id)}
                                             deleting={deletingId === address.id}
                                             settingDefault={settingDefaultId === address.id}
+                                            feeText={feeText(address)}
                                         />
                                     ))}
 
@@ -311,8 +340,14 @@ export default function ShippingClient() {
                     isLoading={cartLoading}
                     couponCode={appliedCoupon?.code}
                     discountAmount={discountAmount || undefined}
+                    shipping={quoteShipping('cash_on_delivery', feeSource)}
                     className="md:w-[507px] shrink-0 bg-[#E0E0E080] p-5 md:border md:border-gray-200 md:bg-transparent md:p-10"
                 >
+                    {saving > 0 && (
+                        <p className="-mt-2 mb-5 font-beatrice text-[13px] font-semibold text-[#388E3C]">
+                            {tc('payOnlineSave', { amount: money(saving) })}
+                        </p>
+                    )}
                     {appliedCoupon && (
                         <div className="mb-5 flex items-center gap-2 border border-green-300 bg-green-50 px-4 py-3">
                             <span className="font-beatrice text-[13px] font-semibold text-green-700">

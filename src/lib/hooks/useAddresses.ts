@@ -2,24 +2,31 @@
 
 import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { get, post, put, patch, del } from '@/lib/fetcher';
+import { phonePayload } from '@/lib/countries';
+import type { PaymentMethod } from '@/lib/hooks/useOrders';
+
+const toBody = (payload: AddressPayload) => ({ ...payload, ...phonePayload(payload.phone) });
 import type { Address } from './useProfile';
 import { useHasAuthToken } from '@/lib/auth-token';
 
-interface AddressPayload {
-  first_name: string;
-  last_name: string;
-  phone: string;
+/** Body of POST / PUT /user/addresses. Egypt sends the Bosta fields; other countries governorate + city. */
+export interface AddressPayload {
+  title: string;
   country_id: number;
   street_address: string;
+  landmark?: string;
   apartment?: string;
-  city: string;
+  /** The picker's value; sent as { phone, phone_code } (see phonePayload). */
+  phone: string;
+  is_default?: boolean;
   latitude?: number | null;
   longitude?: number | null;
-  is_default?: boolean;
-  bosta_city_id?: string | null;
-  bosta_city_name?: string | null;
-  bosta_district_id?: string | null;
-  bosta_district_name?: string | null;
+  bosta_city_id?: string;
+  bosta_city_name?: string;
+  bosta_district_id?: string;
+  bosta_district_name?: string;
+  governorate?: string | null;
+  city?: string;
 }
 
 interface AddressListResponse {
@@ -37,16 +44,20 @@ const addressKeys = {
 };
 
 /**
- * `cartAmount`: send it when a coupon is applied (subtotal − discount), so each address's
- * shipping fee and free shipping follow the discounted amount. Otherwise the server uses the cart total.
+ * Each address comes with its shipping fee (`shipping_amount`, `shipping_fees`, `free_shipping`).
+ * With a coupon applied send `couponCode` and `cartAmount` = subtotal - discount: the fee and free
+ * shipping can change. `paymentMethod` picks which fee `shipping_amount` holds.
  */
-export function useAddresses({ cartAmount }: { cartAmount?: number } = {}) {
+export function useAddresses({ cartAmount, couponCode, paymentMethod }: { cartAmount?: number; couponCode?: string | null; paymentMethod?: PaymentMethod } = {}) {
   const loggedIn = useHasAuthToken();
-  const amount = cartAmount != null ? Math.round(cartAmount * 100) / 100 : null;
+  const params = new URLSearchParams();
+  if (paymentMethod) params.set('payment_method', paymentMethod);
+  if (cartAmount != null) params.set('cart_amount', String(Math.round(cartAmount * 100) / 100));
+  if (couponCode) params.set('coupon_code', couponCode);
+  const qs = params.toString();
   return useQuery({
-    queryKey: amount != null ? [...addressKeys.all(), { cart_amount: amount }] : addressKeys.all(),
-    queryFn: () =>
-      get<AddressListResponse>(amount != null ? `/user/addresses?cart_amount=${amount}` : '/user/addresses').then(r => r.data),
+    queryKey: qs ? [...addressKeys.all(), qs] : addressKeys.all(),
+    queryFn: () => get<AddressListResponse>(qs ? `/user/addresses?${qs}` : '/user/addresses').then(r => r.data),
     enabled: loggedIn,
     placeholderData: keepPreviousData,
   });
@@ -56,7 +67,7 @@ export function useCreateAddress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: AddressPayload) =>
-      post<AddressResponse>('/user/addresses', payload),
+      post<AddressResponse>('/user/addresses', toBody(payload)),
     onSuccess: () => qc.invalidateQueries({ queryKey: addressKeys.all() }),
   });
 }
@@ -65,7 +76,7 @@ export function useUpdateAddress() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...payload }: AddressPayload & { id: number }) =>
-      put<AddressResponse>(`/user/addresses/${id}`, payload),
+      put<AddressResponse>(`/user/addresses/${id}`, toBody(payload)),
     onSettled: () => qc.invalidateQueries({ queryKey: addressKeys.all() }),
   });
 }

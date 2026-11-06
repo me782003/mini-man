@@ -1,5 +1,7 @@
 // Country helpers — pure functions over the /user/auth/countries list (no React).
 
+import { matchDialCode } from './dial-codes';
+
 export interface Country {
   id: number;
   /** ISO 3166-1 alpha-2, e.g. "EG". Look countries up by this, never by id. */
@@ -82,4 +84,19 @@ export function isValidPhone(phone: string): boolean {
 
 export function isEgyptianMobile(phone: string): boolean {
   return EGYPTIAN_MOBILE.test(normalizeEgyptianPhone(phone));
+}
+
+/**
+ * What every request with a phone sends: the number and its dial code separately.
+ * Accepts the picker's value ("01012345678" for Egypt, "+9665..." otherwise) or a stored phone.
+ * Egypt: "01012345678" → { phone: "1012345678", phone_code: "+20" }.
+ */
+export function phonePayload(value: string): { phone: string; phone_code: string } {
+  const v = value.replace(/[\s\-()]/g, '');
+  if (v.startsWith('+') && !v.startsWith('+20')) {
+    const code = matchDialCode(v);
+    // Unknown code: the API also accepts the full international number on its own.
+    return code ? { phone: v.slice(code.length), phone_code: code } : { phone: v, phone_code: '' };
+  }
+  return { phone: normalizeEgyptianPhone(v).replace(/^0/, ''), phone_code: '+20' };
 }

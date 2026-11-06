@@ -120,6 +120,8 @@ export function useSettings() {
     },
     initialData: () => readCache(locale),
     initialDataUpdatedAt: 0, // treat the session cache as stale → refresh once in the background
-    staleTime: 10 * 60 * 1000,
+    // Short, so a ticker switched on/off in the dashboard updates within a minute.
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 }

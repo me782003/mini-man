@@ -5,19 +5,25 @@ import { createPortal } from 'react-dom';
 import { Search, ChevronDown, Check, LocateFixed } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useCountryHelpers } from '@/lib/hooks/useCountries';
-import { SHIPPING_COUNTRY_CODE, isEgyptianMobile, isValidPhone, normalizeEgyptianPhone } from '@/lib/countries';
+import { SHIPPING_COUNTRY_CODE, isValidPhone, normalizeEgyptianPhone } from '@/lib/countries';
 import CountrySelect from '@/components/Country/CountrySelect';
 import PhoneInput from '@/components/Country/PhoneInput';
 import { useBostaCities, useBostaDistricts } from '@/lib/hooks/useShipping';
 import type { Address } from '@/lib/hooks/useProfile';
+import type { AddressPayload } from '@/lib/hooks/useAddresses';
 import { useLockBodyScroll } from '@/lib/hooks/useLockBodyScroll';
 
 export interface AddressForm {
-    first_name: string;
-    last_name: string;
+    /** The address's label ("Home", "Work"...) - the only name field the customer fills in. */
+    title: string;
+    /** Free-text governorate / state (countries other than Egypt). */
+    governorate: string;
     phone: string;
+    /** Free-text city (countries other than Egypt; Egypt uses the Bosta ids). */
     city: string;
     street_address: string;
+    /** e.g. "Next to the pharmacy" (optional). */
+    landmark: string;
     apartment: string;
     country_id: number;
     latitude: number | null;
@@ -30,11 +36,12 @@ export interface AddressForm {
 }
 
 export const EMPTY_FORM: AddressForm = {
-    first_name: '',
-    last_name: '',
+    title: '',
+    governorate: '',
     phone: '',
     city: '',
     street_address: '',
+    landmark: '',
     apartment: '',
     country_id: 0,
     latitude: null,
@@ -48,11 +55,12 @@ export const EMPTY_FORM: AddressForm = {
 
 export function addressToForm(address: Address): AddressForm {
     return {
-        first_name: address.first_name,
-        last_name: address.last_name,
+        title: address.title ?? '',
+        governorate: address.governorate ?? '',
         phone: address.phone ?? '',
-        city: address.city,
+        city: address.city ?? '',
         street_address: address.street_address,
+        landmark: address.landmark ?? '',
         apartment: address.apartment ?? '',
         country_id: address.country_id,
         latitude: address.latitude ?? null,
@@ -65,9 +73,31 @@ export function addressToForm(address: Address): AddressForm {
     };
 }
 
-// Orders ship automatically only when the address has a Bosta city + district and an Egyptian mobile.
+// Orders ship automatically only when the address has a Bosta governorate + city and a valid phone.
 export function isAddressComplete(address: Address): boolean {
-    return !!address.bosta_city_id && !!address.bosta_district_id && isEgyptianMobile(address.phone ?? '');
+    return !!address.bosta_city_id && !!address.bosta_district_id && isValidPhone(normalizePhone(address.phone ?? ''));
+}
+
+/** Title for an address card; older addresses without one show the customer's name. */
+export function addressLabel(address: Pick<Address, 'title' | 'first_name' | 'last_name'>, fallbackName = ''): string {
+    return address.title?.trim() || [address.first_name, address.last_name].filter(Boolean).join(' ') || fallbackName;
+}
+
+/** Card lines after the title: street, landmark, city, governorate (country is shown separately). */
+export function addressLines(address: Pick<Address, 'street_address' | 'landmark' | 'apartment' | 'city' | 'governorate' | 'bosta_city_name' | 'bosta_district_name'>): string[] {
+    const city = address.bosta_district_name || address.city;
+    const governorate = address.governorate || address.bosta_city_name;
+    return [
+        [address.street_address, address.apartment].filter(Boolean).join(', '),
+        address.landmark,
+        [city, governorate !== city ? governorate : null].filter(Boolean).join(', '),
+    ].filter((line): line is string => !!line && !!line.trim());
+}
+
+/** International numbers are already "+<code><number>"; Egyptian ones become "01...". */
+function normalizePhone(raw: string): string {
+    const v = raw.trim();
+    return v.startsWith('+') && !v.startsWith('+20') ? v.replace(/[\s-]/g, '') : normalizeEgyptianPhone(v);
 }
 
 type FormErrors = Partial<Record<keyof AddressForm, string>>;
@@ -81,8 +111,8 @@ interface AddressModalProps {
     onCountryChange: (id: number) => void;
     onFieldsChange: (patch: Partial<AddressForm>) => void;
     onDefaultToggle: () => void;
-    /** Receives the validated form with the phone normalized. */
-    onSave: (form: AddressForm) => void;
+    /** Receives the request body for POST / PUT /user/addresses. */
+    onSave: (payload: AddressPayload) => void;
     onClose: () => void;
     saving: boolean;
     notice?: string;
@@ -124,37 +154,39 @@ export default function AddressModal({
     useLockBodyScroll();
     const [locating, setLocating] = useState(false);
     const [locationError, setLocationError] = useState(false);
-    // Shipping is Egypt-only: preselect it for new addresses.
-    const egyptId = getDefaultCountry()?.id;
+    // Egypt by default (or the only active country) for new addresses.
+    const defaultCountryId = getDefaultCountry()?.id ?? (countries.length === 1 ? countries[0].id : undefined);
     useEffect(() => {
-        if (!form.country_id && egyptId) onCountryChange(egyptId);
+        if (!form.country_id && defaultCountryId) onCountryChange(defaultCountryId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [egyptId]);
+    }, [defaultCountryId]);
 
     if (typeof document === 'undefined') return null;
 
-    // Bosta unreachable → let the customer type the city instead of blocking the save.
-    const bostaUnavailable = citiesFailed || (!!form.bosta_city_id && districtsFailed);
-    const isLegacyAddress = mode === 'edit' && !form.bosta_district_id && !bostaUnavailable;
     const selectedCountry = getCountryById(form.country_id);
-    // Only Egypt can be delivered to, so with an Egypt-only list there's nothing to choose.
-    const onlyEgypt = countries.length === 1 && countries[0].code === SHIPPING_COUNTRY_CODE;
+    // Governorate -> city lists exist for Egypt only (Bosta); other countries type both in.
+    const isEgypt = !selectedCountry || selectedCountry.code === SHIPPING_COUNTRY_CODE;
+    // Bosta unreachable -> let the customer type the city instead of blocking the save.
+    const bostaUnavailable = citiesFailed || (!!form.bosta_city_id && districtsFailed);
+    const freeTextPlace = !isEgypt || bostaUnavailable;
+    const isLegacyAddress = mode === 'edit' && isEgypt && !form.bosta_district_id && !bostaUnavailable;
+    // The dashboard's active countries are the only choices; with just one the picker is locked.
+    const singleCountry = countries.length === 1;
     const noCountries = !countriesLoading && !countriesFailed && countries.length === 0;
     // The saved country was deactivated since — ask for an active one.
     const inactiveCountry = !!form.country_id && countries.length > 0 && !selectedCountry;
 
     const validate = (phone: string): FormErrors => {
         const e: FormErrors = {};
-        if (!form.first_name.trim()) e.first_name = t('fieldRequired');
-        else if (form.first_name.trim().length > MAX_NAME_LENGTH) e.first_name = ta('nameTooLong');
-        if (!form.last_name.trim()) e.last_name = t('fieldRequired');
-        else if (form.last_name.trim().length > MAX_NAME_LENGTH) e.last_name = ta('nameTooLong');
+        if (!form.title.trim()) e.title = t('fieldRequired');
+        else if (form.title.trim().length > MAX_NAME_LENGTH) e.title = ta('nameTooLong');
         if (!isValidPhone(phone)) e.phone = t('phoneInvalid');
         if (noCountries) e.country_id = tCountry('deliveryUnavailable');
         else if (!selectedCountry) e.country_id = inactiveCountry ? tCountry('chooseActiveCountry') : t('fieldRequired');
-        else if (selectedCountry.code !== SHIPPING_COUNTRY_CODE) e.country_id = tCountry('egyptOnly');
         if (form.street_address.trim().length < 6) e.street_address = t('streetTooShort');
-        if (bostaUnavailable) {
+        if (freeTextPlace) {
+            if (!isEgypt && !form.governorate.trim()) e.governorate = t('fieldRequired');
+            // (Egypt without the Bosta list: governorate optional, city required.)
             if (!form.city.trim()) e.city = t('fieldRequired');
         } else {
             if (!form.bosta_city_id) e.bosta_city_id = t('fieldRequired');
@@ -165,23 +197,34 @@ export default function AddressModal({
 
     const handleSave = () => {
         // International numbers are already "+<code><number>"; Egyptian ones become "01…".
-        const phone = form.phone.trim().startsWith('+') && !form.phone.trim().startsWith('+20')
-            ? form.phone.replace(/[\s-]/g, '')
-            : normalizeEgyptianPhone(form.phone);
+        const phone = normalizePhone(form.phone);
         const e = validate(phone);
         setErrors(e);
         if (Object.keys(e).length > 0) return;
-        onSave({
-            ...form,
-            phone,
-            first_name: form.first_name.trim(),
-            last_name: form.last_name.trim(),
+        const common = {
+            title: form.title.trim(),
+            country_id: form.country_id,
             street_address: form.street_address.trim(),
+            landmark: form.landmark.trim(),
             apartment: form.apartment.trim(),
-            city: form.city.trim(),
+            phone,
+            latitude: form.latitude,
+            longitude: form.longitude,
             // A real boolean — the backend treats the string "false" as true. The first address is always default.
             is_default: isFirstAddress ? true : !!form.is_default,
-        });
+        };
+        onSave(
+            isEgypt && !bostaUnavailable
+                // Egypt: the server fills governorate and city from the Bosta ids / names.
+                ? {
+                    ...common,
+                    bosta_city_id: form.bosta_city_id,
+                    bosta_city_name: form.bosta_city_name,
+                    bosta_district_id: form.bosta_district_id,
+                    bosta_district_name: form.bosta_district_name,
+                }
+                : { ...common, governorate: form.governorate.trim() || null, city: form.city.trim() },
+        );
     };
 
     const useMyLocation = () => {
@@ -210,72 +253,44 @@ export default function AddressModal({
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
             {/* Modal */}
-            <div className="relative z-10 mx-4 max-h-[90vh] w-full max-w-[650px] overflow-y-auto bg-white p-5 sm:p-6 md:p-8 lg:p-10">
-                <h2 className="mb-6 font-beatrice text-[24px] font-bold text-black sm:mb-7 sm:text-[32px]">
+            {/* Title and buttons stay put; only the fields scroll when the screen is short. */}
+            <div className="relative z-10 mx-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-[650px] flex-col bg-white">
+                <h2 className="shrink-0 px-5 pb-4 pt-5 font-beatrice text-[22px] font-bold text-black sm:px-8 sm:pt-7 sm:text-[28px]">
                     {mode === 'add' ? ta('addAddress') : ta('editAddress')}
                 </h2>
 
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2 sm:px-8">
+
                 {(notice || isLegacyAddress) && (
-                    <p className="mb-5 border border-amber-300 bg-amber-50 px-4 py-3 font-beatrice text-[13px] font-medium text-amber-800">
+                    <p className="mb-3 border border-amber-300 bg-amber-50 px-4 py-3 font-beatrice text-[13px] font-medium text-amber-800">
                         {notice ?? ta('selectCityAreaNotice')}
                     </p>
                 )}
 
-                {/* First / Last name */}
-                <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <input
-                            name="first_name"
-                            value={form.first_name}
-                            onChange={onChange}
-                            placeholder={tc('firstName')}
-                            className={inputClass('first_name')}
-                        />
-                        {fieldError('first_name')}
-                    </div>
-                    <div>
-                        <input
-                            name="last_name"
-                            value={form.last_name}
-                            onChange={onChange}
-                            placeholder={tc('lastName')}
-                            className={inputClass('last_name')}
-                        />
-                        {fieldError('last_name')}
-                    </div>
-                </div>
-
-                {/* Phone */}
-                <div className="mb-4">
-                    <PhoneInput
-                        countries={countries}
-                        value={form.phone}
-                        onChange={phone => onFieldsChange({ phone })}
-                        invalid={!!errors.phone}
-                    />
-                    {fieldError('phone')}
-                </div>
-
-                {/* Country — hidden when Egypt is the only option (sent automatically) */}
+                {/* Country - the dashboard's active (shipping) countries; locked when there's only one */}
                 {countriesFailed ? (
-                    <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border border-red-200 bg-red-50 px-4 py-3 font-beatrice text-[13px] text-red-600">
+                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border border-red-200 bg-red-50 px-4 py-3 font-beatrice text-[13px] text-red-600">
                         <span>{tCountry('loadFailed')}</span>
                         <button type="button" onClick={() => refetchCountries()} className="font-semibold text-black underline underline-offset-2">
                             {tCountry('retry')}
                         </button>
                     </div>
                 ) : noCountries ? (
-                    <p className="mb-4 border border-amber-300 bg-amber-50 px-4 py-3 font-beatrice text-[13px] font-medium text-amber-800">
+                    <p className="mb-3 border border-amber-300 bg-amber-50 px-4 py-3 font-beatrice text-[13px] font-medium text-amber-800">
                         {tCountry('deliveryUnavailable')}
                     </p>
-                ) : !onlyEgypt && (
-                    <div className="mb-4">
+                ) : (
+                    <div className="mb-3">
                         <CountrySelect
+                            disabled={singleCountry}
                             countries={countries}
                             value={selectedCountry ? form.country_id : null}
-                            onChange={onCountryChange}
-                            isSelectable={c => c.code === SHIPPING_COUNTRY_CODE}
-                            disabledHint={tCountry('egyptOnly')}
+                            onChange={id => {
+                                if (id === form.country_id) return;
+                                onCountryChange(id);
+                                // The place fields belong to the old country.
+                                onFieldsChange({ governorate: '', city: '', bosta_city_id: '', bosta_city_name: '', bosta_district_id: '', bosta_district_name: '' });
+                            }}
                             invalid={!!errors.country_id}
                         />
                         {fieldError('country_id')}
@@ -285,21 +300,35 @@ export default function AddressModal({
                     </div>
                 )}
 
-                {/* Governorate / District (Bosta) — free-text city if Bosta is unreachable */}
-                {bostaUnavailable ? (
-                    <div className="mb-4">
-                        <input
-                            name="city"
-                            value={form.city}
-                            onChange={onChange}
-                            placeholder={t('governorate')}
-                            className={inputClass('city')}
-                        />
-                        {fieldError('city')}
-                        <p className="mt-1 font-beatrice text-[12px] text-gray-500">{ta('cityListUnavailable')}</p>
+                {/* Governorate -> City. Egypt: Bosta lists (cities follow the governorate). Elsewhere: text. */}
+                {freeTextPlace ? (
+                    <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {(!isEgypt || bostaUnavailable) && (
+                            <div>
+                                <input
+                                    name="governorate"
+                                    value={form.governorate}
+                                    onChange={onChange}
+                                    placeholder={t('governorate')}
+                                    className={inputClass('governorate')}
+                                />
+                                {fieldError('governorate')}
+                            </div>
+                        )}
+                        <div>
+                            <input
+                                name="city"
+                                value={form.city}
+                                onChange={onChange}
+                                placeholder={ta('city')}
+                                className={inputClass('city')}
+                            />
+                            {fieldError('city')}
+                            {isEgypt && <p className="mt-1 font-beatrice text-[12px] text-gray-500">{ta('cityListUnavailable')}</p>}
+                        </div>
                     </div>
                 ) : (
-                <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div>
                         <SearchableSelect
                             options={cities.map(c => ({ id: c.id, name: c.name, nameAr: c.name_ar }))}
@@ -312,7 +341,7 @@ export default function AddressModal({
                             invalid={!!errors.bosta_city_id}
                             onChange={opt => {
                                 if (opt.id === form.bosta_city_id) return;
-                                // English names always — Bosta matches on them.
+                                // English names always - Bosta matches on them.
                                 onFieldsChange({
                                     bosta_city_id: opt.id,
                                     bosta_city_name: opt.name,
@@ -333,9 +362,9 @@ export default function AddressModal({
                             placeholder={
                                 !form.bosta_city_id
                                     ? t('selectGovernorateFirst')
-                                    : districtsLoading ? t('loading') : t('selectDistrict')
+                                    : districtsLoading ? t('loading') : ta('selectCity')
                             }
-                            ariaLabel={t('district')}
+                            ariaLabel={ta('city')}
                             searchPlaceholder={t('search')}
                             noResults={t('noResults')}
                             invalid={!!errors.bosta_district_id}
@@ -347,7 +376,7 @@ export default function AddressModal({
                 )}
 
                 {/* Street */}
-                <div className="mb-4">
+                <div className="mb-3">
                     <input
                         name="street_address"
                         value={form.street_address}
@@ -358,17 +387,52 @@ export default function AddressModal({
                     {fieldError('street_address')}
                 </div>
 
-                {/* Apartment */}
+                {/* Landmark */}
+                <input
+                    name="landmark"
+                    value={form.landmark}
+                    onChange={onChange}
+                    placeholder={ta('landmarkOptional')}
+                    maxLength={255}
+                    className="mb-3 w-full border border-gray-300 px-4 py-3 font-beatrice text-[14px] text-black placeholder:text-gray-400 focus:border-black focus:outline-none"
+                />
+
+                {/* Address title ("Home", "Work"...) */}
+                <div className="mb-3">
+                    <input
+                        name="title"
+                        value={form.title}
+                        onChange={onChange}
+                        placeholder={ta('addressTitlePlaceholder')}
+                        aria-label={ta('addressTitle')}
+                        maxLength={MAX_NAME_LENGTH}
+                        className={inputClass('title')}
+                    />
+                    {fieldError('title')}
+                </div>
+
+                {/* Phone - any country's dial code (not limited to the countries we ship to) */}
+                <div className="mb-3">
+                    <PhoneInput
+                        value={form.phone}
+                        onChange={phone => onFieldsChange({ phone })}
+                        invalid={!!errors.phone}
+                    />
+                    {fieldError('phone')}
+                </div>
+
+                {/* Apartment / floor */}
                 <input
                     name="apartment"
                     value={form.apartment}
                     onChange={onChange}
                     placeholder={ta('apartmentOptional')}
-                    className="mb-4 w-full border border-gray-300 px-4 py-3 font-beatrice text-[14px] text-black placeholder:text-gray-400 focus:border-black focus:outline-none"
+                    maxLength={255}
+                    className="mb-3 w-full border border-gray-300 px-4 py-3 font-beatrice text-[14px] text-black placeholder:text-gray-400 focus:border-black focus:outline-none"
                 />
 
                 {/* Optional location */}
-                <div className="mb-6 flex flex-wrap items-center gap-3">
+                <div className="mb-3 flex flex-wrap items-center gap-3">
                     <button
                         type="button"
                         onClick={useMyLocation}
@@ -388,7 +452,7 @@ export default function AddressModal({
 
                 {/* Default checkbox — the first address is always the default */}
                 {!isFirstAddress && (
-                <label className="mb-7 flex cursor-pointer items-start gap-3 sm:items-center">
+                <label className="mb-2 flex cursor-pointer items-start gap-3 sm:items-center">
                     <button
                         type="button"
                         onClick={onDefaultToggle}
@@ -413,16 +477,18 @@ export default function AddressModal({
                 </label>
                 )}
 
-                {error && (
-                    <p className="mb-4 font-beatrice text-[13px] text-red-500">{error}</p>
-                )}
+                </div>
 
-                {/* Actions */}
+                {/* Actions — always visible */}
+                <div className="shrink-0 border-t border-gray-100 px-5 pb-5 pt-4 sm:px-8 sm:pb-7">
+                {error && (
+                    <p className="mb-3 font-beatrice text-[13px] text-red-500">{error}</p>
+                )}
                 <div className="flex gap-3 sm:gap-4">
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="flex flex-1 items-center justify-between bg-black px-5 py-4 font-beatrice text-[15px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-50 sm:px-7 sm:text-[16px]"
+                        className="flex flex-1 items-center justify-between bg-black px-5 py-3.5 font-beatrice text-[15px] font-semibold text-white transition-colors hover:bg-neutral-800 disabled:opacity-50 sm:px-7 sm:text-[16px]"
                     >
                         <span>{saving ? tc('saving') : ta('saveChanges')}</span>
                         <svg width="28" height="11" viewBox="0 0 37 14" fill="none" className="rtl:rotate-180">
@@ -437,10 +503,11 @@ export default function AddressModal({
                     </button>
                     <button
                         onClick={onClose}
-                        className="border border-gray-300 px-3 py-4 font-beatrice text-[15px] font-semibold text-black transition-colors hover:bg-gray-50 sm:px-10 sm:text-[16px] md:px-6"
+                        className="border border-gray-300 px-3 py-3.5 font-beatrice text-[15px] font-semibold text-black transition-colors hover:bg-gray-50 sm:px-10 sm:text-[16px] md:px-6"
                     >
                         {tc('back')}
                     </button>
+                </div>
                 </div>
             </div>
         </div>,

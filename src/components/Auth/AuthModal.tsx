@@ -1,5 +1,7 @@
 'use client';
 
+import PhoneInput from '@/components/Country/PhoneInput';
+import { isValidPhone } from '@/lib/countries';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
@@ -70,6 +72,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     const errors: Partial<Record<keyof typeof form, string>> = {};
     if (!form.phone.trim()) errors.phone = t('required');
+    else if (!isValidPhone(form.phone)) errors.phone = t('phoneInvalidAny');
     if (!form.password.trim()) errors.password = t('required');
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
     login(form, { onSuccess: (res) => saveAuth(res.data.token, res.data.user) });
@@ -104,8 +107,7 @@ function LoginForm({ onSuccess }: { onSuccess: () => void }) {
           <p className="border border-red-200 bg-red-50 px-3 py-2 font-cairo text-xs text-red-600">{errorMessage}</p>
         )}
         <Field label={t('phone')} error={fieldErrors.phone}>
-          <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-            placeholder="201234567890" autoComplete="tel" dir="ltr" className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`} />
+          <PhoneInput value={form.phone} invalid={!!fieldErrors.phone} onChange={(v) => { setForm((f) => ({ ...f, phone: v })); setFieldErrors((fe) => ({ ...fe, phone: undefined })); }} />
         </Field>
         <Field label={t('password')} error={fieldErrors.password}>
           <div className="relative">
@@ -159,7 +161,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
     e.preventDefault();
     const errors: Partial<Record<keyof typeof form, string>> = {};
     if (!form.name.trim()) errors.name = t('required');
-    if (!/^01[0-9]{9}$/.test(form.phone)) errors.phone = t('phoneInvalid');
+    if (!isValidPhone(form.phone)) errors.phone = t('phoneInvalidAny');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) errors.email = t('emailInvalid');
     if (form.password.length < 8) errors.password = t('passwordMin');
     if (form.confirmPassword !== form.password) errors.confirmPassword = t('passwordsMismatch');
@@ -201,8 +203,7 @@ function RegisterForm({ onSuccess }: { onSuccess: () => void }) {
             placeholder={t('fullNamePlaceholder')} autoComplete="name" className={inputCls(!!fieldErrors.name)} />
         </Field>
         <Field label={t('phone')} error={fieldErrors.phone}>
-          <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-            placeholder="01234567890" autoComplete="tel" dir="ltr" className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`} />
+          <PhoneInput value={form.phone} invalid={!!fieldErrors.phone} onChange={(v) => { setForm((f) => ({ ...f, phone: v })); setFieldErrors((fe) => ({ ...fe, phone: undefined })); }} />
         </Field>
         <Field label={t('email')} error={fieldErrors.email}>
           <input type="email" name="email" value={form.email} onChange={handleChange}

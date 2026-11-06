@@ -1,8 +1,10 @@
 'use client';
 
+import PhoneInput from '@/components/Country/PhoneInput';
+import { isValidPhone } from '@/lib/countries';
 import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useDispatch } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRegister, useGoogleAuth } from '@/lib/hooks/useAuth';
@@ -42,7 +44,7 @@ export default function RegisterClient() {
   const validate = () => {
     const errors: Partial<Record<keyof typeof form, string>> = {};
     if (!form.name.trim())                                      errors.name            = t('nameRequired');
-    if (!/^01[0-9]{9}$/.test(form.phone))                      errors.phone           = t('phoneInvalid');
+    if (!isValidPhone(form.phone))                      errors.phone           = t('phoneInvalidAny');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))        errors.email           = t('emailInvalid');
     if (form.password.length < 8)                               errors.password        = t('passwordMin');
     if (form.confirmPassword !== form.password)                 errors.confirmPassword = t('passwordsMismatch');
@@ -105,11 +107,7 @@ export default function RegisterClient() {
           </Field>
 
           <Field label={t('phoneNumber')} error={fieldErrors.phone}>
-            <input
-              type="tel" name="phone" value={form.phone} onChange={handleChange}
-              placeholder="01234567890" autoComplete="tel" dir="ltr"
-              className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`}
-            />
+            <PhoneInput value={form.phone} invalid={!!fieldErrors.phone} onChange={(v) => { setForm((f) => ({ ...f, phone: v })); setFieldErrors((fe) => ({ ...fe, phone: undefined })); }} />
           </Field>
 
           <Field label={t('emailAddress')} error={fieldErrors.email}>

@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap");
+/* Cairo is loaded with next/font in app/layout.tsx (variable --font-cairo). */
 
 @tailwind base;
 @tailwind components;
@@ -312,4 +312,13 @@ a {
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Arabic pages: one typeface everywhere. Beatrice has no Arabic letters, so headings, nav links
+   and product names fell back to whatever font the device had and looked different from the body. */
+html[dir="rtl"] body,
+html[dir="rtl"] .font-beatrice,
+html[dir="rtl"] .font-headline,
+html[dir="rtl"] .font-cairo {
+  font-family: var(--font-cairo), "Cairo", ui-sans-serif, system-ui, sans-serif;
 }

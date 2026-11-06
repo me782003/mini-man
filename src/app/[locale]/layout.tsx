@@ -5,6 +5,7 @@ import Header from '../../components/Header';
 import Footer from '@/components/Footer';
 import Providers from '@/components/Providers';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import PhoneRequiredGuard from '@/components/Auth/PhoneRequiredGuard';
 import { getSettings } from '@/lib/api/settings';
 import { DEFAULT_SITE_NAME } from '@/lib/hooks/useSettings';
 import { OG_LOCALE, SITE_URL } from '@/lib/seo';
@@ -68,6 +69,7 @@ export default async function LocaleLayout({
                 </div>
                 <Footer />
                 <WhatsAppButton />
+                <PhoneRequiredGuard />
             </Providers>
         </NextIntlClientProvider>
     );

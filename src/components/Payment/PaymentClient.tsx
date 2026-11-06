@@ -40,7 +40,9 @@ export default function PaymentClient() {
     const branchParam = searchParams.get('branch_id');
 
     // isPending: no cart data yet — never treat that as an empty cart (it would bounce to /cart).
-    const { data: cartResponse, isPending: cartLoading } = useCart({ addressId: addressId ? Number(addressId) || null : null });
+    // The applied coupon is priced in: a free-shipping coupon makes every fee 0.
+    const { coupon: storedCoupon } = useAppliedCoupon();
+    const { data: cartResponse, isPending: cartLoading } = useCart({ addressId: addressId ? Number(addressId) || null : null, couponCode: storedCoupon?.code });
     const items = cartResponse?.data.items ?? [];
     const summary = cartResponse?.data.summary;
     const subtotal = Number(summary?.subtotal ?? 0);
@@ -55,11 +57,12 @@ export default function PaymentClient() {
     // Fees for the chosen address (re-priced for the discounted amount when a coupon is applied).
     const { data: addresses } = useAddresses({
         cartAmount: coupon && summary ? subtotal - discountAmount : undefined,
+        couponCode: coupon?.code,
     });
     const address = addresses?.find(a => a.id === Number(addressId)) ?? null;
     const feeSource = pickFeeSource(address, summary);
-    const quoteFor = (method: PaymentMethod) => quoteShipping(method, feeSource);
-    const saving = onlineSaving(feeSource);
+    const quoteFor = (method: PaymentMethod) => quoteShipping(method, feeSource, coupon);
+    const saving = onlineSaving(feeSource, coupon);
     const feeLabel = (quote: ShippingQuote) =>
         quote.kind === 'fee' ? tc('addressShippingFee', { amount: money(quote.amount) })
             : quote.kind === 'free' ? tc('freeShipping')

@@ -11,9 +11,12 @@ interface FetchOptions extends RequestInit {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  /** The body's `error` code when the API sends one, e.g. "PHONE_VERIFICATION_REQUIRED". */
+  public code: string;
+  constructor(public status: number, message: string, code = '') {
     super(message);
     this.name = 'ApiError';
+    this.code = code;
   }
 }
 
@@ -21,13 +24,16 @@ export class ApiError extends Error {
 async function toApiError(res: Response): Promise<ApiError> {
   const text = await res.text().catch(() => res.statusText);
   let message = text || res.statusText;
+  let code = '';
   try {
-    const body = JSON.parse(text) as { message?: unknown };
+    const body = JSON.parse(text) as { message?: unknown; error?: unknown };
     if (typeof body.message === 'string' && body.message) message = body.message;
+    if (typeof body.error === 'string') code = body.error;
   } catch {
-    // non-JSON body — keep the raw text
+    // non-JSON body (e.g. an HTML error page) — never show it raw
+    if (/^\s*</.test(message)) message = res.statusText || 'Request failed';
   }
-  return new ApiError(res.status, message);
+  return new ApiError(res.status, message, code);
 }
 
 function getLocale(): 'en' | 'ar' {

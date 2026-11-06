@@ -5,6 +5,9 @@ import { useHasAuthToken } from '@/lib/auth-token';
 
 export interface ShippingAddress {
     id: number;
+    title?: string | null;
+    governorate?: string | null;
+    landmark?: string | null;
     first_name: string;
     last_name: string;
     phone: string;
@@ -82,6 +85,8 @@ const isNotFound = (error: unknown) => error instanceof ApiError && error.status
 export interface OrderItem {
     id: number;
     product_id?: number;
+    /** Set by the API once the customer rated this product for this order. */
+    is_reviewed?: boolean | number;
     variant_id?: number | null;
     quantity: number;
     price_at_purchase: string;
@@ -113,6 +118,13 @@ export interface OrderDetail extends Order {
     coupon_discount: string;
     items: OrderItem[];
     tracking_history: TrackingEntry[];
+    delivered_at?: string | null;
+    /** Delivered and still inside the return period, with no request yet. */
+    can_request_return?: boolean;
+    /** Last day a return can be requested. */
+    return_deadline?: string | null;
+    /** The customer's return request for this order, if any. */
+    return_request?: ReturnRequest | null;
 }
 
 export interface OrderDetailResponse {
@@ -327,6 +339,14 @@ export interface TrackingStage {
     title: string;
     status: StageStatus;
     date: string | null;
+    /** The message the store wrote when it moved the order to this stage. */
+    note?: string | null;
+}
+
+export interface TrackingNote {
+    status: string;
+    note: string;
+    date: string;
 }
 
 export interface TrackingEvent {
@@ -362,6 +382,8 @@ export interface OrderTracking {
     shipment: TrackingShipment | null;
     issue: TrackingIssue | null;
     stages: TrackingStage[];
+    /** Every note from the store, newest first (status changes, cancellation reasons...). */
+    notes?: TrackingNote[];
     events: TrackingEvent[];
 }
 
@@ -385,5 +407,66 @@ export function useOrderTracking(id: string) {
         refetchInterval: (query) => (isTrackingActive(query.state.data) ? 60 * 1000 : false),
         refetchIntervalInBackground: false,
         refetchOnWindowFocus: (query) => isTrackingActive(query.state.data),
+    });
+}
+
+/* ─── After delivery: return requests & reviews ────────────────────────── */
+
+export const RETURN_REASONS = ['wrong_size', 'damaged', 'not_as_described', 'wrong_item', 'changed_mind', 'other'] as const;
+export type ReturnReason = (typeof RETURN_REASONS)[number];
+
+export type ReturnStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+
+export interface ReturnRequest {
+    id: number;
+    reason: ReturnReason;
+    details: string | null;
+    items: { order_item_id: number; quantity: number }[] | null;
+    status: ReturnStatus;
+    /** The store's reply, shown with the status. */
+    admin_note: string | null;
+    created_at: string;
+    updated_at?: string;
+}
+
+export interface ReturnRequestPayload {
+    reason: ReturnReason;
+    /** Required when the reason is `other` (max 500 characters). */
+    details?: string;
+    /** Leave out to return the whole order. */
+    items?: { order_item_id: number; quantity: number }[];
+}
+
+/** True when the backend doesn't have the endpoint (route-level 404 / 405 / 501). */
+export function isEndpointMissing(error: unknown): boolean {
+    return error instanceof ApiError && (error.status === 404 || error.status === 405 || error.status === 501);
+}
+
+/** POST /user/orders/:id/return — the store reviews it from the dashboard. */
+export function useRequestReturn(orderId: number) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: ReturnRequestPayload) =>
+            post<{ data: ReturnRequest; message: string }>(`/user/orders/${orderId}/return`, payload),
+        onSuccess: () => qc.invalidateQueries({ queryKey: orderKeys.all() }),
+    });
+}
+
+export interface ReviewPayload {
+    order_id: number;
+    product_id: number;
+    rating: number;
+    comment?: string;
+}
+
+/** POST /user/reviews — one review per delivered product; it shows on the site once approved. */
+export function useSubmitOrderReview() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (payload: ReviewPayload) => post<{ data: unknown; message: string }>('/user/reviews', payload),
+        onSuccess: () => {
+            qc.invalidateQueries({ queryKey: orderKeys.all() });
+            qc.invalidateQueries({ queryKey: ['home'] });
+        },
     });
 }

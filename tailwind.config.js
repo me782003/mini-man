@@ -11,9 +11,9 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        beatrice: ["Beatrice", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
-        headline: ["Beatrice Headline", "Beatrice", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
-        cairo: ["Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
+        beatrice: ["Beatrice", "var(--font-cairo)", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
+        headline: ["Beatrice Headline", "Beatrice", "var(--font-cairo)", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
+        cairo: ["var(--font-cairo)", "Cairo", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       colors: {
         background: "var(--background)",
@@ -34,7 +34,7 @@ module.exports = {
       },
     },
     fontFamily: {
-      sans: ["Cairo", "Beatrice", "ui-sans-serif", "system-ui", "sans-serif"],
+      sans: ["var(--font-cairo)", "Cairo", "Beatrice", "ui-sans-serif", "system-ui", "sans-serif"],
     },
   },
   plugins: [],

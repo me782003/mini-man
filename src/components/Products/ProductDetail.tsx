@@ -201,6 +201,7 @@ export default function ProductDetail({ id }: { id: string }) {
     }
 
     const product = data.data;
+    const productCode = (product as { code?: string | null }).code?.trim() || `MM-${product.id}`;
 
     const variants = (product.variants ?? []) as ProductVariantLike[];
     // Top-level `colors` use `color_hexa`; variant colours use `hexa`.
@@ -473,6 +474,18 @@ export default function ProductDetail({ id }: { id: string }) {
                             </h1>
                             <ShareButton title={product.name} />
                         </div>
+
+                        {/* Product code (and the chosen size/colour's SKU) — what customers quote to the store. */}
+                        <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1 font-beatrice text-[12px] text-gray-500 md:text-[13px]">
+                            <span>
+                                {t('productCode')}: <span dir="ltr" className="font-semibold text-black">{productCode}</span>
+                            </span>
+                            {activeColor && 'sku' in activeColor && activeColor.sku && activeColor.sku !== productCode && (
+                                <span>
+                                    {t('sku')}: <span dir="ltr" className="font-semibold text-black">{activeColor.sku}</span>
+                                </span>
+                            )}
+                        </p>
 
                         <div className="mb-5 flex flex-wrap items-center gap-3 md:mb-8">
                             <p className="font-beatrice text-[20px] font-extrabold text-black md:text-[22px]">

@@ -9,6 +9,7 @@ import {
   isValidPhone,
   normalizeEgyptianPhone,
   parseStoredPhone,
+  phonePayload,
   type Country,
 } from './countries';
 
@@ -56,5 +57,14 @@ describe('phones', () => {
     expect(isValidPhone('01012345678')).toBe(true);
     expect(isValidPhone('0101234567')).toBe(false);
     expect(isValidPhone('+97333123456')).toBe(true);
+  });
+});
+
+describe('phonePayload', () => {
+  it('splits numbers into phone + phone_code', () => {
+    expect(phonePayload('01012345678')).toEqual({ phone: '1012345678', phone_code: '+20' });
+    expect(phonePayload('+201012345678')).toEqual({ phone: '1012345678', phone_code: '+20' });
+    expect(phonePayload('+966501234567')).toEqual({ phone: '501234567', phone_code: '+966' });
+    expect(phonePayload('+97150123456')).toEqual({ phone: '50123456', phone_code: '+971' });
   });
 });

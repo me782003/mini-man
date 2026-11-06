@@ -9,6 +9,12 @@ import type { ShippingFees } from '@/lib/shipping-fee';
 
 export interface Address {
     id: number;
+    /** Address label ("Home", "Work"…); older addresses have none. */
+    title?: string | null;
+    /** Free-text governorate for countries outside the Bosta list. */
+    governorate?: string | null;
+    /** e.g. "Next to the pharmacy". */
+    landmark?: string | null;
     first_name: string;
     last_name: string;
     phone: string;
@@ -37,6 +43,8 @@ export interface ProfileResponse {
         phone: string;
         email: string;
         is_verified: number;
+        /** True when the account has no verified phone (Google sign-ups). */
+        needs_phone?: boolean;
         profile_picture: string | null;
         favourite_quantity: number;
         cart_quantity: number;
@@ -78,8 +86,6 @@ export function useProfile() {
         }
     }, [isError, error, dispatch]);
 
-    console.log('profile data', profile)
-
     return { ...profile, refetch };
 }
 
@@ -105,7 +111,13 @@ export function useUpdateProfile() {
 
             if (!res.ok) {
                 const text = await res.text().catch(() => res.statusText);
-                throw new Error(text || 'Failed to update profile');
+                // Show the API's `message`, never the raw JSON body.
+                let message = text || 'Failed to update profile';
+                try {
+                    const body = JSON.parse(text) as { message?: unknown };
+                    if (typeof body.message === 'string' && body.message) message = body.message;
+                } catch { /* not JSON */ }
+                throw new Error(message);
             }
 
             return res.json() as Promise<ProfileResponse>;

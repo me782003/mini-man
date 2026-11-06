@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import CouponField from '@/components/Coupon/CouponField';
 import { useAppliedCoupon } from '@/lib/hooks/useAppliedCoupon';
+import { useTermsAgreement } from '@/lib/hooks/useTermsAgreement';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { TrashIcon } from '../icons';
@@ -23,7 +24,7 @@ export default function CartClient() {
     const removeItem = useRemoveCartItem();
     const updateItem = useUpdateCartItem();
 
-    const [agreed, setAgreed] = useState(false);
+    const [agreed, setAgreed] = useTermsAgreement();
 
     const cartData = response?.data;
     const items = cartData?.items ?? [];
@@ -34,8 +35,8 @@ export default function CartClient() {
 
     const { coupon: appliedCoupon, discount: discountAmount } = useAppliedCoupon(subtotal);
     // No method chosen yet: the backend prices the default address for cash on delivery.
-    const shippingQuote = quoteShipping('cash_on_delivery', summary);
-    const saving = onlineSaving(summary);
+    const shippingQuote = quoteShipping('cash_on_delivery', summary, appliedCoupon);
+    const saving = onlineSaving(summary, appliedCoupon);
     const total = subtotal + tax - discountAmount + shippingAmount(shippingQuote);
     const shippingHref = '/shipping';
 

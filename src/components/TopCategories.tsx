@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from '../i18n/navigation';
 import { useCatalogCategories } from '@/lib/hooks/useCatalog';
 import { useScrollFade } from '@/lib/hooks/useScrollFade';
@@ -13,6 +13,22 @@ export default function TopCategories() {
     const [openCategoryId, setOpenCategoryId] = useState<number | null>(null);
 
     const activeCategory = categories.find((c) => c.id === openCategoryId);
+    const rootRef = useRef<HTMLDivElement>(null);
+
+    // Tapping anywhere outside the row / dropdown (or pressing Escape) closes the dropdown.
+    useEffect(() => {
+        if (openCategoryId === null) return;
+        const onPointer = (e: PointerEvent) => {
+            if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpenCategoryId(null);
+        };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenCategoryId(null); };
+        document.addEventListener('pointerdown', onPointer);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('pointerdown', onPointer);
+            document.removeEventListener('keydown', onKey);
+        };
+    }, [openCategoryId]);
 
     const handleToggle = (id: number) => {
         setOpenCategoryId((prev) => (prev === id ? null : id));
@@ -32,7 +48,7 @@ export default function TopCategories() {
 
     return (
         <div className="w-full py-2.5 md:hidden">
-            <div className="relative mx-auto">
+            <div ref={rootRef} className="relative mx-auto">
                 {/* Native swipe row; edges fade where more categories are hidden. */}
                 <div
                     ref={rowRef}

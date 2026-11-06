@@ -302,9 +302,9 @@ const SwiperSection = ({
                 <div className="mt-6 flex items-center justify-between md:hidden">
                     <div className="flex items-center gap-3">
                         <button
-                            className={`swiper-button-prev-custom flex h-10 w-10 items-center justify-center border transition ${isBeginning
-                                ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                                : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
+                            className={`swiper-button-prev-custom flex h-10 w-10 items-center justify-center transition ${isBeginning
+                                ? "cursor-not-allowed bg-gray-100 text-gray-300"
+                                : "bg-gray-100 text-black hover:bg-black hover:text-white"
                                 }`}
                             aria-label={t("previousSlide")}
                             disabled={isBeginning}
@@ -313,9 +313,9 @@ const SwiperSection = ({
                         </button>
 
                         <button
-                            className={`swiper-button-next-custom flex h-10 w-10 items-center justify-center border transition ${isEnd
-                                ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                                : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
+                            className={`swiper-button-next-custom flex h-10 w-10 items-center justify-center transition ${isEnd
+                                ? "cursor-not-allowed bg-gray-100 text-gray-300"
+                                : "bg-gray-100 text-black hover:bg-black hover:text-white"
                                 }`}
                             aria-label={t("nextSlide")}
                             disabled={isEnd}
@@ -355,9 +355,9 @@ const SwiperSection = ({
                 {/* Tablet/Desktop bottom navigation only */}
                 <div className="mt-6 hidden items-center justify-center gap-3 sm:mt-8 md:flex md:gap-4">
                     <button
-                        className={`swiper-button-prev-custom flex h-10 w-10 items-center justify-center border transition sm:h-11 sm:w-11 lg:h-12 lg:w-12 ${isBeginning
-                            ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                            : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
+                        className={`swiper-button-prev-custom flex h-10 w-10 items-center justify-center transition sm:h-11 sm:w-11 lg:h-12 lg:w-12 ${isBeginning
+                            ? "cursor-not-allowed bg-gray-100 text-gray-300"
+                            : "bg-gray-100 text-black hover:bg-black hover:text-white"
                             }`}
                         aria-label={t("previousSlide")}
                         disabled={isBeginning}
@@ -366,9 +366,9 @@ const SwiperSection = ({
                     </button>
 
                     <button
-                        className={`swiper-button-next-custom flex h-10 w-10 items-center justify-center border transition sm:h-11 sm:w-11 lg:h-12 lg:w-12 ${isEnd
-                            ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                            : "border-gray-300 bg-white text-black hover:bg-black hover:text-white"
+                        className={`swiper-button-next-custom flex h-10 w-10 items-center justify-center transition sm:h-11 sm:w-11 lg:h-12 lg:w-12 ${isEnd
+                            ? "cursor-not-allowed bg-gray-100 text-gray-300"
+                            : "bg-gray-100 text-black hover:bg-black hover:text-white"
                             }`}
                         aria-label={t("nextSlide")}
                         disabled={isEnd}

@@ -1,5 +1,6 @@
 'use client';
 
+import { addressLabel, addressLines } from '@/components/Account/AddressModal';
 import React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ import { OrderStatusBadge, PaymentStatusBadge } from '@/components/Orders/Status
 import { TrackingSkeleton } from './OrderTrackingClient';
 import { Truck } from 'lucide-react';
 import ProductThumb from '@/components/ProductThumb';
+import { OrderUpdates, RateItemButton, REVIEWS_ENABLED, ReturnRequestButton } from '@/components/Orders/OrderAfterDelivery';
 
 const PAYMENT_METHOD_KEYS: Record<string, 'cod' | 'online' | 'branch'> = {
     cash_on_delivery: 'cod',
@@ -79,6 +81,8 @@ export default function OrderDetailClient({ orderId }: Props) {
     const isPickup = order.payment_method === 'branch_pickup';
     const canPayNow = order.payment_method === 'paymob' && order.payment_status === 'unpaid' && order.current_status !== 'cancelled';
     const shipping = parseFloat(order.shipping_amount || '0');
+    // Reviews and returns open once the order reached the customer.
+    const isDelivered = order.current_status === 'delivered' || order.status === 'delivered';
 
     const handleReorder = () => {
         reorder.mutate(order.items, {
@@ -163,7 +167,8 @@ export default function OrderDetailClient({ orderId }: Props) {
                                 const variant = snap.variant_details;
                                 const unit = parseFloat(item.price_at_purchase);
                                 return (
-                                    <Link key={item.id} href={`/products/${snap.slug || item.product_id}`} className="flex gap-4 p-4 transition-colors hover:bg-gray-50 sm:gap-5 sm:p-5">
+                                    <div key={item.id}>
+                                    <Link href={`/products/${snap.slug || item.product_id}`} className="flex gap-4 p-4 transition-colors hover:bg-gray-50 sm:gap-5 sm:p-5">
                                         <ProductThumb src={snap.image_url} alt={snap.name} className="h-[90px] w-[90px] rounded-lg sm:h-[110px] sm:w-[110px]" />
                                         <div className="min-w-0 flex-1 pt-1 font-beatrice">
                                             <p className="text-[15px] font-semibold text-black sm:text-[16px]">{snap.name}</p>
@@ -185,6 +190,13 @@ export default function OrderDetailClient({ orderId }: Props) {
                                             </div>
                                         </div>
                                     </Link>
+                                    {/* Rating: the API has no review endpoint yet (REVIEWS_ENABLED in OrderAfterDelivery). */}
+                                    {isDelivered && REVIEWS_ENABLED && (
+                                        <div className="flex justify-end px-4 pb-4 sm:px-5">
+                                            <RateItemButton orderId={order.id} item={item} />
+                                        </div>
+                                    )}
+                                    </div>
                                 );
                             })}
                         </div>
@@ -199,14 +211,16 @@ export default function OrderDetailClient({ orderId }: Props) {
                             pickupBranch ? <BranchCard branch={pickupBranch} variant="compact" /> : <p className="font-beatrice text-[14px] text-gray-500">—</p>
                         ) : addr ? (
                             <div className="space-y-0.5 font-beatrice text-[14px] text-gray-700">
-                                <p className="font-medium text-black">{addr.first_name} {addr.last_name}</p>
+                                <p className="font-medium text-black">{addressLabel(addr)}</p>
                                 <p dir="ltr" className="rtl:text-right">{addr.phone}</p>
-                                <p>{[addr.street_address, addr.apartment].filter(Boolean).join(', ')}</p>
-                                <p>{[addr.bosta_district_name, addr.bosta_city_name || addr.city].filter(Boolean).join(', ')}</p>
+                                {addressLines(addr).map(line => <p key={line}>{line}</p>)}
                                 <CountryBadge countryId={addr.country_id} />
                             </div>
                         ) : null}
                     </section>
+
+                    {/* Status changes with the store's notes */}
+                    <OrderUpdates history={order.tracking_history} />
                 </div>
 
                 {/* 4. Summary + 6. Actions */}
@@ -244,6 +258,8 @@ export default function OrderDetailClient({ orderId }: Props) {
                                 {payOrder.isPending ? t('redirecting') : tt('payNow')}
                             </button>
                         )}
+                        {/* Shown while returns are open (can_request_return) or once a request exists. */}
+                        <ReturnRequestButton order={order} />
                         <button
                             onClick={handleReorder}
                             disabled={reorder.isPending}

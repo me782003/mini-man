@@ -1,5 +1,6 @@
 import React, { JSX } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 interface SectionHeaderProps {
     primaryTitle?: string | React.ReactNode;
@@ -30,7 +31,8 @@ export default function SectionHeader({
                     </span>
                 </div>
 
-                <a
+                {/* Locale-aware link: a plain <a href="/products"> dropped Arabic visitors on the English site. */}
+                <Link
                     href={seeAllHref}
                     className="mb-1 hidden shrink-0 items-center gap-2 bg-gray-100 px-4 py-2.5 text-[14px] font-semibold text-gray-700 transition-colors hover:bg-black hover:text-white active:bg-black active:text-white md:flex"
                 >
@@ -53,7 +55,7 @@ export default function SectionHeader({
                             />
                         </svg>
                     </span>
-                </a>
+                </Link>
             </div>
         </div>
     );

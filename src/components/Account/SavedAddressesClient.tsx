@@ -1,5 +1,8 @@
 'use client';
 
+import { useProfileData } from '@/lib/hooks/useProfile';
+import type { AddressPayload } from '@/lib/hooks/useAddresses';
+import { addressLabel, addressLines } from '@/components/Account/AddressModal';
 import React, { useState } from 'react';
 import { Link } from '@/i18n/navigation';
 import { Home } from 'lucide-react';
@@ -14,6 +17,8 @@ import AddressModal, { EMPTY_FORM, addressToForm, isAddressComplete, type Addres
 
 export default function SavedAddressesClient() {
     const t = useTranslations('Orders');
+    // Old addresses without a title show the customer's name.
+    const profileName = useProfileData().name;
     const ta = useTranslations('Account');
     const tc = useTranslations('Common');
     const { data: addresses, isPending: isLoading } = useAddresses();
@@ -51,7 +56,7 @@ export default function SavedAddressesClient() {
         setForm(prev => ({ ...prev, is_default: !prev.is_default }));
     }
 
-    function handleSave(values: AddressForm) {
+    function handleSave(values: AddressPayload) {
         if (modal.mode === 'add') {
             createAddress.mutate(values, { onSuccess: closeModal });
         } else if (modal.editId != null) {
@@ -115,16 +120,14 @@ export default function SavedAddressesClient() {
                             </div>
 
                             <p className="font-beatrice text-[20px] font-semibold text-black sm:text-[22px]">
-                                {address.first_name} {address.last_name}
+                                {addressLabel(address, profileName)}
                             </p>
                             {address.phone && (
                                 <p dir="ltr" className="mt-1 font-beatrice text-[14px] text-gray-600 rtl:text-right">{address.phone}</p>
                             )}
-                            <p className="mt-2 font-beatrice text-[14px] text-gray-600">
-                                {[address.street_address, address.apartment, address.bosta_district_name, address.city]
-                                    .filter(Boolean)
-                                    .join(', ')}
-                            </p>
+                            <div className="mt-2 space-y-0.5 font-beatrice text-[14px] text-gray-600">
+                                {addressLines(address).map(line => <p key={line}>{line}</p>)}
+                            </div>
                             <CountryBadge
                                 countryId={address.country_id}
                                 name={address.country_name}

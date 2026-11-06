@@ -53,33 +53,47 @@ function TickerItem({ item }: { item: SettingsTickerItem }) {
 }
 
 function Marquee({ items }: { items: SettingsTickerItem[] }) {
-  // Repeat enough to fill wide screens, then duplicate the set so the -50% loop is seamless.
-  const base = Array.from({ length: Math.ceil(12 / items.length) }, () => items).flat();
-  const track = [...base, ...base];
+  // Two identical copies side by side, each at least as wide as the bar. Both slide by exactly
+  // one copy's width and restart, so the bar is never empty — whatever the screen size,
+  // text length or number of tickers.
+  const copy = Array.from({ length: Math.max(1, Math.ceil(6 / items.length)) }, () => items).flat();
+  // Keep a steady reading speed: more text, longer loop.
+  const duration = Math.max(18, copy.length * 4);
 
   return (
-    <div className="sale-ticker-track flex min-w-max items-center whitespace-nowrap py-1.5 sm:py-2">
-      {track.map((item, idx) => (
-        <TickerItem key={idx} item={item} />
+    <div className="ticker-viewport flex w-full overflow-hidden py-1.5 sm:py-2">
+      {[0, 1].map((n) => (
+        <div
+          key={n}
+          aria-hidden={n === 1 || undefined}
+          className="ticker-copy flex min-w-full shrink-0 items-center justify-around whitespace-nowrap"
+          style={{ animationDuration: `${duration}s` }}
+        >
+          {copy.map((item, idx) => (
+            <TickerItem key={`${item.id}-${idx}`} item={item} />
+          ))}
+        </div>
       ))}
       <style jsx>{`
-        .sale-ticker-track {
-          animation: saleTicker 40s linear infinite;
+        .ticker-copy {
+          animation-name: saleTicker;
+          animation-timing-function: linear;
+          animation-iteration-count: infinite;
         }
-        .sale-ticker-track:hover {
+        .ticker-viewport:hover .ticker-copy {
           animation-play-state: paused;
         }
-        /* In RTL the track overflows to the left, so scroll it rightwards (left → right). */
-        :global([dir='rtl']) .sale-ticker-track {
+        /* RTL lays the copies out right-to-left, so slide them the other way. */
+        :global([dir='rtl']) .ticker-copy {
           animation-name: saleTickerRtl;
         }
         @keyframes saleTicker {
           from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
+          to { transform: translateX(-100%); }
         }
         @keyframes saleTickerRtl {
           from { transform: translateX(0); }
-          to { transform: translateX(50%); }
+          to { transform: translateX(100%); }
         }
       `}</style>
     </div>

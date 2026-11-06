@@ -165,10 +165,12 @@ export default function Header() {
               >
                 <span className="relative h-[50px] w-[191px]">
                   <img
-                    src={isHome && !isFixed ? '/images/logo-white.png' : '/images/logo.svg'}
+                    src='/images/logo.svg'
                     alt={ts('logoAlt')}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    className="h-full w-full object-contain"
+                    // Home page, before scrolling: the header sits on the banner, so show the logo pure white
+                    // (logo-white.png is light grey). Once the bar turns white on scroll, back to the normal logo.
+                    className={`h-full w-full object-contain transition-[filter] duration-300 ${isHome && !isFixed ? 'brightness-0 invert' : ''}`}
                   />
                 </span>
               </Link>

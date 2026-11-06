@@ -3,19 +3,17 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { clearProfile } from '@/lib/store/features/profileSlice';
 import { RootState } from '@/lib/store/store';
-import { notifyAuthChange } from '@/lib/auth-token';
+import { clearSession, currentLocale } from '@/lib/auth-session';
 
 export function useAuthState() {
   const dispatch = useDispatch();
   const profile = useSelector((state: RootState) => state.profile);
 
   const logout = () => {
-    localStorage.removeItem('token');
-    notifyAuthChange();
-    localStorage.removeItem('user');
-    document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax';
+    clearSession();
     dispatch(clearProfile());
-    window.location.href = '/login';
+    // Keep the language: a bare "/login" lets the middleware fall back to English.
+    window.location.href = `/${currentLocale()}/login`;
   };
 
   return { user: profile.id ? profile : null, isLoggedIn: !!profile.id, logout };

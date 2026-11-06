@@ -1,10 +1,12 @@
 'use client';
 
 import { useRef, useState, useEffect, KeyboardEvent, ClipboardEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useVerifyOtp, useResendOtp } from '@/lib/hooks/useAuth';
 import { useTranslations } from 'next-intl';
-import { notifyAuthChange } from '@/lib/auth-token';
+import { useQueryClient } from '@tanstack/react-query';
+import { localRedirectPath, saveSession } from '@/lib/auth-session';
 
 const OTP_LENGTH = 4;
 
@@ -13,7 +15,9 @@ export default function VerifyOtpClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const phone = searchParams.get('phone') ?? '';
-  const mode  = searchParams.get('mode') ?? 'verify'; // 'verify' | 'reset'
+  const mode  = searchParams.get('mode') ?? 'verify'; // 'verify' | 'reset' | 'link' (phone added after Google sign-in)
+  const redirectTo = localRedirectPath(searchParams.get('redirect'), '/account');
+  const queryClient = useQueryClient();
 
   const { mutate: verify, isPending, isError, error } = useVerifyOtp();
   const { mutate: resend, isPending: isResending, isSuccess: resendSuccess } = useResendOtp();
@@ -67,11 +71,10 @@ export default function VerifyOtpClient() {
 
     verify({ phone, otp }, {
       onSuccess: (res) => {
-        localStorage.setItem('token', res.data.token);
-        notifyAuthChange();
-        localStorage.setItem('user', JSON.stringify(res.data.user));
-        document.cookie = `auth_token=${res.data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
-        router.push('/account');
+        // Linking a phone to a signed-in account may not issue a new token — keep the current one then.
+        if (res.data?.token) saveSession(res.data.token, res.data.user);
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        router.push(mode === 'link' ? redirectTo : '/account');
       },
     });
   };

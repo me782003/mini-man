@@ -63,16 +63,22 @@ const cartKeys = {
 
 /**
  * `addressId` prices shipping for that address (default: the customer's default address).
+ * `couponCode`: with a free-shipping coupon every fee comes back 0 and `free_shipping` is true.
  * payment_method isn't sent: the summary's shipping_fees covers every method, so switching
  * methods needs no new request.
  */
-export function useCart({ addressId }: { addressId?: number | null } = {}) {
+export function useCart({ addressId, couponCode }: { addressId?: number | null; couponCode?: string | null } = {}) {
   const loggedIn = useHasAuthToken();
+  const params = new URLSearchParams();
+  if (addressId) params.set('address_id', String(addressId));
+  if (couponCode) params.set('coupon_code', couponCode);
+  const qs = params.toString();
   return useQuery({
     // The plain ['cart'] key stays the cart page's (optimistic quantity updates write to it).
-    queryKey: addressId ? [...cartKeys.all(), { address_id: addressId }] : cartKeys.all(),
-    queryFn: () => get<CartResponse>(addressId ? `/user/cart?address_id=${addressId}` : '/user/cart'),
+    queryKey: qs ? [...cartKeys.all(), qs] : cartKeys.all(),
+    queryFn: () => get<CartResponse>(qs ? `/user/cart?${qs}` : '/user/cart'),
     enabled: loggedIn,
+    placeholderData: (prev) => prev,
   });
 }
 

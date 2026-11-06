@@ -1,8 +1,11 @@
 'use client';
 
+import PhoneInput from '@/components/Country/PhoneInput';
+import { isValidPhone } from '@/lib/countries';
 import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useForgotPassword } from '@/lib/hooks/useAuth';
 import { useTranslations } from 'next-intl';
 
@@ -17,6 +20,7 @@ export default function ForgotPasswordClient() {
 
   const validate = () => {
     if (!phone.trim()) return t('phoneRequired');
+    if (!isValidPhone(phone)) return t('phoneInvalidAny');
     return '';
   };
 
@@ -72,17 +76,7 @@ export default function ForgotPasswordClient() {
               <label className="block font-beatrice text-[13px] font-medium uppercase tracking-wide text-neutral-700">
                 {t('phoneNumber')}
               </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => { setPhone(e.target.value); setPhoneError(''); }}
-                placeholder="201234567890"
-                autoComplete="tel"
-                dir="ltr"
-                className={`rtl:text-right h-[50px] w-full border px-4 font-cairo text-[15px] text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-neutral-700 ${
-                  phoneError ? 'border-red-400 bg-red-50' : 'border-neutral-300 bg-white'
-                }`}
-              />
+              <PhoneInput value={phone} invalid={!!phoneError} onChange={(v) => { setPhone(v); setPhoneError(''); }} />
               {phoneError && <p className="font-cairo text-xs text-red-500">{phoneError}</p>}
             </div>
 

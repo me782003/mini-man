@@ -10,7 +10,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import CheckoutStepper from '@/components/CheckoutStepper';
 import OrderSummary from '@/components/OrderSummary';
 import BranchCard from '@/components/Orders/BranchCard';
-import { isAddressComplete } from '@/components/Account/AddressModal';
+import { isAddressComplete, addressLabel, addressLines } from '@/components/Account/AddressModal';
 import {
     useCheckout,
     usePayOrder,
@@ -30,7 +30,9 @@ import { useAuthModal } from '@/lib/context/AuthModalContext';
 import CouponField from '@/components/Coupon/CouponField';
 import CountryBadge from '@/components/Country/CountryBadge';
 import { useAppliedCoupon } from '@/lib/hooks/useAppliedCoupon';
-import { parseMinimumAmount } from '@/lib/coupon';
+import { classifyCouponError } from '@/lib/coupon';
+import { useCouponErrorText } from '@/lib/hooks/useCouponErrorText';
+import { COMPLETE_PHONE_PAGE_ENABLED, completePhoneHref } from '@/lib/auth-session';
 import { ApiError } from '@/lib/fetcher';
 import { intlLocale } from '@/lib/intl';
 import ProductThumb from '@/components/ProductThumb';
@@ -42,7 +44,7 @@ const METHOD_LABEL: Record<PaymentMethod, 'cod' | 'online' | 'branch'> = {
     branch_pickup: 'branch',
 };
 
-type CheckoutErrorKind = 'stock' | 'address' | 'branch' | 'unavailable' | 'coupon' | 'server' | 'generic';
+type CheckoutErrorKind = 'stock' | 'address' | 'branch' | 'unavailable' | 'coupon' | 'egyptianPhone' | 'server' | 'generic';
 
 const NOTES_MAX = 500;
 
@@ -65,10 +67,12 @@ type Phase =
     | { name: 'payment-failed'; orderId: number; message: string; couponNotice?: string };
 
 // 400s share one status code — tell them apart by the (localized) server message.
-function classifyBadRequest(message: string): CheckoutErrorKind | 'empty' {
+function classifyBadRequest(message: string, sentCoupon: boolean): CheckoutErrorKind | 'empty' {
     if (/cart is empty|السلة فارغة|سلة.*فارغة/i.test(message)) return 'empty';
-    if (/coupon|كوبون|الكوبون|كود الخصم/i.test(message)) return 'coupon';
     if (/stock|مخزون|المخزون/i.test(message)) return 'stock';
+    if (/coupon|كوبون|الكوبون|كود الخصم/i.test(message)) return 'coupon';
+    // Coupon errors ("expired", "usage limit", "Minimum order amount…") don't always say "coupon".
+    if (sentCoupon && classifyCouponError(400, message) !== 'unknown') return 'coupon';
     if (/branch|فرع/i.test(message)) return 'branch';
     if (/address|عنوان/i.test(message)) return 'address';
     return 'generic';
@@ -99,18 +103,22 @@ export default function CheckoutClient() {
     // isPending: no cart data yet (still loading or waiting for the login check) — never treat that as empty.
     // Priced for the chosen address (the URL's address_id; the server's default address otherwise).
     const addressIdNum = !isPickup && addressIdParam ? Number(addressIdParam) || null : null;
-    const { data: cartResponse, isPending: cartLoading, refetch: refetchCart } = useCart({ addressId: addressIdNum });
+    // The applied coupon is priced in: a free-shipping coupon makes every fee 0.
+    const { coupon: storedCoupon } = useAppliedCoupon();
+    const { data: cartResponse, isPending: cartLoading, refetch: refetchCart } = useCart({ addressId: addressIdNum, couponCode: storedCoupon?.code });
     const items = cartResponse?.data.items ?? [];
     const summary = cartResponse?.data.summary;
     const subtotal = Number(summary?.subtotal ?? 0);
 
     const tCoupon = useTranslations('Coupon');
+    const couponErrorText = useCouponErrorText();
     const validateCoupon = useValidateCoupon();
     const { coupon, discount: discountAmount, clearCoupon } = useAppliedCoupon(subtotal);
 
     // With a coupon, address fees are re-priced for the discounted amount (free shipping can turn on or off).
     const { data: addresses, isPending: addressesLoading } = useAddresses({
         cartAmount: coupon && summary ? subtotal - discountAmount : undefined,
+        couponCode: coupon?.code,
     });
     const address = isPickup
         ? null
@@ -126,8 +134,8 @@ export default function CheckoutClient() {
 
     // Shipping follows the selected method: switching methods needs no new request.
     const feeSource = pickFeeSource(address, summary);
-    const shippingQuote = quoteShipping(paymentMethod, feeSource);
-    const saving = paymentMethod === 'cash_on_delivery' ? onlineSaving(feeSource) : 0;
+    const shippingQuote = quoteShipping(paymentMethod, feeSource, coupon);
+    const saving = paymentMethod === 'cash_on_delivery' ? onlineSaving(feeSource, coupon) : 0;
     const tax = Number(summary?.tax ?? 0);
     // The total the customer saw — compared with the server's total after placing the order.
     const shownTotal = subtotal - discountAmount + shippingAmount(shippingQuote) + tax;
@@ -195,11 +203,7 @@ export default function CheckoutClient() {
             } catch (err) {
                 if (err instanceof ApiError && (err.status === 400 || err.status === 404)) {
                     clearCoupon();
-                    const min = err.status === 400 ? parseMinimumAmount(err.message) : null;
-                    setCheckoutError({
-                        kind: 'generic',
-                        message: min !== null ? tCoupon('removedMinimum', { amount: money(min) }) : tCoupon('removedInvalid'),
-                    });
+                    setCheckoutError({ kind: 'coupon', message: t('couponDroppedRetry', { message: couponErrorText(err, { subtotal, removed: true }) }) });
                     return;
                 }
                 // Network / 500: still send it — the backend re-validates at checkout.
@@ -245,12 +249,25 @@ export default function CheckoutClient() {
                     setCheckoutError({ kind: 'unavailable', message: err.message });
                     return;
                 }
+                const code = err instanceof ApiError ? err.code : '';
+                // The store requires a verified phone: add / verify it, then come back to place the order.
+                if (status === 403 && code === 'PHONE_VERIFICATION_REQUIRED') {
+                    // While the phone page is hidden, just show the server's message.
+                    if (COMPLETE_PHONE_PAGE_ENABLED) router.push(completePhoneHref(`/checkout?${searchParams.toString()}`, true));
+                    else setCheckoutError({ kind: 'generic', message: err.message });
+                    return;
+                }
+                // Bosta only calls Egyptian mobiles: edit the address phone, or pick up from a branch.
+                if (code === 'EGYPTIAN_PHONE_REQUIRED') {
+                    setCheckoutError({ kind: 'egyptianPhone', message: err.message || t('egyptianPhoneRequired') });
+                    return;
+                }
                 // 500 / network: the order may already exist — never retry blindly.
                 if (status === 0 || status >= 500) {
                     setCheckoutError({ kind: 'server', message: t('serverErrorCheckOrders') });
                     return;
                 }
-                const kind = status === 400 ? classifyBadRequest(err.message) : 'generic';
+                const kind = status === 400 ? classifyBadRequest(err.message, !!couponCode) : 'generic';
                 if (kind === 'empty') {
                     router.replace('/cart');
                     return;
@@ -262,9 +279,9 @@ export default function CheckoutClient() {
                     return;
                 }
                 if (kind === 'coupon') {
-                    // e.g. "Coupon usage limit reached": drop it and let them place the order again.
+                    // No order was created: drop the coupon, show the new total, let them confirm again.
                     clearCoupon();
-                    setCheckoutError({ kind, message: t('couponDroppedRetry', { message: err.message }) });
+                    setCheckoutError({ kind, message: t('couponDroppedRetry', { message: couponErrorText(err, { subtotal, removed: true }) }) });
                     return;
                 }
                 // "Invalid address": it was deleted or isn't the user's — reload the list before they choose again.
@@ -349,6 +366,7 @@ export default function CheckoutClient() {
         branch: { href: `/payment?method=branch_pickup`, label: t('chooseBranch') },
         unavailable: { href: stepHref('/payment'), label: t('paymentMethod') },
         stock: { href: '/cart', label: t('reviewCart') },
+        egyptianPhone: { href: stepHref('/shipping'), label: t('editAddressPhone') },
         server: { href: '/account/orders', label: t('checkMyOrders') },
         coupon: null,
         generic: null,
@@ -359,6 +377,11 @@ export default function CheckoutClient() {
             <p>{checkoutError.message}</p>
             {checkoutError.kind === 'unavailable' && (
                 <p className="mt-1 text-red-500">{t('onlineUnavailableHint')}</p>
+            )}
+            {checkoutError.kind === 'egyptianPhone' && branches.length > 0 && (
+                <Link href="/payment?method=branch_pickup" className="me-4 mt-2 inline-block font-semibold text-black underline underline-offset-2">
+                    {t('chooseBranchPickup')}
+                </Link>
             )}
             {errorAction && (
                 <Link href={errorAction.href} className="mt-2 inline-block font-semibold text-black underline underline-offset-2">
@@ -426,14 +449,11 @@ export default function CheckoutClient() {
                             <div className="h-16 animate-pulse bg-gray-200" />
                         ) : address ? (
                             <div className="space-y-1">
-                                <p className="font-beatrice text-[14px] text-[#616161] font-medium">{address.first_name} {address.last_name}</p>
+                                <p className="font-beatrice text-[14px] text-[#616161] font-medium">{addressLabel(address)}</p>
                                 <p dir="ltr" className="font-beatrice text-[14px] text-[#616161] font-medium rtl:text-right">{address.phone}</p>
-                                <p className="font-beatrice text-[14px] text-[#616161] font-medium">
-                                    {address.street_address}{address.apartment ? `, ${address.apartment}` : ''}
-                                </p>
-                                <p className="font-beatrice text-[14px] text-[#616161] font-medium">
-                                    {address.bosta_district_name ? `${address.bosta_district_name}, ` : ''}{address.city}
-                                </p>
+                                {addressLines(address).map(line => (
+                                    <p key={line} className="font-beatrice text-[14px] text-[#616161] font-medium">{line}</p>
+                                ))}
                                 <CountryBadge
                                     countryId={address.country_id}
                                     name={address.country_name}

@@ -83,7 +83,10 @@
     "serverErrorCheckOrders": "Something went wrong. Your order may already have been placed — please check My orders before trying again.",
     "checkMyOrders": "Check my orders",
     "couponDroppedRetry": "{message}. The coupon was removed — you can place the order again.",
-    "onlineUnavailableShort": "Online payment is unavailable right now"
+    "onlineUnavailableShort": "Online payment is unavailable right now",
+    "egyptianPhoneRequired": "Home delivery needs an Egyptian mobile number. Edit the address phone or choose branch pickup.",
+    "editAddressPhone": "Edit the address phone",
+    "chooseBranchPickup": "Pick up from a branch"
   },
   "Common": {
     "home": "Home",
@@ -205,7 +208,12 @@
     "useMyLocation": "Use my location",
     "locationAdded": "Location added",
     "locationFailed": "Couldn't get your location",
-    "confirmDeleteAddress": "Delete this address?"
+    "confirmDeleteAddress": "Delete this address?",
+    "addressTitle": "Address title",
+    "addressTitlePlaceholder": "Address title (e.g. Home, Work)",
+    "city": "City",
+    "selectCity": "Select city",
+    "landmarkOptional": "Landmark (optional)"
   },
   "Auth": {
     "signIn": "Sign In",
@@ -266,7 +274,19 @@
     "codeSent": "Code sent! Check your phone.",
     "noCode": "Didn't receive a code?",
     "resendIn": "Resend in {seconds}s",
-    "resendCode": "Resend code"
+    "resendCode": "Resend code",
+    "completePhoneTitle": "Add your phone number",
+    "completePhoneSubtitle": "We'll send you a code on WhatsApp to confirm it.",
+    "completePhoneRequired": "Add and verify your phone number to continue with your order.",
+    "phoneInvalidAny": "Enter a valid phone number",
+    "phoneLockedHint": "After it's verified, the number can't be changed.",
+    "sendCode": "Send code",
+    "later": "Later",
+    "phoneTaken": "This phone number is already registered.",
+    "somethingWrong": "Something went wrong. Please try again.",
+    "whatsappCodeSentTo": "Enter the {length}-digit code we sent on WhatsApp to",
+    "confirmPhone": "Confirm number",
+    "changeNumber": "Change number"
   },
   "Checkout": {
     "freeShipping": "Free shipping",
@@ -356,7 +376,9 @@
     },
     "showMore": "Show more",
     "showLess": "Show less",
-    "showingCount": "Showing {shown} of {total}"
+    "showingCount": "Showing {shown} of {total}",
+    "latestTitle1": "Latest",
+    "latestTitle2": "Products"
   },
   "Products": {
     "title": "Products",
@@ -419,7 +441,9 @@
     "removeFilter": "Remove filter: {name}",
     "showMore": "Show more",
     "showLess": "Show less",
-    "showingShort": "{shown} of {total}"
+    "showingShort": "{shown} of {total}",
+    "productCode": "Code",
+    "sku": "SKU"
   },
   "Site": {
     "seeAll": "See All",
@@ -474,7 +498,8 @@
     "whatsappGreeting": "Hello, I have a question about Mini Man",
     "pagesNav": "Policies & info",
     "onThisPage": "On this page",
-    "viewAllIn": "View all {name}"
+    "viewAllIn": "View all {name}",
+    "emailOptional": "Email (optional)"
   },
   "Coupon": {
     "label": "Coupon code",
@@ -488,7 +513,13 @@
     "removedInvalid": "Coupon removed: it's invalid or has expired",
     "error": "Something went wrong, please try again",
     "maxDiscount": "Max discount {amount}",
-    "notApplied": "Your coupon could no longer be applied; your order total is {amount}."
+    "notApplied": "Your coupon could no longer be applied; your order total is {amount}.",
+    "expired": "This coupon has expired",
+    "notStarted": "This coupon isn't active yet",
+    "usedUp": "This coupon has reached its usage limit",
+    "removedReason": "Coupon removed: {reason}",
+    "freeShipping": "Free shipping",
+    "inactive": "This coupon isn't available right now"
   },
   "Country": {
     "country": "Country",
@@ -563,7 +594,44 @@
     "needHelp": "Need help with this order?",
     "needHelpHint": "Our team is happy to help.",
     "typeDelivery": "Home delivery",
-    "typePickup": "Branch pickup"
+    "typePickup": "Branch pickup",
+    "orderUpdates": "Order updates",
+    "requestReturn": "Request a return",
+    "returnRequested": "Return requested",
+    "return_pending": "Under review",
+    "return_approved": "Approved",
+    "return_rejected": "Rejected",
+    "return_completed": "Completed",
+    "returnHint": "Choose the items you want to return and tell us why. The store will review your request.",
+    "returnItems": "Items to return",
+    "returnReason": "Reason",
+    "returnChooseReason": "Choose a reason",
+    "reason_wrong_size": "Wrong size",
+    "reason_damaged": "Damaged or defective",
+    "reason_not_as_described": "Not as described",
+    "reason_wrong_item": "Wrong item received",
+    "reason_changed_mind": "Changed my mind",
+    "reason_other": "Other",
+    "returnDetailsPlaceholder": "More details (optional)",
+    "sendReturnRequest": "Send request",
+    "returnPickItems": "Choose at least one item.",
+    "returnPickReason": "Choose a reason.",
+    "returnSent": "Return request sent. We'll contact you soon.",
+    "returnSentWhatsapp": "Your request opened in WhatsApp — send the message to complete it.",
+    "returnWhatsappIntro": "Return request for order #{id}:",
+    "rateProduct": "Rate product",
+    "reviewed": "Rated",
+    "yourRating": "Your rating",
+    "stars": "{n, plural, one {# star} other {# stars}}",
+    "reviewPlaceholder": "Tell others what you think (optional)",
+    "submitReview": "Submit review",
+    "reviewPickRating": "Choose a rating from 1 to 5 stars.",
+    "reviewThanks": "Thanks for your review!",
+    "reviewUnavailable": "Reviews can't be sent right now. Please try again later.",
+    "storeUpdates": "Updates from the store",
+    "returnUntil": "You can request a return until {date}",
+    "returnDetailsRequired": "Please tell us more about the reason.",
+    "returnDetailsRequiredPlaceholder": "Tell us the reason (required)"
   },
   "Branches": {
     "title": "Our branches",

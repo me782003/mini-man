@@ -1,8 +1,11 @@
 'use client';
 
+import PhoneInput from '@/components/Country/PhoneInput';
+import { isValidPhone } from '@/lib/countries';
 import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Link } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useDispatch } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLogin, useGoogleAuth } from '@/lib/hooks/useAuth';
@@ -10,6 +13,7 @@ import { setProfile } from '@/lib/store/features/profileSlice';
 import { GoogleLogin } from '@react-oauth/google';
 import { useTranslations } from 'next-intl';
 import { notifyAuthChange } from '@/lib/auth-token';
+import { localRedirectPath } from '@/lib/auth-session';
 
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
@@ -30,7 +34,8 @@ export default function LoginClient() {
   const t = useTranslations('Auth');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get('redirect') || '/account';
+  // The param may carry a locale ("/ar/cart"); the locale-aware router adds it back itself.
+  const redirectTo = localRedirectPath(searchParams.get('redirect'));
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { mutate: login, isPending, isError, error } = useLogin();
@@ -43,6 +48,7 @@ export default function LoginClient() {
   const validate = () => {
     const errors: Partial<Record<keyof typeof form, string>> = {};
     if (!form.phone.trim()) errors.phone = t('phoneRequired');
+    else if (!isValidPhone(form.phone)) errors.phone = t('phoneInvalidAny');
     if (!form.password.trim()) errors.password = t('passwordRequired');
     return errors;
   };
@@ -125,11 +131,7 @@ export default function LoginClient() {
 
           {/* Phone */}
           <Field label={t('phoneNumber')} error={fieldErrors.phone}>
-            <input
-              type="tel" name="phone" value={form.phone} onChange={handleChange}
-              placeholder="201234567890" autoComplete="tel" dir="ltr"
-              className={`${inputCls(!!fieldErrors.phone)} rtl:text-right`}
-            />
+            <PhoneInput value={form.phone} invalid={!!fieldErrors.phone} onChange={(v) => { setForm((f) => ({ ...f, phone: v })); setFieldErrors((fe) => ({ ...fe, phone: undefined })); }} />
           </Field>
 
           {/* Password */}

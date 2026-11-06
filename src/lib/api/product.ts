@@ -17,7 +17,7 @@ export interface SeoProduct {
 
 export async function getProductForSeo(locale: string, idOrSlug: string): Promise<SeoProduct | null> {
     try {
-        const res = await fetch(`${API_BASE_URL}/user/catalog/products/${encodeURIComponent(idOrSlug)}`, {
+        const res = await fetch(`${API_BASE_URL}/user/catalog/products/${encodeURIComponent(idOrSlug)}?locale=${locale}`, {
             headers: { locale },
             next: { revalidate: 300 },
         });

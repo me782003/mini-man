@@ -24,11 +24,13 @@ export default function HeroBannerSwiper({ banners }: HeroBannerSwiperProps) {
                 <Swiper
                     modules={[Autoplay, Pagination, EffectFade]}
                     slidesPerView={1}
-                    loop
+                    // A single banner doesn't slide: no loop, autoplay or dots.
+                    loop={banners.length > 1}
+                    allowTouchMove={banners.length > 1}
                     effect="fade"
                     speed={900}
-                    autoplay={{ delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true }}
-                    pagination={{ clickable: true }}
+                    autoplay={banners.length > 1 ? { delay: 3500, disableOnInteraction: false, pauseOnMouseEnter: true } : false}
+                    pagination={banners.length > 1 ? { clickable: true } : false}
                     className="hero-banner-swiper"
                 >
                     {banners.map((banner, idx) => (

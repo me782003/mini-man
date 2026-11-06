@@ -74,6 +74,8 @@ export interface RelatedProduct {
 
 export interface ProductDetailData {
   id: number;
+  /** Product code, e.g. "MM01C01P0003" ("MM-<id>" when the product has no SKU). */
+  code?: string | null;
   name: string;
   slug: string;
   description: string;

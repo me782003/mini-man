@@ -2,6 +2,8 @@
 // address's city, by payment method) — never calculate it here, only pick the right number.
 
 import type { PaymentMethod } from '@/lib/hooks/useOrders';
+// Relative (not @/) so the unit tests can load this file.
+import { isFreeShippingCoupon, type Coupon } from './coupon';
 
 export type ShippingFees = Record<PaymentMethod, number>;
 
@@ -19,8 +21,14 @@ export type ShippingQuote =
     | { kind: 'pending' }  // no address yet, so no price
     | { kind: 'fee'; amount: number };
 
-export function quoteShipping(method: PaymentMethod, source: ShippingFeeSource | null | undefined): ShippingQuote {
+export function quoteShipping(
+    method: PaymentMethod,
+    source: ShippingFeeSource | null | undefined,
+    /** A free-shipping coupon waives the fee (once the address is known). */
+    coupon?: Coupon | null,
+): ShippingQuote {
     if (method === 'branch_pickup') return { kind: 'pickup' };
+    if (source && isFreeShippingCoupon(coupon)) return { kind: 'free' };
     if (!source) return { kind: 'pending' };
     if (source.free_shipping) return { kind: 'free' };
     if (source.shipping_fees === null) return { kind: 'pending' };
@@ -35,9 +43,9 @@ export function shippingAmount(quote: ShippingQuote): number {
 }
 
 /** "Pay online and save X": cash-on-delivery fee minus online fee (0 when there's no saving). */
-export function onlineSaving(source: ShippingFeeSource | null | undefined): number {
+export function onlineSaving(source: ShippingFeeSource | null | undefined, coupon?: Coupon | null): number {
     const fees = source?.shipping_fees;
-    if (!fees || source?.free_shipping) return 0;
+    if (!fees || source?.free_shipping || isFreeShippingCoupon(coupon)) return 0;
     return Math.max(0, Number(fees.cash_on_delivery ?? 0) - Number(fees.paymob ?? 0));
 }
 

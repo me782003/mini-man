@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Tag, X } from 'lucide-react';
 import { ApiError } from '@/lib/fetcher';
-import { normalizeCouponCode, parseMinimumAmount } from '@/lib/coupon';
+import { isFreeShippingCoupon, normalizeCouponCode } from '@/lib/coupon';
+import { useCouponErrorText } from '@/lib/hooks/useCouponErrorText';
 import { useAppliedCoupon } from '@/lib/hooks/useAppliedCoupon';
 import { useValidateCoupon } from '@/lib/hooks/useOrders';
 import { intlLocale } from '@/lib/intl';
@@ -29,21 +30,10 @@ export default function CouponField({ subtotal }: { subtotal: number }) {
     const money = (n: number) =>
         tc('currency', { amount: n.toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 }) });
 
-    const errorMessage = (err: unknown, revalidating: boolean): string => {
-        if (err instanceof ApiError) {
-            if (err.status === 404) return revalidating ? t('removedInvalid') : t('invalid');
-            if (err.status === 400) {
-                const min = parseMinimumAmount(err.message);
-                if (min !== null) {
-                    return revalidating
-                        ? t('removedMinimum', { amount: money(min) })
-                        : t('addMore', { amount: money(Math.max(0, min - subtotal)) });
-                }
-                return err.message;
-            }
-        }
-        return t('error');
-    };
+    // Never show the server's raw (English-only) text: map it to a translated reason.
+    const couponErrorText = useCouponErrorText();
+    const errorMessage = (err: unknown, revalidating: boolean): string =>
+        couponErrorText(err, { subtotal, removed: revalidating });
 
     const apply = () => {
         const code = normalizeCouponCode(input);
@@ -88,7 +78,9 @@ export default function CouponField({ subtotal }: { subtotal: number }) {
     }, [coupon?.code, subtotal]);
 
     const discountLabel = coupon
-        ? coupon.type === 'percentage'
+        ? isFreeShippingCoupon(coupon) && coupon.type === 'free_shipping'
+            ? t('freeShipping')
+            : coupon.type === 'percentage'
             ? `−${parseFloat(coupon.value).toLocaleString(intlLocale(locale), { maximumFractionDigits: 2 })}%`
             : `−${money(parseFloat(coupon.value))}`
         : '';

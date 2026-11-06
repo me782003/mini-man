@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useLocale } from 'next-intl';
 import { get } from '@/lib/fetcher';
 
 export interface HomeBanner {
@@ -96,8 +97,10 @@ export interface HomePageData {
 }
 
 export function useHomePage() {
+  const locale = useLocale();
   return useQuery({
-    queryKey: ['home'],
+    // Per language: titles, tickers and collections come back translated.
+    queryKey: ['home', locale],
     queryFn: () => get<{ data: HomePageData }>('/user/pages/home'),
     staleTime: 5 * 60 * 1000,
   });

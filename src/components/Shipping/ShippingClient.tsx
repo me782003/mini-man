@@ -1,5 +1,8 @@
 'use client';
 
+import type { AddressPayload } from '@/lib/hooks/useAddresses';
+import { isFreeShippingCoupon } from '@/lib/coupon';
+import { addressLabel, addressLines } from '@/components/Account/AddressModal';
 import React, { useState } from 'react';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
@@ -52,7 +55,7 @@ function AddressCard({
                 <div className="flex items-center gap-2">
                     <div className={`h-4 w-4 shrink-0 rounded-full border-2 ${selected ? 'border-black bg-black' : 'border-gray-400'}`} />
                     <span className="font-beatrice text-[14px] font-semibold text-black">
-                        {address.first_name} {address.last_name}
+                        {addressLabel(address)}
                     </span>
                     {address.is_default === 1 && (
                         <span className="rounded bg-black px-2 py-0.5 font-beatrice text-[10px] text-white">{c('default')}</span>
@@ -75,7 +78,7 @@ function AddressCard({
                 </div>
             </div>
             <p className="ps-6 font-beatrice text-[13px] text-gray-600">
-                {[address.street_address, address.apartment, address.bosta_district_name, address.city].filter(Boolean).join(', ')}
+                {addressLines(address).join(' · ')}
             </p>
             <CountryBadge countryId={address.country_id} name={address.country_name} className="ps-6 font-beatrice text-[12px] text-gray-500" />
             {feeText && (
@@ -125,6 +128,7 @@ export default function ShippingClient() {
     // With a coupon, each address is priced for the discounted amount (free shipping can turn on or off).
     const { data: addresses, isPending: profileLoading } = useAddresses({
         cartAmount: appliedCoupon && cartData ? subtotal - discountAmount : undefined,
+        couponCode: appliedCoupon?.code,
     });
 
     const createAddress = useCreateAddress();
@@ -159,9 +163,9 @@ export default function ShippingClient() {
     // The method is chosen on the next step: show cash on delivery (the backend's default) plus the online saving.
     const selectedAddress = addressList.find(a => a.id === effectiveSelectedId) ?? null;
     const feeSource = pickFeeSource(selectedAddress, cartData?.data?.summary);
-    const saving = onlineSaving(feeSource);
+    const saving = onlineSaving(feeSource, appliedCoupon);
     const feeText = (address: Address) => {
-        if (address.free_shipping) return tc('freeShipping');
+        if (address.free_shipping || isFreeShippingCoupon(appliedCoupon)) return tc('freeShipping');
         const fees = address.shipping_fees;
         if (!fees) return null;
         return fees.cash_on_delivery === fees.paymob
@@ -175,7 +179,7 @@ export default function ShippingClient() {
         if (continueAfterSave) router.push(paymentHref({ address_id: String(addressId) }));
     };
 
-    const handleSave = (values: AddressForm) => {
+    const handleSave = (values: AddressPayload) => {
         if (modal.mode === 'add') {
             createAddress.mutate(values, { onSuccess: res => afterSave(res.data.id) });
         } else if (modal.editId != null) {
@@ -340,7 +344,7 @@ export default function ShippingClient() {
                     isLoading={cartLoading}
                     couponCode={appliedCoupon?.code}
                     discountAmount={discountAmount || undefined}
-                    shipping={quoteShipping('cash_on_delivery', feeSource)}
+                    shipping={quoteShipping('cash_on_delivery', feeSource, appliedCoupon)}
                     className="md:w-[507px] shrink-0 bg-[#E0E0E080] p-5 md:border md:border-gray-200 md:bg-transparent md:p-10"
                 >
                     {saving > 0 && (

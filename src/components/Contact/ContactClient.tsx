@@ -29,7 +29,7 @@ export default function ContactClient() {
     const branches = (settingsData?.data?.branches ?? []).filter(b => b.name);
 
     const { mutate, isPending, isError, error } = useMutation({
-        mutationFn: (payload: typeof EMPTY) =>
+        mutationFn: (payload: Omit<typeof EMPTY, 'email'> & { email?: string }) =>
             post('/user/pages/contact-us', payload),
     });
 
@@ -41,11 +41,11 @@ export default function ContactClient() {
         setSubmitted(false);
     };
 
-    // The API needs all five fields (camelCase) and answers 400 "All fields are required" otherwise.
+    // Everything but the email is required (fields are camelCase for the API).
     const validate = () => {
         const next: Partial<Record<Field, string>> = {};
         (Object.keys(EMPTY) as Field[]).forEach((key) => {
-            if (!form[key].trim()) next[key] = t('fieldRequired');
+            if (key !== 'email' && !form[key].trim()) next[key] = t('fieldRequired');
         });
         if (form.email.trim() && !EMAIL.test(form.email.trim())) next.email = t('invalidEmail');
         if (form.phone.trim() && !isEgyptianMobile(form.phone)) next.phone = t('invalidPhone');
@@ -59,7 +59,8 @@ export default function ContactClient() {
         const payload = {
             firstName: form.firstName.trim(),
             lastName: form.lastName.trim(),
-            email: form.email.trim(),
+            // Optional: only sent when filled in.
+            ...(form.email.trim() ? { email: form.email.trim() } : {}),
             phone: normalizeEgyptianPhone(form.phone),
             message: form.message.trim(),
         };
@@ -147,7 +148,7 @@ export default function ContactClient() {
                             <input
                                 type="email"
                                 name="email" dir="ltr"
-                                placeholder={tc('email')}
+                                placeholder={t('emailOptional')}
                                 value={form.email}
                                 onChange={handleChange}
                                 aria-invalid={!!errors.email}

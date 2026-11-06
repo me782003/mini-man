@@ -49,6 +49,8 @@ export default function HeroSection2({ banners }) {
   const swiperRef = useRef(null);
 
   const currentSlide = slides[activeIndex];
+  // One banner: no arrows, dots, counter or autoplay — there's nothing to move to.
+  const multiple = slides.length > 1;
 
   const handleSlideChange = useCallback(
     (swiper) => {
@@ -69,8 +71,9 @@ export default function HeroSection2({ banners }) {
       <Swiper
         modules={[Autoplay, EffectFade, Pagination]}
         effect="fade"
-        autoplay={{ delay: 5000, disableOnInteraction: false }}
-        loop
+        autoplay={multiple ? { delay: 5000, disableOnInteraction: false } : false}
+        loop={multiple}
+        allowTouchMove={multiple}
         speed={900}
         onSwiper={handleSwiper}
         onSlideChange={handleSlideChange}
@@ -175,6 +178,7 @@ export default function HeroSection2({ banners }) {
         </div>
 
         {/* Bottom bar */}
+        {multiple && (
         <div className="container px-4 mx-auto pb-10 pointer-events-auto">
           <div className="flex items-end justify-between gap-6">
             {/* Slide counter + progress */}
@@ -230,23 +234,29 @@ export default function HeroSection2({ banners }) {
             </div>
           </div>
         </div>
+        )}
       </div>
 
-      {/* Prev / Next arrows */}
-      <button
-        onClick={() => swiperRef.current?.slidePrev()}
-        className="absolute left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/15 transition-colors flex items-center justify-center text-white"
-        aria-label={t("previousSlide")}
-      >
-        <ArrowRightIcon className="rotate-180" />
-      </button>
-      <button
-        onClick={() => swiperRef.current?.slideNext()}
-        className="absolute right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/15 transition-colors flex items-center justify-center text-white"
-        aria-label={t("nextSlide")}
-      >
-        <ArrowRightIcon />
-      </button>
+      {/* Prev / Next arrows — borderless; "previous" sits at the reading start (left in English,
+          right in Arabic) and each arrow points outwards, toward its own side. */}
+      {multiple && (
+        <>
+          <button
+            onClick={() => swiperRef.current?.slidePrev()}
+            className="absolute start-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-black/10 backdrop-blur-sm hover:bg-white/15 transition-colors flex items-center justify-center text-white"
+            aria-label={t("previousSlide")}
+          >
+            <ArrowRightIcon className="rotate-180 rtl:rotate-0" />
+          </button>
+          <button
+            onClick={() => swiperRef.current?.slideNext()}
+            className="absolute end-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full bg-black/10 backdrop-blur-sm hover:bg-white/15 transition-colors flex items-center justify-center text-white"
+            aria-label={t("nextSlide")}
+          >
+            <ArrowRightIcon className="rtl:rotate-180" />
+          </button>
+        </>
+      )}
 
       <style>{`
         @keyframes fadeSlideUp {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { queryClient } from '@/lib/query-client';
@@ -23,6 +23,14 @@ export default function Providers({ children, locale, settings }: ProvidersProps
   useState(() => {
     if (settings) queryClient.setQueryData(settingsKey(locale), { data: settings });
   });
+
+  // The root <html> is rendered once; keep its language and direction in step with the locale
+  // so RTL/LTR never lags behind a language change.
+  useEffect(() => {
+    const el = document.documentElement;
+    el.lang = locale;
+    el.dir = locale === 'ar' ? 'rtl' : 'ltr';
+  }, [locale]);
 
   return (
     <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''}>

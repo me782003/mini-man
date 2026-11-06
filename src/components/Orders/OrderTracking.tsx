@@ -121,6 +121,7 @@ export default function OrderTracking({ tracking, orderId, onRefresh, refreshing
                         <h2 id="timeline-heading" className="mb-6 font-beatrice text-[17px] font-bold text-black">{t('timeline')}</h2>
                         <StageTimeline stages={tracking.stages} cancelled={tracking.cancelled} locale={locale} />
                     </section>
+                    {(tracking.notes?.length ?? 0) > 0 && <StoreNotes notes={tracking.notes!} locale={locale} />}
                     {tracking.events.length > 0 && <ShippingUpdates events={tracking.events} locale={locale} />}
                 </div>
 
@@ -239,7 +240,8 @@ function StageTimeline({ stages, cancelled, locale }: { stages: TrackingStage[];
                 const isLast = i === stages.length - 1;
                 const nextReached = !cancelled && !isLast && stages[i + 1].status !== 'pending';
                 const date = stage.date && stage.status !== 'pending' ? formatTrackingDate(stage.date, locale) : null;
-                const label = [stage.title, stateLabel[status], date].filter(Boolean).join(', ');
+                const note = stage.note?.trim() || null;
+                const label = [stage.title, stateLabel[status], date, note].filter(Boolean).join(', ');
 
                 const circle =
                     status === 'done'
@@ -275,6 +277,10 @@ function StageTimeline({ stages, cancelled, locale }: { stages: TrackingStage[];
                                 )}
                             </div>
                             {date && <p className="mt-0.5 font-beatrice text-[12px] text-gray-500">{date}</p>}
+                            {/* The message the store wrote when it changed the status. */}
+                            {note && (
+                                <p className="mt-2 whitespace-pre-line rounded-lg bg-gray-50 px-3 py-2 font-beatrice text-[13px] text-gray-700">{note}</p>
+                            )}
                         </div>
                     </li>
                 );
@@ -426,6 +432,30 @@ function ShippingUpdates({ events, locale }: { events: OrderTrackingData['events
                     ))}
                 </ol>
             )}
+        </section>
+    );
+}
+
+/** "Updates from the store": every note written in the dashboard (e.g. a cancellation reason), newest first. */
+function StoreNotes({ notes, locale }: { notes: NonNullable<OrderTrackingData['notes']>; locale: string }) {
+    const t = useTranslations('Tracking');
+    return (
+        <section aria-labelledby="store-notes-heading" className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-7">
+            <h2 id="store-notes-heading" className="mb-4 font-beatrice text-[17px] font-bold text-black">{t('storeUpdates')}</h2>
+            <ul className="space-y-4">
+                {notes.map((n, i) => {
+                    const key = `status_${n.status}`;
+                    return (
+                        <li key={`${n.date}-${i}`} className="border-s-2 border-gray-200 ps-4">
+                            <p className="font-beatrice text-[13px] font-semibold text-black">
+                                {t.has(key) ? t(key) : n.status}
+                                {n.date && <span className="ms-2 font-normal text-gray-500">{formatTrackingDate(n.date, locale)}</span>}
+                            </p>
+                            <p className="mt-1 whitespace-pre-line font-beatrice text-[14px] text-gray-700">{n.note}</p>
+                        </li>
+                    );
+                })}
+            </ul>
         </section>
     );
 }

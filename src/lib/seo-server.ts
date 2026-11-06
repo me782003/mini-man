@@ -1,6 +1,7 @@
 // Server-only SEO helpers (they read the cached store settings).
 import type { Metadata } from 'next';
 import { getSettings } from '@/lib/api/settings';
+import { OG_IMAGE } from '@/lib/seo';
 
 type OpenGraph = NonNullable<Metadata['openGraph']>;
 
@@ -11,6 +12,5 @@ type OpenGraph = NonNullable<Metadata['openGraph']>;
 export async function pageOpenGraph(locale: string, og: OpenGraph): Promise<OpenGraph> {
     if (og.images) return og;
     const settings = await getSettings(locale);
-    const url = settings?.site_info?.header_logo || '/images/logo.png';
-    return { ...og, images: [{ url, alt: settings?.site_info?.name ?? undefined }] };
+    return { ...og, images: [{ ...OG_IMAGE, alt: settings?.site_info?.name ?? undefined }] };
 }

@@ -1,10 +1,24 @@
 import type { Metadata } from 'next';
 
 /** Public site origin, used for absolute URLs (canonical, Open Graph, sitemap). Set it in production. */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
+// On Vercel, a missing or localhost value falls back to the production domain Vercel provides —
+// otherwise link previews (WhatsApp, Facebook) get localhost image URLs and show nothing.
+function resolveSiteUrl(): string {
+    const configured = process.env.NEXT_PUBLIC_SITE_URL;
+    const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+    if (vercelHost && (!configured || /localhost|127\.0\.0\.1/.test(configured))) return `https://${vercelHost}`;
+    return configured || 'http://localhost:3000';
+}
+export const SITE_URL = resolveSiteUrl().replace(/\/$/, '');
 
 export const LOCALES = ['en', 'ar'] as const;
 export const OG_LOCALE: Record<string, string> = { en: 'en_US', ar: 'ar_EG' };
+
+/**
+ * Link-preview image (WhatsApp, Facebook, X…), 1200×630. Kept in the repo on purpose: the
+ * dashboard's header logo is not a share image and once held a wrong placeholder.
+ */
+export const OG_IMAGE = { url: '/images/og-image.png', width: 1200, height: 630 };
 
 /**
  * Canonical URL for this language + links to the other language versions (hreflang).

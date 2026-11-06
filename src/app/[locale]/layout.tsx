@@ -8,7 +8,7 @@ import WhatsAppButton from '@/components/WhatsAppButton';
 import PhoneRequiredGuard from '@/components/Auth/PhoneRequiredGuard';
 import { getSettings } from '@/lib/api/settings';
 import { DEFAULT_SITE_NAME } from '@/lib/hooks/useSettings';
-import { OG_LOCALE, SITE_URL } from '@/lib/seo';
+import { OG_IMAGE, OG_LOCALE, SITE_URL } from '@/lib/seo';
 
 // Site-wide defaults; pages override title / description / alternates / images.
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,7 +16,6 @@ export async function generateMetadata(): Promise<Metadata> {
     const settings = await getSettings(locale);
     const name = settings?.site_info?.name || DEFAULT_SITE_NAME;
     const description = settings?.site_info?.description || undefined;
-    const ogImage = settings?.site_info?.header_logo || '/images/logo.png';
 
     return {
         metadataBase: new URL(SITE_URL),
@@ -31,9 +30,9 @@ export async function generateMetadata(): Promise<Metadata> {
             description,
             locale: OG_LOCALE[locale],
             alternateLocale: Object.values(OG_LOCALE).filter((l) => l !== OG_LOCALE[locale]),
-            images: [{ url: ogImage, alt: name }],
+            images: [{ ...OG_IMAGE, alt: name }],
         },
-        twitter: { card: 'summary_large_image', title: name, description, images: [ogImage] },
+        twitter: { card: 'summary_large_image', title: name, description, images: [OG_IMAGE.url] },
         robots: { index: true, follow: true },
     };
 }

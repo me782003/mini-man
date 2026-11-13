@@ -44,7 +44,7 @@ export interface PhoneStatus {
  * "Add your phone number" page (/complete-phone). Temporarily hidden: nobody is sent there and the
  * URL shows "not found". Set to true to bring it back (after Google sign-in and from checkout).
  */
-export const COMPLETE_PHONE_PAGE_ENABLED = true;
+export const COMPLETE_PHONE_PAGE_ENABLED = false;
 
 /** The server's `needs_phone`: true when the account has no verified phone (Google sign-ups). */
 export function needsVerifiedPhone(user: PhoneStatus | null | undefined): boolean {

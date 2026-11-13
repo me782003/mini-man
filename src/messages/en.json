@@ -436,6 +436,7 @@
     "increaseQuantity": "Increase quantity",
     "alreadyInCart": "Already in cart ({n})",
     "outOfStockOnly": "Show out of stock only",
+    "availableOnly": "Available only",
     "minPrice": "Minimum price",
     "maxPrice": "Maximum price",
     "removeFilter": "Remove filter: {name}",

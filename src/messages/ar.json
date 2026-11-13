@@ -436,6 +436,7 @@
     "increaseQuantity": "زيادة الكمية",
     "alreadyInCart": "موجود في السلة ({n})",
     "outOfStockOnly": "عرض غير المتوفر فقط",
+    "availableOnly": "المتوفر فقط",
     "minPrice": "أقل سعر",
     "maxPrice": "أعلى سعر",
     "removeFilter": "إزالة التصفية: {name}",

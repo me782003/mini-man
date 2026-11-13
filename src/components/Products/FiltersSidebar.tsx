@@ -213,6 +213,9 @@ function PriceInput({ label, value, min, max, onCommit }: {
 // URL params owned by other controls (search box, sort dropdown) that filtering keeps.
 const PRESERVED_PARAMS = ['search', 'sort_by', 'sort_order'] as const;
 
+// URL params written by this sidebar.
+const FILTER_PARAMS = ['size_name', 'collection_id', 'category_id', 'sub_category_id', 'is_available', 'min_price', 'max_price'] as const;
+
 export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSidebarProps) {
   const t = useTranslations('Products');
   const tc = useTranslations('Common');
@@ -242,6 +245,9 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
     setLocal(readFiltersFromParams(searchParams, priceMin, priceMax));
   }, [searchParams, priceMin, priceMax]);
 
+  // Show "Clear all" only when at least one filter is applied (search and sort don't count).
+  const hasActiveFilters = FILTER_PARAMS.some((key) => searchParams.has(key));
+
   // Every selection filters immediately — update local state and the URL together.
   function update(change: (prev: LocalFilters) => LocalFilters) {
     const next = change(local);
@@ -254,10 +260,6 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
       ...prev,
       sizes: prev.sizes.includes(size) ? prev.sizes.filter((s) => s !== size) : [...prev.sizes, size],
     }));
-  }
-
-  function toggleAvailability(val: string) {
-    update((prev) => ({ ...prev, isAvailable: prev.isAvailable === val ? null : val }));
   }
 
   function pushFilters(local: LocalFilters) {
@@ -397,17 +399,18 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
 
         {/* Availability */}
         <AccordionSection title={t('availability')} defaultOpen>
-          {/* The API returns in-stock products by default and can't mix both — so it's a single toggle. */}
+          {/* The API returns in-stock products by default and can't mix both:
+              checked (no param) = available only, unchecked = out of stock (is_available=0). */}
           <label className="flex cursor-pointer items-center gap-2.5">
             <input
               type="checkbox"
-              checked={local.isAvailable === '0'}
-              onChange={() => toggleAvailability('0')}
+              checked={local.isAvailable !== '0'}
+              onChange={() => update((prev) => ({ ...prev, isAvailable: prev.isAvailable === '0' ? null : '0' }))}
               className="h-4 w-4 cursor-pointer accent-black"
             />
             <span className="font-beatrice text-[14px] text-black">
-              {t('outOfStockOnly')}{' '}
-              {filters && <span className="font-semibold text-red-500">({filters.availability.out_of_stock})</span>}
+              {t('availableOnly')}{' '}
+              {filters && <span className="font-semibold text-green-600">({filters.availability.in_stock})</span>}
             </span>
           </label>
         </AccordionSection>
@@ -458,13 +461,15 @@ export default function FiltersSidebar({ isOpen = false, onClose }: FiltersSideb
           >
             {t('viewResults')}
           </button>
-          <button
-            type="button"
-            onClick={clearAll}
-            className="w-full border border-gray-300 py-3 font-beatrice text-[12px] font-semibold uppercase tracking-widest text-gray-500 transition-colors hover:border-black hover:text-black"
-          >
-            {t('clearAll')}
-          </button>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="w-full border border-gray-300 py-3 font-beatrice text-[12px] font-semibold uppercase tracking-widest text-gray-500 transition-colors hover:border-black hover:text-black"
+            >
+              {t('clearAll')}
+            </button>
+          )}
         </div>
       </aside>
     </>
